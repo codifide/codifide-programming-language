@@ -1,0 +1,266 @@
+dispatch:
+  id: sha256:pending
+  schema: noema.dispatch/0.1
+  subject: Session-end polish, hardening, and documentation refresh
+  at: 2026-05-10T00:00:00Z
+  author: Glyph
+
+  intent: >
+    Final dispatch for the 2026-05-10 session. Records the last round
+    of additions (intent-graph error messages, primitive library,
+    store verify, parser hardening, concurrency test, documentation
+    refresh), the two P1 findings the parser fuzz harness caught, and
+    the closure of three prior audit unknowns.
+
+  state:
+    shipped:
+      # Error-message quality
+      - claim: errors.intent_chain_rendered_in_effect_and_contract_violations
+      # Primitive library expansion
+      - claim: primitives.math_abs_min_max_pow_floor_ceil_round
+      - claim: primitives.collections_min_of_max_of_sum_reverse_append_contains_item
+      - claim: primitives.strings_upper_lower_trim_starts_with_ends_with_replace_split_join
+      - claim: primitives.empty_aggregates_surface_as_primitive_error
+      # Store
+      - claim: cli.store_verify_subcommand
+      # Parser hardening (closes P1-3 and P1-4 from fuzz harness)
+      - claim: audit.P1_3.lex_error_wrapped_in_parse_error
+      - claim: audit.P1_4.paren_depth_bound_enforced
+      # Test infrastructure
+      - claim: tests.parser_fuzz_harness
+      - claim: tests.store_concurrency
+      # Prior audit closures
+      - claim: audit.P3_1_store_verify_subcommand_shipped
+      - claim: audit.P3_3_store_concurrency_verified
+      # Documentation
+      - claim: docs.readme_rewritten_for_current_state
+      - claim: docs.language_tour_updated_imports_indices_shadowing_errors
+      - claim: docs.tutorial_written_end_to_end_walkthrough
+      - claim: docs.architecture_written_for_contributors
+      - claim: docs.getting_started_updated
+      # Bottom-line
+      - claim: tests.suite_passing_76_of_76
+      - claim: rust_tests.suite_passing_6_of_6
+    in_flight: []
+    blocked: []
+    refused:
+      - claim: primitives.first_class_function_references
+        why: >
+          `map_call`/`filter_call`/`reduce_call` would need access to
+          the interpreter's registry from a primitive. That is a
+          calling-convention change, not a patch. Deferred until
+          user-defined functions become first-class values.
+      - claim: store.garbage_collection
+        why: Still out of scope; monotonic growth is acceptable for v0.
+      - claim: cbor_serialization
+        why: Still v0.2; JSON works and conformance holds.
+
+  evidence:
+    - claim: tests.suite_passing_76_of_76
+      kind: test
+      source: python3 -m noema test
+      result: "Ran 76 tests in 0.5s; OK"
+      confidence: 1.0
+    - claim: rust_tests.suite_passing_6_of_6
+      kind: test
+      source: cargo test --release -p noema-canonical
+      result: 6 passed; 0 failed
+      confidence: 1.0
+    - claim: errors.intent_chain_rendered_in_effect_and_contract_violations
+      kind: test
+      source: tests/test_runtime.py::test_error_message_walks_the_intent_graph
+      result: >
+        Three-level-deep synthetic call produces an error message
+        naming outer/middle/inner with their intents and a
+        "called from:" chain.
+      confidence: 1.0
+    - claim: primitives.math_abs_min_max_pow_floor_ceil_round
+      kind: test
+      source: tests/test_primitives.py::test_math_primitives
+      result: >
+        abs(neg(7))=7, min(3,9)=3, max(3,9)=9, pow(2,10)=1024,
+        floor(2.9)=2, ceil(2.1)=3, round(2.5)=2.
+      confidence: 1.0
+    - claim: primitives.collections_min_of_max_of_sum_reverse_append_contains_item
+      kind: test
+      source: tests/test_primitives.py::test_collection_primitives
+      result: >
+        min_of=1, max_of=5, sum=14, reverse preserves, append is
+        non-mutating, contains_item is distinct from string contains,
+        sum(empty)=0.
+      confidence: 1.0
+    - claim: primitives.strings_upper_lower_trim_starts_with_ends_with_replace_split_join
+      kind: test
+      source: tests/test_primitives.py::test_string_primitives
+      result: >
+        upper/lower/trim/starts_with/ends_with/replace work; split and
+        join round-trip for simple inputs.
+      confidence: 1.0
+    - claim: primitives.empty_aggregates_surface_as_primitive_error
+      kind: test
+      source: tests/test_primitives.py::test_min_of_empty_surfaces_as_primitive_error
+      result: >
+        min_of([]) surfaces as PrimitiveError(fn='min_of'), not a bare
+        ValueError.
+      confidence: 1.0
+    - claim: cli.store_verify_subcommand
+      kind: test
+      source: tests/test_store.py::StoreVerifyTests
+      result: >
+        Good index verifies OK with exit 0. Index with missing
+        pointee reports the specific identity that is missing on
+        stderr and exits non-zero.
+      confidence: 1.0
+    - claim: audit.P1_3.lex_error_wrapped_in_parse_error
+      kind: test
+      source: tests/test_parser_fuzz.py::test_adversarial_inputs_raise_parse_error_or_succeed
+      result: >
+        30 adversarial inputs including unclosed strings, bare Unicode
+        glyphs in expression position, double bind operators, and
+        stray operators all raise ParseError or succeed. No LexError
+        escapes.
+      confidence: 1.0
+    - claim: audit.P1_4.paren_depth_bound_enforced
+      kind: test
+      source: tests/test_parser_fuzz.py::test_adversarial_inputs_raise_parse_error_or_succeed (deep_parens_500)
+      result: >
+        500-deep paren nest rejects as ParseError at the
+        MAX_PAREN_DEPTH=256 bound. No RecursionError escapes.
+      confidence: 1.0
+    - claim: tests.parser_fuzz_harness
+      kind: read
+      source: tests/test_parser_fuzz.py
+      result: >
+        30 hand-curated adversarial inputs + 200 seeded structural
+        samples; each parse bounded by SIGALRM at 1s so infinite
+        loops surface as failures.
+      confidence: 1.0
+    - claim: tests.store_concurrency
+      kind: test
+      source: tests/test_store_concurrency.py
+      result: >
+        8 processes putting the same symbol produce exactly one
+        object, one identity, zero temp leftovers. 8 processes
+        putting distinct symbols produce 8 objects, 8 distinct
+        identities, zero temp leftovers.
+      confidence: 1.0
+    - claim: audit.P3_1_store_verify_subcommand_shipped
+      kind: read
+      source: noema/__main__.py::cmd_store_verify
+      result: >
+        Opt-in `noema store verify <hash>` walks a module's imports
+        and reports missing pointees. Sable's preferred fix over
+        parse-time validation.
+      confidence: 1.0
+    - claim: audit.P3_3_store_concurrency_verified
+      kind: test
+      source: tests/test_store_concurrency.py (both methods)
+      result: >
+        Atomic-rename write path holds up under real process-level
+        contention; open concurrency question from prior audit now
+        closed.
+      confidence: 1.0
+    - claim: docs.readme_rewritten_for_current_state
+      kind: read
+      source: README.md
+      result: >
+        Seven design principles unchanged. "What's in v0" replaced
+        with accurate "What's in v0.1-dev". "Why this exists" and
+        "What working Noema code looks like" sections added.
+      confidence: 1.0
+    - claim: docs.language_tour_updated_imports_indices_shadowing_errors
+      kind: read
+      source: docs/LANGUAGE.md
+      result: >
+        New sections for imports (direct + from-import), indices,
+        shadowing, typed errors, recursion limit, store CLI. "What
+        v0 does not have yet" updated to remove shipped items.
+      confidence: 1.0
+    - claim: docs.tutorial_written_end_to_end_walkthrough
+      kind: read
+      source: docs/TUTORIAL.md
+      result: >
+        Six sections walking from first program to publishing and
+        consuming through an index, with shell commands that were
+        run to confirm reproducible output.
+      confidence: 1.0
+    - claim: docs.architecture_written_for_contributors
+      kind: read
+      source: docs/ARCHITECTURE.md
+      result: >
+        Layered-structure ASCII diagram, two-implementation strategy
+        flow, effect-check locations, import resolution stages,
+        store-on-disk details, conformance test flow, file map, test
+        topology, persona-interaction notes.
+      confidence: 1.0
+    - claim: docs.getting_started_updated
+      kind: read
+      source: GETTING_STARTED.md
+      result: >
+        68→76 test count updated, cargo test added, "Try the full
+        story" walk-through added, "Where things live" table
+        expanded, gotchas section expanded.
+      confidence: 1.0
+
+  unknowns:
+    - question: >
+        What is the GC story for the store? Monotonic growth is
+        acceptable for v0 but not indefinitely.
+      why_unknown: No usage data yet to know the shape of the
+        reachability analysis users will want.
+      how_to_resolve: >
+        Design a reachable-from-root GC after real usage surfaces
+        which identities need preserving and which can be dropped.
+    - question: >
+        CBOR wire form.
+      why_unknown: Still deferred until v0.2.
+      how_to_resolve: >
+        Port the canonical byte form to CBOR; extend conformance
+        test to verify Python and Rust agree on CBOR bytes.
+    - question: >
+        Cost-based candidate dispatch.
+      why_unknown: Canonical form already carries enough metadata
+        but the dispatcher is unwritten.
+      how_to_resolve: >
+        Add cost annotations to candidate intent or to a new field;
+        implement a dispatcher that picks among satisfying
+        candidates by cost.
+    - question: >
+        Does the CLI hold up against hostile file paths (symlinks,
+        path traversal, /dev/zero)?
+      why_unknown: Not tested in any audit to date.
+      how_to_resolve: >
+        Add an audit-specific test suite that feeds pathological
+        paths to `run`, `canonical`, `store put`, `store get`.
+    - question: >
+        Does the Rust canonical crate hold up under its own fuzz?
+      why_unknown: The crate does not parse .nm surface, so its
+        attack surface is narrower (JSON decoder + canonical byte
+        writer), but no fuzz harness exists.
+      how_to_resolve: >
+        Port a subset of the Python fuzz corpus to Rust via
+        cargo-fuzz or honggfuzz-rs.
+
+  next:
+    - action: CLI filesystem-safety audit
+      depends_on: [cli.store_verify_subcommand]
+      effect: "{}"
+    - action: Rust canonical-crate fuzz
+      depends_on: [rust_tests.suite_passing_6_of_6]
+      effect: "{}"
+    - action: store GC design pass
+      depends_on: []
+      effect: "{}"
+    - action: CBOR serialization
+      depends_on: []
+      effect: "{}"
+    - action: cost-based candidate dispatch
+      depends_on: []
+      effect: "{}"
+
+  links:
+    canonical: docs/CANONICAL.md
+    human_readout: dispatches/2026-05-10-polish.readout.md
+    fuzz_audit_note: dispatches/2026-05-10-fuzz-audit.md
+    session_state: sessions/2026-05-10.md
+    repo_path: .

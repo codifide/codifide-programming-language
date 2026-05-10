@@ -1,0 +1,156 @@
+dispatch:
+  id: sha256:pending
+  schema: noema.dispatch/0.1
+  subject: Content-addressed indices and `from`-imports
+  at: 2026-05-10T00:00:00Z
+  author: Glyph
+
+  intent: >
+    Record the next layer of Noema's content-addressing story. Agents
+    can now publish *indices* — modules whose imports map is their
+    export table — and consumers can reference symbols through those
+    indices with `from <identity> import <names>`. One hash (the
+    index) replaces a list of per-symbol hashes, without introducing
+    any new trust anchor or any mechanism outside canonical form.
+
+  state:
+    shipped:
+      - claim: indices.surface_syntax_from_identity_import_names
+      - claim: indices.canonical_form_is_module_with_empty_symbols_and_populated_imports
+      - claim: indices.content_addressed_same_as_any_module
+      - claim: indices.order_independent_identity
+      - claim: indices.name_sensitive_identity
+      - claim: indices.parse_time_resolution_via_store
+      - claim: indices.cli_store_index_subcommand
+      - claim: indices.effect_check_unchanged_for_from_imports
+      - claim: spec.shadowing_rule_written
+      - claim: spec.from_imports_section_written
+      - claim: audit.p3_1_opportunistic_index_validation_documented
+      - claim: audit.p3_2_shadowing_rule_now_specified
+      - claim: tests.suite_passing_64_of_64
+    in_flight: []
+    blocked: []
+    refused:
+      - claim: indices.parse_time_exhaustive_pointee_check
+        why: >
+          A parse pass that verifies every index pointee exists in the
+          store is arbitrary I/O on parse and a DoS vector against
+          hostile indices. Runtime failure on missing pointee is typed
+          and clear; Sable approved. Opt-in `store verify` is the
+          right affordance.
+      - claim: indices.centralized_name_registry
+        why: >
+          Indices replace the need for one. Names are local to each
+          index; discoverability between ecosystems comes from agents
+          sharing index hashes, not from a global namespace.
+      - claim: indices.version_ranges
+        why: >
+          Content addressing makes version ranges unnecessary; a new
+          version is a new hash.
+
+  evidence:
+    - claim: tests.suite_passing_64_of_64
+      kind: test
+      source: python3 -m noema test
+      result: "Ran 64 tests in 0.095s; OK"
+      confidence: 1.0
+    - claim: indices.parse_time_resolution_via_store
+      kind: test
+      source: tests/test_indices.py::FromImportResolutionTests::test_from_import_resolves_and_runs
+      result: >
+        Consumer with `from <index> import hello` runs end-to-end and
+        returns the library's output.
+      confidence: 1.0
+    - claim: indices.order_independent_identity
+      kind: test
+      source: tests/test_indices.py::IndexIdentityTests::test_entry_order_does_not_affect_identity
+      result: >
+        Index with (hello, goodbye) and index with (goodbye, hello)
+        produce identical hashes.
+      confidence: 1.0
+    - claim: indices.name_sensitive_identity
+      kind: test
+      source: tests/test_indices.py::IndexIdentityTests::test_module_name_is_part_of_identity
+      result: Index module name is part of its content hash.
+      confidence: 1.0
+    - claim: indices.effect_check_unchanged_for_from_imports
+      kind: test
+      source: tests/test_indices.py::FromImportEffectCheckTests
+      result: >
+        Pure consumer importing an effectful symbol through an index
+        is still rejected with EffectViolation at module load.
+      confidence: 1.0
+    - claim: indices.cli_store_index_subcommand
+      kind: run
+      source: "python3 -m noema store index --name greet_library hello=<hash> goodbye=<hash>"
+      result: >
+        Prints `sha256:<hex>\\t<module_name>` for the resulting index.
+        Demonstrated end-to-end with three agents: library publisher,
+        index publisher, consumer.
+      confidence: 1.0
+    - claim: spec.shadowing_rule_written
+      kind: read
+      source: docs/CANONICAL.md §Shadowing
+      result: >
+        Locals over imports over primitives, with effect checks
+        applying to the resolved callee.
+      confidence: 1.0
+    - claim: spec.from_imports_section_written
+      kind: read
+      source: docs/CANONICAL.md §Indices and `from`-imports
+      result: >
+        Index defined; `from <identity> import <names>` grammar
+        specified; target's local symbols are not reachable; parse-
+        time resolution is allowed but not required; rejection of
+        missing names is required.
+      confidence: 1.0
+    - claim: audit.p3_2_shadowing_rule_now_specified
+      kind: test
+      source: tests/test_indices.py::FromImportResolutionTests::test_local_def_shadows_imported_name
+      result: >
+        Consumer with both `from <idx> import hello` and local `def
+        hello` resolves to the local version; no surprise.
+      confidence: 1.0
+
+  unknowns:
+    - question: >
+        How do agents decide which indices to trust? Content identity
+        makes a given index immutable, but not socially endorsed.
+      why_unknown: Usage problem, not spec problem.
+      how_to_resolve: >
+        Observe how agents actually share index hashes under adversarial
+        conditions; consider a lightweight signing/attestation layer as
+        a separate spec extension.
+    - question: >
+        What should rotation look like when an index needs to point at
+        newer symbol versions? Today it means publishing a new index
+        with a different hash, which consumers must update manually.
+      why_unknown: >
+        Deliberately unresolved — the discipline may be correct. A
+        "latest-known pointer" layer on top of content addressing
+        would make this ergonomic but adds a mutable element.
+      how_to_resolve: >
+        Let real usage surface whether manual-upgrade discipline is
+        tolerable or if a pointer layer is needed.
+    - question: >
+        Are there interesting DoS patterns against the CLI via
+        adversarial index files? (E.g., indices with 100,000 entries.)
+      why_unknown: Not fuzz-tested.
+      how_to_resolve: Parser fuzz harness, carried over.
+
+  next:
+    - action: "opt-in `noema store verify <index>` subcommand"
+      depends_on: [indices.parse_time_resolution_via_store]
+      effect: "{}"
+    - action: parser fuzz harness (still open from prior audit)
+      depends_on: []
+      effect: "{}"
+    - action: index signing/attestation extension (design only)
+      depends_on: [indices.surface_syntax_from_identity_import_names]
+      effect: "{}"
+
+  links:
+    canonical: docs/CANONICAL.md
+    human_readout: dispatches/2026-05-10-indices.readout.md
+    audit_note: dispatches/2026-05-10-index-audit.md
+    repo_path: .

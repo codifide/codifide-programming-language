@@ -58,6 +58,22 @@ def bad
         with self.assertRaises(ParseError):
             parse(src)
 
+    def test_module_name_grammar_is_enforced(self) -> None:
+        # Security audit P2-2. A module name must look like an identifier,
+        # not arbitrary text — canonical form echoes it into displays and
+        # arbitrary content creates ambiguity in downstream consumers.
+        src = """module foo; bad stuff
+def x
+  intent "x"
+  sig () -> Int
+  effects {}
+  cand
+    1
+"""
+        with self.assertRaises(ParseError) as cm:
+            parse(src)
+        self.assertIn("module name", str(cm.exception).lower())
+
     def test_effect_set_parses(self) -> None:
         src = """
 def hello

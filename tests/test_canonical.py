@@ -72,6 +72,51 @@ def judge
         obj = to_canonical(m)
         self.assertEqual(obj["symbols"]["greet"]["intent"], "greet")
 
+    def test_nested_believe_round_trips_through_canonical_form(self) -> None:
+        # Security audit unknown from the original v0 dispatch: does
+        # believe-in-believe nesting round-trip through canonical form?
+        # The *surface parser* does not yet accept multi-line values in
+        # believe arms, so we build this form directly and verify the
+        # canonical JSON layer preserves the structure.
+        from noema.core.types import (
+            Believe, BottomExpr, Call, Candidate, Definition,
+            Lit, Module, Ref, Signature,
+        )
+        inner = Believe(
+            subject=Ref("y"),
+            arms=((
+                Call("ge", (Call("conf", (Ref("y"),)), Lit(0.9, type="Float"))),
+                Ref("y"),
+            ),),
+            otherwise=BottomExpr(),
+        )
+        outer = Believe(
+            subject=Ref("x"),
+            arms=((
+                Call("ge", (Call("conf", (Ref("x"),)), Lit(0.9, type="Float"))),
+                inner,
+            ),),
+            otherwise=BottomExpr(),
+        )
+        m = Module(
+            name="nested",
+            symbols=(
+                Definition(
+                    name="deep",
+                    intent="nested believe",
+                    signature=Signature(returns="Any"),
+                    candidates=(Candidate(body=outer),),
+                ),
+            ),
+        )
+        json_a = to_canonical(m)
+        m2 = from_canonical(json.loads(json.dumps(json_a, sort_keys=True)))
+        json_b = to_canonical(m2)
+        self.assertEqual(
+            json.dumps(json_a, sort_keys=True),
+            json.dumps(json_b, sort_keys=True),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

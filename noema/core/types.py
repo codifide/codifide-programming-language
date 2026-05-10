@@ -179,14 +179,35 @@ class Definition:
 
 @dataclass(frozen=True)
 class Module:
-    """A collection of definitions under a module name."""
+    """A collection of definitions under a module name.
+
+    `imports` is a tuple of (local_name, identity) pairs where identity is
+    a content-hash of the form `sha256:<hex>`. Imports are resolved
+    through a :class:`~noema.store.SymbolStore` at runtime; the canonical
+    form of a module that imports is therefore shorter than a module that
+    inlines the same bodies, because it references them by identity.
+
+    The order of `imports` is preserved in the AST but does not affect
+    canonical byte form: the canonical JSON layer emits imports as a
+    sorted object (map from local name to identity). Two modules that
+    differ only in import declaration order produce identical canonical
+    bytes and the same content hash.
+    """
     name: str
     symbols: Tuple[Definition, ...] = ()
+    imports: Tuple[Tuple[str, str], ...] = ()
 
     def lookup(self, name: str) -> Optional[Definition]:
         for d in self.symbols:
             if d.name == name:
                 return d
+        return None
+
+    def import_identity(self, name: str) -> Optional[str]:
+        """Return the content identity bound to a local import name."""
+        for n, identity in self.imports:
+            if n == name:
+                return identity
         return None
 
 

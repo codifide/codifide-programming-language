@@ -1,0 +1,171 @@
+dispatch:
+  id: sha256:pending  # replaced at commit time by content hash of this file
+  schema: noema.dispatch/0.1
+  subject: Second implementation of Noema canonical form (Rust)
+  at: 2026-05-10T00:00:00Z
+  author: Glyph
+
+  intent: >
+    Record the first point at which Noema has two independent
+    implementations of its canonical form that agree byte-for-byte on
+    every example program. This is the gate at which "Noema is a Python
+    library" becomes "Noema is a language with a Python reference and a
+    Rust conformance implementation."
+
+  state:
+    shipped:
+      - claim: spec.canonical.normalization_rules
+      - claim: spec.canonical.byte_form_defined
+      - claim: spec.canonical.content_address_scheme
+      - claim: spec.effect_algebra.transitive_rule_called_out
+      - claim: python.canonical_bytes_and_hash
+      - claim: rust.crate.noema_canonical_compiles
+      - claim: rust.crate.json_round_trip
+      - claim: rust.crate.canonical_byte_form
+      - claim: rust.crate.content_hash
+      - claim: rust.crate.cli_bytes_and_hash
+      - claim: conformance.rust_python_byte_equal_on_examples
+      - claim: conformance.rust_python_hash_equal_on_examples
+      - claim: tests.suite_passing_21_of_21
+    in_flight: []
+    blocked: []
+    refused:
+      - claim: rust.interpreter_port
+        why: >
+          Runtime semantics are still changing; transitive effect-subset
+          check will alter behavior. Porting a moving target doubles the
+          cost of every semantics change. Canonical form is the right
+          stable surface to conform on first.
+      - claim: surface_parser_in_rust
+        why: >
+          The `.nm` parser is a projection, not the language. Python is
+          authoritative for parsing in v0. Duplicating the parser before
+          the canonical form is fully stable would invert the dependency.
+
+  evidence:
+    - claim: tests.suite_passing_21_of_21
+      kind: test
+      source: python3 -m noema test
+      result: "Ran 21 tests in 0.024s; OK"
+      confidence: 1.0
+    - claim: conformance.rust_python_byte_equal_on_examples
+      kind: test
+      source: tests/test_conformance.py::test_rust_and_python_agree_on_canonical_bytes
+      result: byte-for-byte equal on greet.nm, sort.nm, classify.nm
+      confidence: 1.0
+    - claim: conformance.rust_python_hash_equal_on_examples
+      kind: test
+      source: tests/test_conformance.py::test_rust_and_python_agree_on_content_hash
+      result: sha256 equal on all three examples
+      confidence: 1.0
+    - claim: rust.crate.noema_canonical_compiles
+      kind: run
+      source: cargo build --release
+      result: "Finished `release` profile [optimized] target(s)"
+      confidence: 1.0
+    - claim: rust.crate.json_round_trip
+      kind: read
+      source: crates/noema-canonical/src/json.rs
+      result: to_canonical_json / from_canonical_json mirror Python shape exactly
+      confidence: 0.95
+    - claim: rust.crate.canonical_byte_form
+      kind: test
+      source: cargo test --release
+      result: 3 unit tests pass (sorted keys, array order, hash stability)
+      confidence: 1.0
+    - claim: rust.crate.content_hash
+      kind: read
+      source: crates/noema-canonical/src/canonical.rs::content_hash
+      result: SHA-256 hex with `sha256:` prefix over canonical bytes
+      confidence: 1.0
+    - claim: python.canonical_bytes_and_hash
+      kind: read
+      source: noema/projection/canonical.py::canonical_bytes, content_hash
+      result: json.dumps with sort_keys + compact separators + ensure_ascii
+      confidence: 1.0
+    - claim: spec.canonical.normalization_rules
+      kind: read
+      source: docs/CANONICAL.md §Normalization
+      result: five explicit rules (keys, numbers, strings, arrays, effect sets)
+      confidence: 1.0
+    - claim: spec.canonical.byte_form_defined
+      kind: read
+      source: docs/CANONICAL.md §Canonical serialization
+      result: UTF-8 no BOM, no whitespace, sorted keys, compact JSON, ASCII escapes
+      confidence: 1.0
+    - claim: spec.canonical.content_address_scheme
+      kind: read
+      source: docs/CANONICAL.md §Content addressing
+      result: sha256:<hex> over canonical byte form, equal inputs -> equal hashes
+      confidence: 1.0
+    - claim: spec.effect_algebra.transitive_rule_called_out
+      kind: read
+      source: docs/CANONICAL.md §Effect algebra
+      result: transitive rule declared REQUIRED; v0 Python gap called out
+      confidence: 1.0
+    - claim: rust.crate.cli_bytes_and_hash
+      kind: run
+      source: cargo build produced target/release/noema-canonical
+      result: two subcommands exercised by conformance suite
+      confidence: 1.0
+
+  unknowns:
+    - question: >
+        Does `json.dumps(..., ensure_ascii=True)` and `serde_json::to_vec`
+        agree on every escape sequence, including surrogate pairs in
+        source strings?
+      why_unknown: >
+        Examples so far use ASCII-only string literals. Conformance has not
+        been exercised on non-ASCII content.
+      how_to_resolve: >
+        Add a fixture with non-ASCII identifiers or string literals in a
+        .nm program and assert byte equality.
+    - question: >
+        Does number serialization agree on edge cases — very large ints,
+        floats near precision boundaries, `-0.0`?
+      why_unknown: >
+        Python's json module and serde_json use different shortest-decimal
+        strategies that coincide for common values but may diverge on
+        edge cases.
+      how_to_resolve: >
+        Add a conformance fixture with literal values at numeric edges and
+        compare bytes.
+    - question: >
+        Should the content hash include or exclude the `intent` field when
+        computing symbol identity? Two definitions with identical bodies
+        and different intents should probably have different identities,
+        since intent is first-class and preserved forever — but the spec
+        has not made this explicit.
+      why_unknown: >
+        Not yet decided. Both implementations include intent in the hash
+        today by default (because intent is part of the canonical bytes)
+        but the spec does not call out the choice.
+      how_to_resolve: >
+        Write the rule into docs/CANONICAL.md §Content addressing in the
+        next spec pass.
+    - question: >
+        Will the transitive effect subset check, once implemented, change
+        any canonical form? (Expected: no — it's a static pass over the
+        existing canonical form, not a shape change.)
+      why_unknown: Not yet implemented.
+      how_to_resolve: Implement the check; re-run conformance.
+
+  next:
+    - action: add non-ASCII conformance fixture
+      depends_on: [conformance.rust_python_byte_equal_on_examples]
+      effect: "{}"
+    - action: add numeric-edge conformance fixture
+      depends_on: [conformance.rust_python_byte_equal_on_examples]
+      effect: "{}"
+    - action: implement transitive effect subset check (Python)
+      depends_on: [spec.effect_algebra.transitive_rule_called_out]
+      effect: "{}"
+    - action: specify intent's role in content addressing
+      depends_on: [spec.canonical.content_address_scheme]
+      effect: "{}"
+
+  links:
+    canonical: docs/CANONICAL.md
+    rust_notes: docs/RUST.md
+    human_readout: dispatches/2026-05-10-rust-canonical.readout.md
+    repo_path: .

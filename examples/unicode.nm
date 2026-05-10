@@ -1,0 +1,21 @@
+module unicode_example
+
+# This example exists specifically as a conformance anchor: Python and Rust
+# canonical-form implementations MUST produce byte-for-byte identical output
+# on a program containing non-ASCII content. The security audit of 2026-05-10
+# (finding P0-2) caught that they did not; this fixture is the regression.
+
+def greet_cafe
+  intent "greet in a café — non-ASCII content in intent, body, and returned string"
+  sig    () -> String
+  effects {}
+  post   contains(result, "café")
+  cand
+    "welcome to the café ☕"
+
+def main
+  intent "entry point for unicode conformance"
+  sig    () -> String
+  effects {}
+  cand
+    greet_cafe()

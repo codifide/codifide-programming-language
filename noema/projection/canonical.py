@@ -3,9 +3,16 @@
 Noema canonical form is a typed hypergraph. JSON is the v0 serialization; CBOR
 and content-addressing will arrive later. Round-tripping is total: any Module
 parsed, projected to JSON, and read back is structurally identical.
+
+This module also provides the *canonical byte form* — a deterministic byte
+serialization of a Module that any two spec-conforming implementations must
+agree on. The byte form is what content addressing hashes. See
+`docs/CANONICAL.md §Canonical serialization` for the rules.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any, Dict, List
 
 from ..core.types import (
@@ -30,11 +37,21 @@ NOEMA_SCHEMA_VERSION = "0.1"
 
 
 def to_canonical(module: Module) -> Dict[str, Any]:
-    return {
+    obj: Dict[str, Any] = {
         "noema": NOEMA_SCHEMA_VERSION,
         "module": module.name,
         "symbols": {d.name: _def_to_json(d) for d in module.symbols},
     }
+    # Imports are emitted only when present so modules without imports
+    # produce the same canonical form they did before import support
+    # landed. Keys are sorted so the in-memory canonical form matches
+    # the canonical byte form (which sorts keys at every depth). Two
+    # modules that differ only in import-declaration order produce
+    # identical bytes and identical in-memory canonical dicts.
+    if module.imports:
+        sorted_imports = sorted(module.imports, key=lambda p: p[0])
+        obj["imports"] = {name: identity for name, identity in sorted_imports}
+    return obj
 
 
 def from_canonical(obj: Dict[str, Any]) -> Module:
@@ -45,7 +62,45 @@ def from_canonical(obj: Dict[str, Any]) -> Module:
     name = obj.get("module", "main")
     syms = obj.get("symbols", {})
     defs = tuple(_def_from_json(dn, dv) for dn, dv in syms.items())
-    return Module(name=name, symbols=defs)
+    imports_obj = obj.get("imports", {}) or {}
+    # Restore imports in sorted order so from_canonical(to_canonical(m))
+    # is a fixed point even for modules constructed with unsorted imports.
+    imports = tuple(
+        (name, identity) for name, identity in sorted(imports_obj.items())
+    )
+    return Module(name=name, symbols=defs, imports=imports)
+
+
+def canonical_bytes(module: Module) -> bytes:
+    """Deterministic byte serialization of a Module.
+
+    Two structurally-equal Modules produce identical bytes. The rules
+    (sorted keys, no insignificant whitespace, ASCII-escaped non-ASCII) must
+    match every other spec-conforming implementation; agreement is the whole
+    point of having a canonical form.
+    """
+    obj = to_canonical(module)
+    # `sort_keys=True` applies recursively in json.dumps.
+    # Compact separators strip insignificant whitespace.
+    # ensure_ascii=True (the default) escapes non-ASCII as \uXXXX so byte
+    # comparison across implementations is not dependent on source encoding.
+    return json.dumps(
+        obj,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+    ).encode("utf-8")
+
+
+def content_hash(module: Module) -> str:
+    """SHA-256 of the canonical byte form, hex-prefixed with `sha256:`.
+
+    This is a definition's identity under the content-addressed scheme
+    described in the spec. The hash is stable across implementations because
+    the input bytes are.
+    """
+    digest = hashlib.sha256(canonical_bytes(module)).hexdigest()
+    return f"sha256:{digest}"
 
 
 # ---------------------------------------------------------------------------

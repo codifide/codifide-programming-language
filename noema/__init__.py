@@ -18,8 +18,21 @@ from .core.types import (
     EffectSet,
 )
 from .parser.parser import parse
-from .projection.canonical import to_canonical, from_canonical
+from .projection.canonical import (
+    to_canonical,
+    from_canonical,
+    canonical_bytes,
+    content_hash,
+)
 from .runtime.interpreter import run, Interpreter
+from .store import (
+    IntegrityError,
+    NotFound,
+    StoreError,
+    SymbolStore,
+    symbol_bytes,
+    symbol_hash,
+)
 from .runtime.errors import (
     NoemaError,
     ParseError,
@@ -27,6 +40,9 @@ from .runtime.errors import (
     ContractViolation,
     RefusalError,
     DispatchError,
+    RecursionLimitError,
+    PrimitiveError,
+    BottomPropagationError,
 )
 
 __version__ = "0.1.0"
@@ -46,10 +62,21 @@ __all__ = [
     "Interpreter",
     "to_canonical",
     "from_canonical",
+    "canonical_bytes",
+    "content_hash",
     "NoemaError",
     "ParseError",
     "EffectViolation",
     "ContractViolation",
     "RefusalError",
     "DispatchError",
+    "RecursionLimitError",
+    "PrimitiveError",
+    "BottomPropagationError",
+    "SymbolStore",
+    "symbol_bytes",
+    "symbol_hash",
+    "StoreError",
+    "NotFound",
+    "IntegrityError",
 ]

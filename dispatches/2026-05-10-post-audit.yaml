@@ -1,0 +1,193 @@
+dispatch:
+  id: sha256:pending  # replaced at commit time by content hash of this file
+  schema: noema.dispatch/0.1
+  subject: Post-audit resolution of 2026-05-10 security findings
+  at: 2026-05-10T00:00:00Z
+  author: Glyph
+
+  intent: >
+    Record closure of every finding in dispatches/2026-05-10-security-audit.md.
+    Every P0 and P1 is fixed with a reproducing regression test. Every P2
+    with a spec change is accompanied by an implementation change that
+    makes the spec true. Agents consuming this dispatch can trust the
+    language's soundness claims to the extent listed in `state.shipped`
+    and MUST treat items in `unknowns` as still-open.
+
+  state:
+    shipped:
+      # P0 — soundness, closed
+      - claim: audit.P0_1.transitive_effect_check_implemented
+      - claim: audit.P0_2.non_ascii_byte_equality
+      - claim: audit.P0_2.parser_unicode_mojibake_fixed
+      # P1 — typed error surface, closed
+      - claim: audit.P1_1.primitive_errors_typed
+      - claim: audit.P1_1.bottom_propagation_typed
+      - claim: audit.P1_2.recursion_limit_enforced
+      # P2 — spec + behavior, closed
+      - claim: audit.P2_1.contracts_are_pure
+      - claim: audit.P2_2.module_name_grammar
+      # P3 — spec only, closed
+      - claim: audit.P3_1.intent_in_hash_specified
+      # New structural pieces
+      - claim: personas.sable.auditor_added
+      - claim: spec.errors_section_added
+      - claim: examples.unicode_conformance_fixture
+      - claim: tests.suite_passing_28_of_28
+    in_flight: []
+    blocked: []
+    refused:
+      - claim: audit.P1_2.trampoline_interpreter
+        why: >
+          Depth limit is enforced and defense-in-depth catches Python
+          RecursionError. A full trampoline is a v0.3 concern when the
+          interpreter moves to Rust.
+      - claim: parser_fuzzing
+        why: >
+          Listed in the audit's "not tested" section; deferred until after
+          the conformance fuzz surface is expanded with numeric-edge and
+          non-ASCII coverage.
+
+  evidence:
+    - claim: tests.suite_passing_28_of_28
+      kind: test
+      source: python3 -m noema test
+      result: "Ran 28 tests in 0.047s; OK"
+      confidence: 1.0
+    - claim: audit.P0_1.transitive_effect_check_implemented
+      kind: test
+      source: tests/test_runtime.py::test_transitive_effect_subset_is_enforced
+      result: >
+        A def with effects {} that calls a def with effects {io.stdout}
+        is rejected with EffectViolation at module load, before any
+        body executes.
+      confidence: 1.0
+    - claim: audit.P0_2.non_ascii_byte_equality
+      kind: test
+      source: tests/test_conformance.py — with examples/unicode.nm
+      result: >
+        Python canonical_bytes and Rust canonical_bytes are byte-identical
+        on a program containing non-ASCII in intent, string literal, and
+        postcondition. Conformance test extended to include this fixture.
+      confidence: 1.0
+    - claim: audit.P0_2.parser_unicode_mojibake_fixed
+      kind: read
+      source: noema/parser/parser.py::_parse_string_literal
+      result: >
+        Manual escape decoder replaces the previous unicode_escape path
+        that double-decoded non-ASCII as Latin-1.
+      confidence: 1.0
+    - claim: audit.P1_1.primitive_errors_typed
+      kind: test
+      source: tests/test_runtime.py::test_P1_1_div_by_zero_surfaces_as_primitive_error
+      result: PrimitiveError wraps Python ZeroDivisionError; __cause__ preserved.
+      confidence: 1.0
+    - claim: audit.P1_1.bottom_propagation_typed
+      kind: test
+      source: tests/test_runtime.py::test_P1_1_bottom_into_arithmetic_is_typed
+      result: BottomPropagationError raised when ⊥ reaches a numeric primitive.
+      confidence: 1.0
+    - claim: audit.P1_2.recursion_limit_enforced
+      kind: test
+      source: tests/test_runtime.py::test_P1_2_recursion_limit_is_enforced
+      result: >
+        500-deep chain triggers RecursionLimitError at the interpreter's
+        configurable DEFAULT_MAX_DEPTH=64. Defense in depth maps any
+        Python RecursionError in run() to the same typed error.
+      confidence: 1.0
+    - claim: audit.P2_1.contracts_are_pure
+      kind: test
+      source: tests/test_runtime.py::test_P2_1_contracts_are_pure
+      result: >
+        A postcondition that calls io.say is rejected with EffectViolation
+        even when the signature declares {io.stdout}. Contracts evaluate
+        with an effect budget of ∅.
+      confidence: 1.0
+    - claim: audit.P2_2.module_name_grammar
+      kind: test
+      source: tests/test_parser.py::test_module_name_grammar_is_enforced
+      result: >
+        Module names match ^[A-Za-z_][A-Za-z0-9_.-]*$; free-form names
+        produce ParseError at parse time.
+      confidence: 1.0
+    - claim: audit.P3_1.intent_in_hash_specified
+      kind: read
+      source: docs/CANONICAL.md §Content addressing — "What the hash covers"
+      result: >
+        Spec now states intent is part of a symbol's identity; renaming
+        or re-intenting produces a fresh hash by design.
+      confidence: 1.0
+    - claim: spec.errors_section_added
+      kind: read
+      source: docs/CANONICAL.md §Errors
+      result: >
+        Eight typed error kinds enumerated; implementations leaking host
+        exceptions are non-conforming.
+      confidence: 1.0
+    - claim: personas.sable.auditor_added
+      kind: read
+      source: .kiro/steering/personas/sable.md
+      result: >
+        Third persona with distinct integrity rules, severity scale, and
+        signature move (What I did not test). Neither Quill nor Glyph
+        could credibly file a security audit on their own work.
+      confidence: 1.0
+    - claim: examples.unicode_conformance_fixture
+      kind: run
+      source: examples/unicode.nm
+      result: >
+        Runs end-to-end through the full pipeline (parse, effect check,
+        contract check, dispatch, I/O-free body). Registered as a
+        conformance fixture.
+      confidence: 1.0
+
+  unknowns:
+    - question: >
+        Does number serialization agree between serde_json and Python
+        json.dumps on all numeric edges (very large ints, -0.0, floats
+        near precision boundaries)?
+      why_unknown: >
+        No fixture exists that exercises these values. The audit called
+        this out in "what I did not test"; it remains unresolved.
+      how_to_resolve: >
+        Add a numeric-edge conformance fixture and measure.
+    - question: >
+        Does the parser survive structured-grammar fuzzing without hangs
+        or panics?
+      why_unknown: No fuzz harness exists.
+      how_to_resolve: >
+        Add a minimal fuzz harness (hypothesis, AFL, or similar) that
+        generates adversarial .nm input and measures time + exit status.
+    - question: >
+        Are Rust dependencies (serde_json, sha2, their transitive set)
+        free of known CVEs or typosquatting variants?
+      why_unknown: Not audited.
+      how_to_resolve: >
+        Run `cargo audit` in CI once CI exists; write the result into a
+        future dispatch.
+    - question: >
+        Does believe-in-believe nesting round-trip through canonical
+        form correctly?
+      why_unknown: >
+        Unresolved from the original v0 dispatch; neither audit nor fix
+        cycle exercised it.
+      how_to_resolve: Add a nested-believe fixture to test_canonical.
+
+  next:
+    - action: add numeric-edge conformance fixture
+      depends_on: [audit.P0_2.non_ascii_byte_equality]
+      effect: "{}"
+    - action: parser fuzz harness
+      depends_on: []
+      effect: "{}"
+    - action: cargo audit in CI
+      depends_on: []
+      effect: "{}"
+    - action: nested-believe round-trip test
+      depends_on: [canonical.json_schema.v0_1]
+      effect: "{}"
+
+  links:
+    audit_source: dispatches/2026-05-10-security-audit.md
+    canonical: docs/CANONICAL.md
+    human_readout: dispatches/2026-05-10-post-audit.readout.md
+    repo_path: .

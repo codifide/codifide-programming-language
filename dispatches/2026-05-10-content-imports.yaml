@@ -1,0 +1,174 @@
+dispatch:
+  id: sha256:pending
+  schema: noema.dispatch/0.1
+  subject: Content-addressed imports — modules reference symbols by identity
+  at: 2026-05-10T00:00:00Z
+  author: Glyph
+
+  intent: >
+    Record that modules can now reference other symbols by content
+    identity (sha256 hash) rather than by local filename. This is the
+    piece that makes the symbol store operationally useful: two agents
+    working in the same store can exchange and compose each other's
+    symbols without ambiguity about version, without re-typing bodies,
+    and without being able to smuggle effects past each other.
+
+  state:
+    shipped:
+      - claim: imports.surface_syntax
+      - claim: imports.canonical_form
+      - claim: imports.canonical_form_sorted_by_key
+      - claim: imports.runtime_resolution_through_store
+      - claim: imports.transitive_effect_check
+      - claim: imports.tamper_detection_flows_through_runtime
+      - claim: imports.cli_run_accepts_store_flag
+      - claim: imports.cross_implementation_agreement
+      - claim: spec.top_level_shape_updated
+      - claim: rust.canonical_understands_imports
+      - claim: tests.suite_passing_51_of_51
+    in_flight: []
+    blocked: []
+    refused:
+      - claim: imports.transitive_dependency_closure
+        why: >
+          When imported symbol A calls B by name, B must be resolvable
+          in the importing module's scope. Imports are references, not
+          closures — the store does not ship dependency graphs
+          alongside symbols. Closures are a bigger project; refused
+          for this turn.
+      - claim: imports.network_transport
+        why: >
+          Local store is sufficient for the capability to be real.
+          Network store is a separate project with its own security
+          surface (TLS, auth, abuse mitigation).
+      - claim: imports.version_ranges
+        why: >
+          By design. Content identity is the version. If you want a
+          newer library, you import a newer identity. Version ranges
+          are a tool for a world where code does not have stable
+          identity; content addressing makes them unnecessary.
+
+  evidence:
+    - claim: tests.suite_passing_51_of_51
+      kind: test
+      source: python3 -m noema test
+      result: "Ran 51 tests in 0.072s; OK"
+      confidence: 1.0
+    - claim: imports.runtime_resolution_through_store
+      kind: test
+      source: tests/test_imports.py::ImportResolutionTests::test_import_resolves_and_executes
+      result: >
+        Module with `import greeting = sha256:<lib_hash>` resolves the
+        library through the store and returns "Hello, Ada." end-to-end.
+      confidence: 1.0
+    - claim: imports.transitive_effect_check
+      kind: test
+      source: tests/test_imports.py::ImportEffectCheckTests::test_pure_caller_cannot_import_effectful_callee
+      result: >
+        A module declaring effects {} that imports a symbol with
+        effects {io.stdout} is rejected with EffectViolation at module
+        load, before any code runs.
+      confidence: 1.0
+    - claim: imports.tamper_detection_flows_through_runtime
+      kind: test
+      source: tests/test_imports.py::ImportResolutionTests::test_tampered_imported_symbol_raises_integrity_error
+      result: >
+        Corrupting an imported symbol on disk surfaces as a NoemaError
+        whose __cause__ is an IntegrityError, not a silent load of
+        tampered code.
+      confidence: 1.0
+    - claim: imports.cross_implementation_agreement
+      kind: run
+      source: >
+        python3 -m noema canonical consumer.nm | ./noema-canonical hash ;
+        python3 content_hash(consumer_module)
+      result: >
+        Python and Rust produce identical content hashes for a module
+        containing an `imports` map.
+      confidence: 1.0
+    - claim: imports.canonical_form_sorted_by_key
+      kind: test
+      source: tests/test_imports.py::ImportCanonicalFormTests::test_round_trip_preserves_imports
+      result: >
+        Imports canonicalize as a sorted map by local name. Two modules
+        that differ only in import-declaration order produce identical
+        canonical forms and identical hashes.
+      confidence: 1.0
+    - claim: rust.canonical_understands_imports
+      kind: test
+      source: cargo test --release (3 Rust unit tests) + conformance on examples/imports_demo.nm
+      result: >
+        Rust AST gained `Module.imports`, JSON projection handles
+        optional imports map with sorted-by-key emission, conformance
+        test on imports_demo.nm passes byte-for-byte.
+      confidence: 1.0
+    - claim: spec.top_level_shape_updated
+      kind: read
+      source: docs/CANONICAL.md §Top-level shape
+      result: >
+        Imports formally described as an optional map from local name
+        to identity; must be omitted when empty; transitive effect
+        check must treat imports uniformly with local defs.
+      confidence: 1.0
+    - claim: imports.cli_run_accepts_store_flag
+      kind: run
+      source: >
+        NOEMA_STORE=/tmp/store python3 -m noema run examples/consumer.nm
+      result: >
+        `run` subcommand gained --store flag; opens the store only when
+        the module actually declares imports.
+      confidence: 1.0
+    - claim: imports.surface_syntax
+      kind: read
+      source: noema/parser/parser.py::_parse_import
+      result: >
+        `import <name> = sha256:<hex>`; malformed names and identities
+        rejected at parse time.
+      confidence: 1.0
+
+  unknowns:
+    - question: >
+        How should a symbol expose its own transitive dependencies to
+        the store so a consumer can pre-fetch them?
+      why_unknown: Not designed yet.
+      how_to_resolve: >
+        Propose a content-addressed dependency manifest format; store
+        it alongside the symbol under a secondary key.
+    - question: >
+        Is there a replay-attack concern for effects across imports?
+        e.g., a consumer imports symbol X with effects {io.stdout};
+        later X is deprecated in favor of Y with effects {}. The
+        consumer's identity points at X forever and continues to
+        require io.stdout budget even though the library intent has
+        moved on.
+      why_unknown: >
+        Content addressing makes this the intended behavior — stable
+        identity is the feature — but it is worth stating whether we
+        also want a "latest-known identity for intent X" pointer.
+      how_to_resolve: Design a separate symbol-index layer if needed.
+    - question: >
+        What happens when a definition's own body shadows an imported
+        name with a local parameter? (e.g., import greeting = ... ;
+        def main(greeting: ...) -> ...)
+      why_unknown: >
+        Not tested. Today locals win over imports because lookup
+        checks module.lookup(fn) first, but the interaction with
+        parameter binding is not explicit in the spec.
+      how_to_resolve: >
+        Write the rule down; add a test for shadowing; confirm or fix.
+
+  next:
+    - action: dependency manifest for stored symbols
+      depends_on: [imports.runtime_resolution_through_store]
+      effect: "{}"
+    - action: shadowing-rule test for import vs local param
+      depends_on: [imports.surface_syntax]
+      effect: "{}"
+    - action: store concurrency test (carried from previous dispatch)
+      depends_on: []
+      effect: "{}"
+
+  links:
+    canonical: docs/CANONICAL.md
+    human_readout: dispatches/2026-05-10-content-imports.readout.md
+    repo_path: .

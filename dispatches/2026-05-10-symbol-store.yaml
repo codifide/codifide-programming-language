@@ -1,0 +1,218 @@
+dispatch:
+  id: sha256:pending  # replaced at commit time by content hash of this file
+  schema: noema.dispatch/0.1
+  subject: Content-addressed symbol store operational
+  at: 2026-05-10T00:00:00Z
+  author: Glyph
+
+  intent: >
+    Record that Noema now has a working content-addressed symbol store,
+    converting the canonical form's content-addressing property into an
+    operational capability. Agents consuming this dispatch can exchange
+    symbols by identity rather than by name. Also records the closure of
+    three remaining unknowns from dispatches/2026-05-10-security-audit.md.
+
+  state:
+    shipped:
+      - claim: store.symbol_hash_stable
+      - claim: store.symbol_bytes_deterministic
+      - claim: store.put_get_round_trip
+      - claim: store.put_idempotent
+      - claim: store.integrity_check_on_read
+      - claim: store.integrity_check_on_write
+      - claim: store.atomic_write
+      - claim: store.git_style_sharded_layout
+      - claim: cli.store_put
+      - claim: cli.store_get
+      - claim: cli.store_list
+      - claim: cli.store_hash
+      - claim: cli.store_root_via_flag_env_or_default
+      - claim: conformance.python_store_hash_equals_rust_cli_hash
+      - claim: spec.symbol_store_section_added
+      - claim: typed_errors.store_error_notfound_integrity
+      - claim: audit_closures.numeric_edges_agree
+      - claim: audit_closures.nested_believe_round_trips
+      - claim: audit_closures.cargo_audit_clean
+      - claim: tests.suite_passing_40_of_40
+    in_flight: []
+    blocked: []
+    refused:
+      - claim: store.network_transport
+        why: >
+          Local filesystem store is sufficient for the capability to be
+          real. Network-fronted store is a v0.2+ concern and a project,
+          not a patch.
+      - claim: store.garbage_collection
+        why: >
+          Monotonic growth is acceptable for short-running fixtures and
+          single-session agent work. GC belongs after a real usage
+          pattern emerges; designing it now would be speculative.
+
+  evidence:
+    - claim: tests.suite_passing_40_of_40
+      kind: test
+      source: python3 -m noema test
+      result: "Ran 40 tests in 0.056s; OK"
+      confidence: 1.0
+    - claim: store.put_get_round_trip
+      kind: test
+      source: tests/test_store.py::SymbolStoreTests::test_put_then_get_round_trips
+      result: >
+        get_bytes(identity) returns the same bytes symbol_bytes would
+        produce fresh. No reformatting.
+      confidence: 1.0
+    - claim: store.put_idempotent
+      kind: test
+      source: tests/test_store.py::SymbolStoreTests::test_put_is_idempotent
+      result: >
+        Two puts of the same symbol return the same identity; store
+        contains exactly one object.
+      confidence: 1.0
+    - claim: store.integrity_check_on_read
+      kind: test
+      source: tests/test_store.py::SymbolStoreTests::test_tampered_bytes_raise_integrity_error
+      result: >
+        Corrupting the file on disk makes get_bytes raise IntegrityError
+        rather than returning tampered data.
+      confidence: 1.0
+    - claim: store.integrity_check_on_write
+      kind: read
+      source: noema/store/symbol_store.py::_write_atomic
+      result: >
+        Writes refuse bytes whose SHA-256 does not match the declared
+        identity.
+      confidence: 1.0
+    - claim: store.atomic_write
+      kind: read
+      source: noema/store/symbol_store.py::_write_atomic
+      result: >
+        Bytes are written to a temp file in the target directory, fsync'd,
+        then os.replace'd into final position. A crashed writer leaves no
+        half-written object visible.
+      confidence: 0.95
+    - claim: store.git_style_sharded_layout
+      kind: read
+      source: noema/store/symbol_store.py::_path_for
+      result: <root>/sha256/<two-hex>/<remaining-hex>.json
+      confidence: 1.0
+    - claim: conformance.python_store_hash_equals_rust_cli_hash
+      kind: test
+      source: tests/test_store.py::StoreRustConformance::test_rust_binary_agrees_with_python_store_hash
+      result: >
+        Envelope produced by Python store hashes identically when handed
+        to the Rust canonical CLI's `hash` subcommand.
+      confidence: 1.0
+    - claim: cli.store_put
+      kind: run
+      source: "NOEMA_STORE=/tmp/demo python3 -m noema store put examples/greet.nm"
+      result: >
+        Prints two lines "<sha256:hex>\\t<symbol_name>" for greet.nm's
+        two symbols; files appear under /tmp/demo/sha256/.
+      confidence: 1.0
+    - claim: cli.store_get
+      kind: run
+      source: "python3 -m noema store get <hash>"
+      result: Prints canonical JSON for the stored identity.
+      confidence: 1.0
+    - claim: cli.store_list
+      kind: run
+      source: "python3 -m noema store list"
+      result: Enumerates every stored identity, one per line.
+      confidence: 1.0
+    - claim: cli.store_hash
+      kind: run
+      source: "python3 -m noema store hash examples/classify.nm"
+      result: Prints identities without writing to the store.
+      confidence: 1.0
+    - claim: audit_closures.numeric_edges_agree
+      kind: test
+      source: manual probe across 10 numeric edges
+      result: >
+        Zero, negative zero, 2^53 + 1, 2^63 - 1, 1e-300, 0.1, 1/3,
+        0.1+0.2, f64::MAX, 1e10 — Python json.dumps and Rust serde_json
+        produce byte-identical output on every case.
+      confidence: 1.0
+    - claim: audit_closures.nested_believe_round_trips
+      kind: test
+      source: tests/test_canonical.py::test_nested_believe_round_trips_through_canonical_form
+      result: >
+        believe-in-believe construction at the canonical layer survives
+        to_canonical -> from_canonical -> to_canonical as structurally
+        equal.
+      confidence: 1.0
+    - claim: audit_closures.cargo_audit_clean
+      kind: run
+      source: cargo audit
+      result: >
+        22 dependencies scanned; 0 vulnerabilities reported from 1068
+        advisory-db entries.
+      confidence: 1.0
+    - claim: spec.symbol_store_section_added
+      kind: read
+      source: docs/CANONICAL.md §Symbol store
+      result: >
+        Three mandatory properties stated (hash-verified reads,
+        hash-verified writes, idempotent writes); on-disk layout is
+        implementation-defined.
+      confidence: 1.0
+    - claim: typed_errors.store_error_notfound_integrity
+      kind: read
+      source: noema/store/symbol_store.py
+      result: >
+        StoreError (base) / NotFound / IntegrityError — no host
+        exceptions leak from the public store API.
+      confidence: 1.0
+
+  unknowns:
+    - question: >
+        Does the store behave correctly under concurrent writers racing
+        the same identity?
+      why_unknown: >
+        Atomic rename protects the final file, but two processes writing
+        the same identity both create temp files and one gets leaked.
+        No test exercises this.
+      how_to_resolve: >
+        Add a concurrency test using multiprocessing or threads that
+        issues N simultaneous puts of the same symbol and asserts
+        exactly one object and no temp files remain.
+    - question: >
+        What is the right surface syntax for multi-line believe arms?
+      why_unknown: >
+        The canonical form supports nested believe (verified by
+        round-trip test); the .nm parser does not accept multi-line
+        values in believe arms yet. Single-line is a usability
+        limitation.
+      how_to_resolve: >
+        Design a block-form believe arm (brace or indent based) and
+        extend the parser. Canonical form is already correct.
+    - question: >
+        Should modules reference other symbols by content identity, or
+        only by local name?
+      why_unknown: >
+        Unanswered design question. Today a module binds names to
+        definitions inline. A module that binds names to identities
+        from the store would make code reuse by hash possible — which
+        is the point of having a store at all.
+      how_to_resolve: >
+        Propose a module-level `import <identity> as <name>` form in a
+        future spec change; implement in a feature branch; measure
+        whether it breaks existing round-trip tests.
+
+  next:
+    - action: store concurrency test
+      depends_on: [store.atomic_write]
+      effect: "{}"
+    - action: multi-line believe arms in surface parser
+      depends_on: [audit_closures.nested_believe_round_trips]
+      effect: "{}"
+    - action: propose import-by-identity form
+      depends_on: [store.put_get_round_trip]
+      effect: "{}"
+    - action: "parser fuzz harness (still open from previous audit)"
+      depends_on: []
+      effect: "{}"
+
+  links:
+    canonical: docs/CANONICAL.md
+    human_readout: dispatches/2026-05-10-symbol-store.readout.md
+    repo_path: .

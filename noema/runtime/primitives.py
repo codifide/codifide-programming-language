@@ -12,6 +12,7 @@ reach these capabilities and that is through this registry.
 """
 from __future__ import annotations
 
+import math
 import sys
 import time
 from dataclasses import dataclass
@@ -112,6 +113,23 @@ def build_default_registry(trace: EffectTrace) -> PrimitiveRegistry:
     reg.register("or",   lambda *xs: any(bool(_unwrap(x)) for x in xs), returns="Bool")
     reg.register("not",  lambda x: not bool(_unwrap(x)), returns="Bool")
 
+    # Absolute value, two-arg min/max, and power. These exist because agents
+    # reach for them constantly in numeric guards and postconditions; open-
+    # coding them per-caller makes contracts harder to read. `min`/`max` are
+    # deliberately two-arg — a variadic form over a list lives under
+    # `min_of`/`max_of` below, keeping the shapes distinct.
+    reg.register("abs",  lambda x: abs(_num(x)), returns="Number")
+    reg.register("min",  lambda a, b: min(_num(a), _num(b)), returns="Number")
+    reg.register("max",  lambda a, b: max(_num(a), _num(b)), returns="Number")
+    reg.register("pow",  lambda b, e: _num(b) ** _num(e), returns="Number")
+
+    # Rounding. `floor` and `ceil` always return an int (mirroring Python's
+    # `math.floor`/`math.ceil`); `round` returns Python's built-in rounding,
+    # which is int-valued when called on a number without a digit count.
+    reg.register("floor", lambda x: math.floor(_num(x)), returns="Int")
+    reg.register("ceil",  lambda x: math.ceil(_num(x)),  returns="Int")
+    reg.register("round", lambda x: round(_num(x)),       returns="Int")
+
     # -- Collections (pure) --------------------------------------------------
     reg.register("len",  lambda xs: len(_unwrap(xs)), returns="Int")
     reg.register("list", lambda *xs: [_unwrap(x) for x in xs], returns="List")
@@ -124,6 +142,33 @@ def build_default_registry(trace: EffectTrace) -> PrimitiveRegistry:
         returns="Bool",
     )
 
+    # Aggregates. `min_of`/`max_of` take a list; empty input raises, and the
+    # interpreter's `_call_primitive` wraps that as a typed `PrimitiveError`.
+    # `sum` on an empty list is defined to return 0 because postconditions
+    # often reduce over possibly-empty collections, and raising there would
+    # force every caller to guard length before asking a simple question.
+    reg.register("min_of", lambda xs: min(_unwrap(xs)), returns="Any")
+    reg.register("max_of", lambda xs: max(_unwrap(xs)), returns="Any")
+    reg.register("sum",    lambda xs: sum(_unwrap(xs)) if _unwrap(xs) else 0, returns="Number")
+
+    # Non-mutating list ops. `reverse` and `append` always return fresh
+    # Python lists so Noema's value semantics are preserved — a caller who
+    # still holds the input sees the input, not the result.
+    reg.register("reverse", lambda xs: list(reversed(_unwrap(xs))), returns="List")
+    reg.register(
+        "append",
+        lambda xs, item: [*_unwrap(xs), _unwrap(item)],
+        returns="List",
+    )
+
+    # Membership on a list, distinct from the string-substring `contains`
+    # below. Named `contains_item` so the two never shadow each other.
+    reg.register(
+        "contains_item",
+        lambda xs, item: _unwrap(item) in _unwrap(xs),
+        returns="Bool",
+    )
+
     # -- Strings (pure) ------------------------------------------------------
     reg.register(
         "contains",
@@ -133,6 +178,48 @@ def build_default_registry(trace: EffectTrace) -> PrimitiveRegistry:
     reg.register(
         "str",
         lambda x: str(_unwrap(x)),
+        returns="String",
+    )
+
+    # Case and whitespace trimming. Agents frequently normalize inputs
+    # before comparison; having these as primitives avoids ad-hoc Python
+    # escape hatches and keeps the resulting programs effect-free.
+    reg.register("upper", lambda s: str(_unwrap(s)).upper(),  returns="String")
+    reg.register("lower", lambda s: str(_unwrap(s)).lower(),  returns="String")
+    reg.register("trim",  lambda s: str(_unwrap(s)).strip(),  returns="String")
+
+    # Prefix/suffix tests and substring substitution. These are the
+    # minimal set of string checks postconditions tend to want — anything
+    # fancier belongs in user-defined code.
+    reg.register(
+        "starts_with",
+        lambda s, prefix: str(_unwrap(s)).startswith(str(_unwrap(prefix))),
+        returns="Bool",
+    )
+    reg.register(
+        "ends_with",
+        lambda s, suffix: str(_unwrap(s)).endswith(str(_unwrap(suffix))),
+        returns="Bool",
+    )
+    reg.register(
+        "replace",
+        lambda s, old, new: str(_unwrap(s)).replace(
+            str(_unwrap(old)), str(_unwrap(new))
+        ),
+        returns="String",
+    )
+
+    # Split returns a list of plain Python strings; join consumes one and
+    # produces a string. The items inside an unwrapped list are already
+    # plain Python values, so `join` does not re-unwrap them.
+    reg.register(
+        "split",
+        lambda s, sep: str(_unwrap(s)).split(str(_unwrap(sep))),
+        returns="List",
+    )
+    reg.register(
+        "join",
+        lambda sep, xs: str(_unwrap(sep)).join(str(item) for item in _unwrap(xs)),
         returns="String",
     )
 

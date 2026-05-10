@@ -12,8 +12,8 @@
 - Three examples + tests
 
 ## v0.1
-- CBOR serialization of canonical form
-- Content-addressed symbol store (sha256 of canonical JSON)
+- ~~CBOR serialization of canonical form~~ (deferred)
+- ✅ Content-addressed symbol store (sha256 of canonical JSON)
 - Structural diff and merge
 - Richer primitive library (math, collections, string)
 - Better error messages that walk the intent graph

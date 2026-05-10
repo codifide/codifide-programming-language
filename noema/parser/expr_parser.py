@@ -178,9 +178,18 @@ def _take_operand(src: str, start: int) -> (str, int):
 
 
 class _Parser:
+    # Maximum nesting depth for parenthesized sub-expressions. A
+    # recursive-descent parser with no bound blows the Python stack on
+    # adversarial input (``((...(1)...))`` with a few hundred parens),
+    # leaking RecursionError to the host. The fuzz harness at
+    # tests/test_parser_fuzz.py catches this; the bound here keeps
+    # pathological input from reaching the Python stack limit.
+    MAX_PAREN_DEPTH = 256
+
     def __init__(self, tokens: List[Token]) -> None:
         self.tokens = tokens
         self.pos = 0
+        self._paren_depth = 0
 
     def eof(self) -> bool:
         return self.pos >= len(self.tokens)
@@ -248,7 +257,15 @@ class _Parser:
             return self._dotted_ref(tok.text)
         if tok.kind == "punct" and tok.text == "(":
             self.take()
-            inner = self.parse_expr()
+            if self._paren_depth >= self.MAX_PAREN_DEPTH:
+                raise ExprParseError(
+                    f"parenthesis nesting exceeds {self.MAX_PAREN_DEPTH}"
+                )
+            self._paren_depth += 1
+            try:
+                inner = self.parse_expr()
+            finally:
+                self._paren_depth -= 1
             if not (self.peek() and self.peek().kind == "punct" and self.peek().text == ")"):
                 raise ExprParseError("expected ')'")
             self.take()

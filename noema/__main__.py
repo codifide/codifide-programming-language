@@ -1,9 +1,14 @@
 """Noema CLI.
 
 Subcommands:
-    run <file.nm>       Parse and execute a Noema program.
-    canonical <file.nm> Print the canonical JSON projection.
-    test                Run the Noema test suite.
+    run <file.nm>            Parse and execute a Noema program.
+    canonical <file.nm>      Print the canonical JSON projection.
+    test                     Run the Noema test suite.
+    store put <file.nm>      Store every symbol in a module by content hash.
+    store get <hash>         Print the canonical JSON for a stored symbol.
+    store list               List every stored symbol identity.
+    store hash <file.nm>     Print (name, hash) pairs for a module's symbols.
+    store index name=<id>... Publish an index module bundling name->id pairs.
 
 The CLI is deliberately minimal. Noema's surface is a projection; a richer
 interaction is better done over the canonical form (see noema.projection).
@@ -12,12 +17,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 from . import parse, run
 from .projection.canonical import to_canonical
 from .runtime.errors import NoemaError
+from .store import StoreError, SymbolStore, symbol_hash
 
 
 def _read(path: str) -> str:
@@ -26,9 +33,22 @@ def _read(path: str) -> str:
 
 def cmd_run(args: argparse.Namespace) -> int:
     try:
-        module = parse(_read(args.file))
+        # Parse first without the store; if the source uses `from`
+        # imports, the parser will return an error that names the
+        # missing store. We open the store then and retry, so modules
+        # that do not need a store do not pay for opening one.
+        src = _read(args.file)
+        store: Optional[SymbolStore] = None
+        try:
+            module = parse(src)
+        except NoemaError:
+            store = SymbolStore(_store_root(args))
+            module = parse(src, store=store)
+        if store is None and module.imports:
+            # Plain `import` at runtime still needs a store.
+            store = SymbolStore(_store_root(args))
         entry = args.entry or _default_entry(module)
-        result = run(module, entry)
+        result = run(module, entry, store=store)
         if result is not None:
             # Print the unwrapped result for scripting convenience.
             print(result)
@@ -58,6 +78,184 @@ def cmd_test(args: argparse.Namespace) -> int:
     return 0 if runner.run(suite).wasSuccessful() else 1
 
 
+# ---------------------------------------------------------------------------
+# Symbol store
+# ---------------------------------------------------------------------------
+
+
+def _store_root(args: argparse.Namespace) -> Path:
+    """Resolve the store root: --store flag, env var, or default."""
+    if args.store:
+        return Path(args.store)
+    env = os.environ.get("NOEMA_STORE")
+    if env:
+        return Path(env)
+    return Path.home() / ".noema" / "store"
+
+
+def cmd_store_put(args: argparse.Namespace) -> int:
+    try:
+        module = parse(_read(args.file))
+        store = SymbolStore(_store_root(args))
+        entries = store.put_module(module)
+        for name, identity in entries:
+            print(f"{identity}\t{name}")
+        return 0
+    except (NoemaError, StoreError) as e:
+        print(f"noema: {e}", file=sys.stderr)
+        return 1
+
+
+def cmd_store_get(args: argparse.Namespace) -> int:
+    try:
+        store = SymbolStore(_store_root(args))
+        obj = store.get(args.hash)
+        print(json.dumps(obj, indent=2, sort_keys=True))
+        return 0
+    except StoreError as e:
+        print(f"noema: {e}", file=sys.stderr)
+        return 1
+
+
+def cmd_store_list(args: argparse.Namespace) -> int:
+    store = SymbolStore(_store_root(args))
+    for identity in sorted(store.iter_identities()):
+        print(identity)
+    return 0
+
+
+def cmd_store_hash(args: argparse.Namespace) -> int:
+    # Compute identities without writing anything — useful for scripting
+    # (e.g. seeing what a module would produce before committing to a put).
+    try:
+        module = parse(_read(args.file))
+        for defn in module.symbols:
+            print(f"{symbol_hash(defn.name, defn)}\t{defn.name}")
+        return 0
+    except NoemaError as e:
+        print(f"noema: {e}", file=sys.stderr)
+        return 1
+
+
+def cmd_store_index(args: argparse.Namespace) -> int:
+    """Publish an index: a module whose imports table is its export map.
+
+    Given ``name=sha256:...`` pairs on the command line, mint a module
+    with those entries in its imports table, store it, and print the
+    resulting identity. Consumers can then write
+    ``from <index_id> import <name>`` to resolve any of those names
+    back to a specific symbol identity.
+
+    Indices are ordinary modules; they live in the same store as the
+    symbols they reference and their identity is computed the same way
+    (content hash of their canonical bytes).
+    """
+    from .core.types import Module
+
+    entries: list[tuple[str, str]] = []
+    for raw in args.entry:
+        if "=" not in raw:
+            print(
+                f"noema: index entry must be `name=sha256:<hex>`: {raw!r}",
+                file=sys.stderr,
+            )
+            return 2
+        name, identity = raw.split("=", 1)
+        name = name.strip()
+        identity = identity.strip()
+        if not name.isidentifier():
+            print(f"noema: invalid index name: {name!r}", file=sys.stderr)
+            return 2
+        if not (identity.startswith("sha256:") and len(identity) == 71):
+            print(f"noema: invalid identity: {identity!r}", file=sys.stderr)
+            return 2
+        entries.append((name, identity))
+
+    store = SymbolStore(_store_root(args))
+    index_module = Module(
+        name=args.name or "index",
+        symbols=(),
+        imports=tuple(entries),
+    )
+
+    # The module's content identity is the hash of its canonical bytes.
+    # We compute and store it by writing the canonical JSON directly,
+    # bypassing the symbol store's per-definition envelope since an
+    # index has no definitions.
+    import hashlib
+    from .projection.canonical import to_canonical
+
+    canonical_obj = to_canonical(index_module)
+    data = json.dumps(
+        canonical_obj, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+    ).encode("utf-8")
+    identity = f"sha256:{hashlib.sha256(data).hexdigest()}"
+
+    # Write through the store's atomic-write path. We use the internal
+    # method because the public API is per-symbol; indices are modules,
+    # not symbols. The on-disk layout is identical.
+    store._write_atomic(identity, data)
+    print(f"{identity}\t{index_module.name}")
+    return 0
+
+
+def cmd_store_verify(args: argparse.Namespace) -> int:
+    """Verify a stored index's pointees are present and well-formed.
+
+    Security audit 2026-05-10 P3-1: indices are validated opportunistically
+    at parse time — a broken index parses fine and errors at runtime
+    when a consumer actually resolves it. This subcommand is the opt-in
+    check Sable proposed: fetch the index, walk its imports, confirm
+    each pointee exists in the store and round-trips through canonical
+    form. Exit 0 if every pointee is reachable, exit 1 if any are not.
+
+    Also works on ordinary symbols (walks their transitive user-function
+    calls and flags ones that would fail at module load). Best-effort —
+    not a full type-check pass.
+    """
+    from .projection.canonical import from_canonical
+
+    store = SymbolStore(_store_root(args))
+    try:
+        obj = store.get(args.hash)
+    except StoreError as e:
+        print(f"noema: {e}", file=sys.stderr)
+        return 1
+
+    try:
+        module = from_canonical(obj)
+    except Exception as e:
+        print(f"noema: malformed module at {args.hash}: {e}", file=sys.stderr)
+        return 1
+
+    problems: list[str] = []
+    # Verify each imports-table entry is present and round-trips.
+    for local_name, target_id in module.imports:
+        if not store.has(target_id):
+            problems.append(f"  {local_name}: missing in store → {target_id}")
+            continue
+        try:
+            target_obj = store.get(target_id)
+            from_canonical(target_obj)
+        except Exception as e:
+            problems.append(f"  {local_name}: unreadable ({target_id}): {e}")
+
+    # Report.
+    if problems:
+        print(f"noema: {args.hash} has {len(problems)} problem(s):", file=sys.stderr)
+        for p in problems:
+            print(p, file=sys.stderr)
+        return 1
+    n_imports = len(module.imports)
+    n_syms = len(module.symbols)
+    print(
+        f"{args.hash}\tOK  "
+        f"({n_syms} symbol{'s' if n_syms != 1 else ''}, "
+        f"{n_imports} import{'s' if n_imports != 1 else ''})"
+    )
+    return 0
+
+
 def _default_entry(module) -> str:
     # If there's only one definition, use it; else prefer `main`.
     if len(module.symbols) == 1:
@@ -76,6 +274,10 @@ def main(argv=None) -> int:
     p_run = sub.add_parser("run", help="execute a Noema program")
     p_run.add_argument("file")
     p_run.add_argument("--entry", help="entry definition (default: main or sole definition)")
+    p_run.add_argument(
+        "--store",
+        help="store root for import resolution (default: $NOEMA_STORE or ~/.noema/store)",
+    )
     p_run.set_defaults(func=cmd_run)
 
     p_can = sub.add_parser("canonical", help="print canonical JSON")
@@ -84,6 +286,59 @@ def main(argv=None) -> int:
 
     p_test = sub.add_parser("test", help="run the test suite")
     p_test.set_defaults(func=cmd_test)
+
+    # Symbol store. A store root can be passed via --store or the
+    # NOEMA_STORE environment variable; defaults to ~/.noema/store.
+    p_store = sub.add_parser(
+        "store",
+        help="content-addressed symbol store",
+    )
+    p_store.add_argument(
+        "--store",
+        help="store root directory (default: $NOEMA_STORE or ~/.noema/store)",
+    )
+    store_sub = p_store.add_subparsers(dest="store_cmd", required=True)
+
+    p_put = store_sub.add_parser("put", help="store every symbol in a module")
+    p_put.add_argument("file")
+    p_put.set_defaults(func=cmd_store_put)
+
+    p_get = store_sub.add_parser("get", help="fetch one symbol by hash")
+    p_get.add_argument("hash")
+    p_get.set_defaults(func=cmd_store_get)
+
+    p_list = store_sub.add_parser("list", help="list every stored identity")
+    p_list.set_defaults(func=cmd_store_list)
+
+    p_hash = store_sub.add_parser(
+        "hash",
+        help="print the content hash of every symbol in a module without storing",
+    )
+    p_hash.add_argument("file")
+    p_hash.set_defaults(func=cmd_store_hash)
+
+    p_index = store_sub.add_parser(
+        "index",
+        help="publish an index module from name=<identity> pairs",
+    )
+    p_index.add_argument(
+        "--name",
+        default=None,
+        help="module name for the index (default: `index`)",
+    )
+    p_index.add_argument(
+        "entry",
+        nargs="+",
+        help="name=sha256:<hex> pairs defining the index's exports",
+    )
+    p_index.set_defaults(func=cmd_store_index)
+
+    p_verify = store_sub.add_parser(
+        "verify",
+        help="verify a stored module's imports resolve in the store",
+    )
+    p_verify.add_argument("hash", help="identity of the module to verify")
+    p_verify.set_defaults(func=cmd_store_verify)
 
     args = parser.parse_args(argv)
     return args.func(args)

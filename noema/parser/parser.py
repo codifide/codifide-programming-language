@@ -34,8 +34,12 @@ express the interesting ideas. The canonical form carries the real meaning.
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from ..store import SymbolStore
 
 from ..core.types import (
     Believe,
@@ -53,6 +57,7 @@ from ..core.types import (
 )
 from ..runtime.errors import ParseError
 from .expr_parser import ExprParseError, parse_expr
+from .lexer import LexError
 from .tokens import KEYWORDS
 
 
@@ -64,11 +69,27 @@ class _Line:
     lineno: int
 
 
-def parse(source: str, module_name: str = "main") -> Module:
-    """Parse Noema source to a canonical Module."""
+_MODULE_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_.\-]*$")
+_IDENTITY_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+
+
+def parse(
+    source: str,
+    module_name: str = "main",
+    *,
+    store: Optional["SymbolStore"] = None,
+) -> Module:
+    """Parse Noema source to a canonical Module.
+
+    When the source uses ``from <identity> import <name>`` to resolve
+    names through a stored index module, ``store`` must be provided.
+    Plain ``import name = sha256:<hex>`` lines never require a store at
+    parse time; they are resolved at runtime instead.
+    """
     lines = _preprocess(source)
     i = 0
     defs: List[Definition] = []
+    imports: List[Tuple[str, str]] = []
     name = module_name
     while i < len(lines):
         line = lines[i]
@@ -79,7 +100,27 @@ def parse(source: str, module_name: str = "main") -> Module:
             # adding it to the general keyword table (where it might collide
             # with a future `module` expression).
             _, payload = line.text.split(" ", 1)
-            name = payload.strip() or module_name
+            candidate = payload.strip() or module_name
+            # Security audit P2-2: reject free-form module names. They are
+            # echoed into canonical form and human-facing displays; anything
+            # that looks like injected code in those surfaces is a spec bug.
+            if not _MODULE_NAME_RE.match(candidate):
+                raise ParseError(
+                    f"invalid module name: {candidate!r}. Module names match "
+                    f"[A-Za-z_][A-Za-z0-9_.-]*",
+                    line=line.lineno,
+                )
+            name = candidate
+            i += 1
+            continue
+        if line.text.startswith("from "):
+            resolved = _parse_from_import(line, store)
+            imports.extend(resolved)
+            i += 1
+            continue
+        if line.text.startswith("import "):
+            local_name, identity = _parse_import(line)
+            imports.append((local_name, identity))
             i += 1
             continue
         if head == "def":
@@ -89,7 +130,109 @@ def parse(source: str, module_name: str = "main") -> Module:
         raise ParseError(
             f"unexpected top-level line: {line.raw!r}", line=line.lineno
         )
-    return Module(name=name, symbols=tuple(defs))
+    return Module(name=name, symbols=tuple(defs), imports=tuple(imports))
+
+
+def _parse_from_import(
+    line: "_Line",
+    store: Optional["SymbolStore"],
+) -> List[Tuple[str, str]]:
+    """Parse ``from <identity> import <name1>, <name2>``.
+
+    Resolved at parse time against ``store``. Each requested name must
+    appear in the target module's ``imports`` map. Local symbols of the
+    target module are not resolvable through ``from``; to re-export a
+    locally-defined symbol, the target module must import it by its own
+    content identity first. This keeps the rule simple: an index is a
+    module whose ``imports`` map is its export table, and ``from``
+    looks up names in that table only.
+    """
+    payload = line.text[len("from ") :].strip()
+    if " import " not in payload:
+        raise ParseError(
+            "from-import requires `import`: expected "
+            "`from <identity> import <name>[, <name>]*`",
+            line=line.lineno,
+        )
+    identity_part, names_part = payload.split(" import ", 1)
+    identity = identity_part.strip()
+    if not _IDENTITY_RE.match(identity):
+        raise ParseError(
+            f"invalid from-import identity: {identity!r}. Expected "
+            f"`sha256:<64 lowercase hex>`",
+            line=line.lineno,
+        )
+    requested = [n.strip() for n in names_part.split(",") if n.strip()]
+    if not requested:
+        raise ParseError(
+            "from-import requires at least one name", line=line.lineno
+        )
+    for n in requested:
+        if not n.isidentifier():
+            raise ParseError(
+                f"invalid from-import name: {n!r}", line=line.lineno
+            )
+    if store is None:
+        raise ParseError(
+            f"from-import requires a store to resolve {identity}. Pass "
+            f"store= to parse() or use `import <name> = sha256:<hex>` "
+            f"for direct identity binding.",
+            line=line.lineno,
+        )
+    # Resolve names against the target module's imports table. We fetch
+    # the target module's canonical JSON and read its imports map; this
+    # avoids dragging the whole from_canonical machinery into the parser
+    # and keeps the cycle shorter.
+    try:
+        target_obj = store.get(identity)
+    except Exception as exc:
+        raise ParseError(
+            f"cannot resolve from-import {identity}: {exc}",
+            line=line.lineno,
+        ) from exc
+    target_imports = target_obj.get("imports", {}) or {}
+    out: List[Tuple[str, str]] = []
+    for name in requested:
+        target_identity = target_imports.get(name)
+        if target_identity is None:
+            raise ParseError(
+                f"from-import {identity} does not export {name!r}. "
+                f"The target module's imports table has "
+                f"{sorted(target_imports.keys()) or 'no entries'}.",
+                line=line.lineno,
+            )
+        out.append((name, target_identity))
+    return out
+
+
+def _parse_import(line: "_Line") -> Tuple[str, str]:
+    """Parse `import <local_name> = sha256:<hex>`.
+
+    The syntax is deliberately tight: import names follow the same
+    grammar as identifiers, identities follow the on-the-wire form used
+    by the symbol store. Anything else is a parse error — imports are
+    trust boundaries and we do not want to make them forgiving.
+    """
+    payload = line.text[len("import ") :].strip()
+    if "=" not in payload:
+        raise ParseError(
+            "import requires `=`: expected `import <name> = sha256:<hex>`",
+            line=line.lineno,
+        )
+    left, right = payload.split("=", 1)
+    local_name = left.strip()
+    identity = right.strip()
+    if not local_name.isidentifier():
+        raise ParseError(
+            f"invalid import name: {local_name!r}", line=line.lineno
+        )
+    if not _IDENTITY_RE.match(identity):
+        raise ParseError(
+            f"invalid import identity: {identity!r}. Expected "
+            f"`sha256:<64 lowercase hex>`",
+            line=line.lineno,
+        )
+    return local_name, identity
 
 
 # ---------------------------------------------------------------------------
@@ -317,10 +460,61 @@ def _compose_steps(steps: List[Expr]) -> Expr:
 
 
 def _parse_string_literal(s: str, line: int) -> str:
+    # Security audit P0-2: the previous implementation ran
+    # `s.encode("utf-8").decode("unicode_escape")` which misinterprets any
+    # non-ASCII character already in ``s`` as a sequence of Latin-1 bytes
+    # and produces mojibake. We instead decode backslash-escapes manually so
+    # non-ASCII characters pass through untouched.
     s = s.strip()
     if not s.startswith('"') or not s.endswith('"') or len(s) < 2:
         raise ParseError(f"expected quoted string, got {s!r}", line=line)
-    return s[1:-1].encode("utf-8").decode("unicode_escape")
+    inner = s[1:-1]
+    out: List[str] = []
+    i = 0
+    n = len(inner)
+    while i < n:
+        c = inner[i]
+        if c != "\\":
+            out.append(c)
+            i += 1
+            continue
+        if i + 1 >= n:
+            raise ParseError("trailing backslash in string literal", line=line)
+        esc = inner[i + 1]
+        i += 2
+        if esc == "n":
+            out.append("\n")
+        elif esc == "t":
+            out.append("\t")
+        elif esc == "r":
+            out.append("\r")
+        elif esc == "\\":
+            out.append("\\")
+        elif esc == '"':
+            out.append('"')
+        elif esc == "0":
+            out.append("\0")
+        elif esc == "u":
+            # \uXXXX four-hex-digit escape — matches the lexer and the
+            # canonical byte form's escape alphabet.
+            if i + 4 > n:
+                raise ParseError(
+                    "\\u escape needs four hex digits", line=line
+                )
+            hex4 = inner[i : i + 4]
+            i += 4
+            try:
+                out.append(chr(int(hex4, 16)))
+            except ValueError as exc:
+                raise ParseError(
+                    f"invalid \\u escape: {hex4!r}", line=line
+                ) from exc
+        else:
+            # Unknown escapes are preserved literally; a future spec may
+            # tighten this to an error.
+            out.append("\\")
+            out.append(esc)
+    return "".join(out)
 
 
 def _parse_signature(rest: str, line: int, existing_effects) -> Signature:
@@ -384,4 +578,13 @@ def _safe_parse_expr(text: str, line: int) -> Expr:
     try:
         return parse_expr(text)
     except ExprParseError as e:
+        raise ParseError(str(e), line=line) from e
+    except LexError as e:
+        # Security audit 2026-05-10 P1-3: the lexer raises LexError for
+        # unterminated strings, unknown characters, and stray operators.
+        # Without this wrapper those escaped the parser's ParseError
+        # contract and leaked to the host as a bare LexError — which a
+        # fuzz harness reliably triggered with unclosed quotes, non-ASCII
+        # outside strings, and double bind operators. Wrap it here so
+        # the `parse() -> Module | ParseError` contract holds.
         raise ParseError(str(e), line=line) from e
