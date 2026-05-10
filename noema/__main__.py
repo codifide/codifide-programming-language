@@ -23,6 +23,7 @@ from pathlib import Path
 
 from . import parse, run
 from .projection.canonical import to_canonical
+from .projection.cbor import canonical_cbor
 from .runtime.errors import NoemaError
 from .store import StoreError, SymbolStore, symbol_hash
 
@@ -61,6 +62,11 @@ def cmd_run(args: argparse.Namespace) -> int:
 def cmd_canonical(args: argparse.Namespace) -> int:
     try:
         module = parse(_read(args.file))
+        if args.cbor:
+            # CBOR is binary; write raw bytes to stdout so callers can
+            # pipe into a file or a consumer tool without re-encoding.
+            sys.stdout.buffer.write(canonical_cbor(to_canonical(module)))
+            return 0
         print(json.dumps(to_canonical(module), indent=2, sort_keys=True))
         return 0
     except NoemaError as e:
@@ -97,7 +103,7 @@ def cmd_store_put(args: argparse.Namespace) -> int:
     try:
         module = parse(_read(args.file))
         store = SymbolStore(_store_root(args))
-        entries = store.put_module(module)
+        entries = store.put_module(module, cbor=args.cbor)
         for name, identity in entries:
             print(f"{identity}\t{name}")
         return 0
@@ -280,8 +286,13 @@ def main(argv=None) -> int:
     )
     p_run.set_defaults(func=cmd_run)
 
-    p_can = sub.add_parser("canonical", help="print canonical JSON")
+    p_can = sub.add_parser("canonical", help="print canonical JSON or CBOR")
     p_can.add_argument("file")
+    p_can.add_argument(
+        "--cbor",
+        action="store_true",
+        help="emit canonical CBOR (RFC 8949 §4.2) bytes instead of JSON",
+    )
     p_can.set_defaults(func=cmd_canonical)
 
     p_test = sub.add_parser("test", help="run the test suite")
@@ -301,6 +312,11 @@ def main(argv=None) -> int:
 
     p_put = store_sub.add_parser("put", help="store every symbol in a module")
     p_put.add_argument("file")
+    p_put.add_argument(
+        "--cbor",
+        action="store_true",
+        help="store in CBOR form (produces different identities than JSON)",
+    )
     p_put.set_defaults(func=cmd_store_put)
 
     p_get = store_sub.add_parser("get", help="fetch one symbol by hash")

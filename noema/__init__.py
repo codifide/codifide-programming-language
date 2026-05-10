@@ -22,7 +22,9 @@ from .projection.canonical import (
     to_canonical,
     from_canonical,
     canonical_bytes,
+    canonical_cbor_bytes,
     content_hash,
+    content_hash_cbor,
 )
 from .runtime.interpreter import run, Interpreter
 from .store import (
@@ -63,7 +65,9 @@ __all__ = [
     "to_canonical",
     "from_canonical",
     "canonical_bytes",
+    "canonical_cbor_bytes",
     "content_hash",
+    "content_hash_cbor",
     "NoemaError",
     "ParseError",
     "EffectViolation",

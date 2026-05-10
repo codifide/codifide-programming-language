@@ -8,7 +8,9 @@ from .symbol_store import (
     StoreError,
     SymbolStore,
     symbol_bytes,
+    symbol_cbor_bytes,
     symbol_hash,
+    symbol_hash_cbor,
 )
 
 __all__ = [
@@ -17,5 +19,7 @@ __all__ = [
     "StoreError",
     "SymbolStore",
     "symbol_bytes",
+    "symbol_cbor_bytes",
     "symbol_hash",
+    "symbol_hash_cbor",
 ]

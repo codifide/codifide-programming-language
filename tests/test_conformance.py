@@ -3,7 +3,8 @@
 The point of this test suite is the one that makes Noema a language rather
 than a Python library: two independent implementations must agree on the
 canonical byte form of every example program, and on the content hash that
-derives from it.
+derives from it. Both the JSON form (v0.1 primary) and the CBOR form
+(v0.2 binary) are checked.
 
 The Rust crate is built on demand; if `cargo` is not available the test is
 skipped with a clear reason. When the crate is available, each example is
@@ -20,7 +21,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from noema import parse, to_canonical, canonical_bytes, content_hash
+from noema import (
+    canonical_bytes,
+    canonical_cbor_bytes,
+    content_hash,
+    content_hash_cbor,
+    parse,
+    to_canonical,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES_DIR = REPO_ROOT / "examples"
@@ -128,6 +136,77 @@ class RustPythonConformance(unittest.TestCase):
                     rust_hash,
                     python_hash,
                     f"Rust/Python content hash differs for {example.name}",
+                )
+
+    def test_rust_and_python_agree_on_canonical_cbor_bytes(self) -> None:
+        # CBOR is the v0.2 binary canonical form. Both implementations
+        # follow RFC 8949 §4.2 deterministic encoding: shortest head,
+        # shortest float, sorted maps. Byte-level agreement is the
+        # proof that the determinism rules are implemented the same
+        # way on both sides — anything less would defeat the point of
+        # having a binary canonical form at all.
+        for example in sorted(EXAMPLES_DIR.glob("*.nm")):
+            with self.subTest(example=example.name):
+                module = parse(example.read_text(encoding="utf-8"))
+                python_cbor = canonical_cbor_bytes(module)
+
+                canonical_json = to_canonical(module)
+                with tempfile.NamedTemporaryFile(
+                    "w", suffix=".json", delete=False, encoding="utf-8"
+                ) as tmp:
+                    json.dump(canonical_json, tmp)
+                    tmp_path = Path(tmp.name)
+                try:
+                    rust = subprocess.run(
+                        [str(RUST_BIN), "bytes-cbor", str(tmp_path)],
+                        capture_output=True,
+                        check=True,
+                    )
+                finally:
+                    tmp_path.unlink(missing_ok=True)
+                rust_cbor = rust.stdout
+
+                self.assertEqual(
+                    rust_cbor,
+                    python_cbor,
+                    f"Rust/Python canonical CBOR bytes differ for "
+                    f"{example.name}: "
+                    f"py={python_cbor.hex()[:80]}... "
+                    f"rs={rust_cbor.hex()[:80]}...",
+                )
+
+    def test_rust_and_python_agree_on_cbor_content_hash(self) -> None:
+        # CBOR content hash is computed over the canonical CBOR byte
+        # form. If the byte form agrees on every example, the hash
+        # trivially agrees; asserting it explicitly pins the interface
+        # so that a future change to the hash function is caught, not
+        # silent.
+        for example in sorted(EXAMPLES_DIR.glob("*.nm")):
+            with self.subTest(example=example.name):
+                module = parse(example.read_text(encoding="utf-8"))
+                python_hash = content_hash_cbor(module)
+
+                canonical_json = to_canonical(module)
+                with tempfile.NamedTemporaryFile(
+                    "w", suffix=".json", delete=False, encoding="utf-8"
+                ) as tmp:
+                    json.dump(canonical_json, tmp)
+                    tmp_path = Path(tmp.name)
+                try:
+                    rust = subprocess.run(
+                        [str(RUST_BIN), "hash-cbor", str(tmp_path)],
+                        capture_output=True,
+                        check=True,
+                        text=True,
+                    )
+                finally:
+                    tmp_path.unlink(missing_ok=True)
+                rust_hash = rust.stdout.strip()
+
+                self.assertEqual(
+                    rust_hash,
+                    python_hash,
+                    f"Rust/Python CBOR content hash differs for {example.name}",
                 )
 
 

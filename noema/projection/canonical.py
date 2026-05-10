@@ -1,8 +1,9 @@
 """Canonical JSON projection.
 
 Noema canonical form is a typed hypergraph. JSON is the v0 serialization; CBOR
-and content-addressing will arrive later. Round-tripping is total: any Module
-parsed, projected to JSON, and read back is structurally identical.
+is the v0.2 binary form (see ``noema.projection.cbor``). Round-tripping is
+total: any Module parsed, projected to JSON, and read back is structurally
+identical.
 
 This module also provides the *canonical byte form* — a deterministic byte
 serialization of a Module that any two spec-conforming implementations must
@@ -100,6 +101,37 @@ def content_hash(module: Module) -> str:
     the input bytes are.
     """
     digest = hashlib.sha256(canonical_bytes(module)).hexdigest()
+    return f"sha256:{digest}"
+
+
+def canonical_cbor_bytes(module: Module) -> bytes:
+    """Deterministic CBOR byte serialization of a Module.
+
+    RFC 8949 §4.2 canonical encoding of the same abstract structure
+    ``to_canonical`` produces. Both implementations — Python here, Rust
+    in the ``noema-canonical`` crate — MUST produce byte-identical
+    output for the same Module; the conformance test enforces that.
+
+    CBOR is the v0.2 binary canonical form. JSON remains authoritative
+    for content addressing in v0.1; switching the hash algorithm would
+    invalidate every existing identity, which is a breaking change that
+    belongs to a future release, not this one.
+    """
+    from .cbor import canonical_cbor
+
+    return canonical_cbor(to_canonical(module))
+
+
+def content_hash_cbor(module: Module) -> str:
+    """SHA-256 of canonical CBOR bytes, hex-prefixed with `sha256:`.
+
+    Parallel to ``content_hash`` but computed over the CBOR byte form
+    instead of the JSON byte form. Present so agents that prefer the
+    binary wire can compute a stable identity in the same shape.
+    Switching v0.1's primary hash from JSON to CBOR is deferred; this
+    function is the tool that makes that switch testable when it lands.
+    """
+    digest = hashlib.sha256(canonical_cbor_bytes(module)).hexdigest()
     return f"sha256:{digest}"
 
 

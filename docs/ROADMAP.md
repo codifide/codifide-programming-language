@@ -15,8 +15,17 @@
 - ~~CBOR serialization of canonical form~~ (deferred)
 - ✅ Content-addressed symbol store (sha256 of canonical JSON)
 - Structural diff and merge
-- Richer primitive library (math, collections, string)
-- Better error messages that walk the intent graph
+- ~~Richer primitive library (math, collections, string)~~ ✅
+- Better error messages that walk the intent graph ✅
+
+## v0.2
+- ✅ CBOR serialization alongside JSON (shipped one release early).
+  Both forms produce byte-identical output across Python and Rust
+  implementations on every example. Content addressing works over
+  either form with distinct identities per form.
+- Migration of primary content hash from JSON to CBOR. Breaking
+  change; belongs with a v1.0-approaching release that invalidates
+  all existing identities.
 
 ## v0.2
 - Effect inference (so signatures can be partially elided)

@@ -6,10 +6,15 @@ canonical byte form, prefixed with ``sha256:`` (see
 
 This module turns that identity into a working store:
 
-- :func:`symbol_bytes` serializes one definition to canonical bytes.
-- :func:`symbol_hash` hashes those bytes to produce the identity.
+- :func:`symbol_bytes` serializes one definition to canonical JSON bytes.
+- :func:`symbol_cbor_bytes` serializes one definition to canonical CBOR bytes.
+- :func:`symbol_hash` hashes the JSON byte form to produce the JSON identity.
+- :func:`symbol_hash_cbor` hashes the CBOR byte form to produce the CBOR
+  identity. The two are distinct identities for the same abstract module —
+  JSON and CBOR are different wire forms, and content addressing makes no
+  pretense of collapsing them.
 - :class:`SymbolStore` is a filesystem-backed key-value store keyed by
-  that identity. Writes verify the hash before accepting the bytes; reads
+  an identity. Writes verify the hash before accepting the bytes; reads
   verify the hash of what came back. Neither direction trusts the disk.
 
 Why this exists now: until agents can exchange symbols by identity rather
@@ -28,6 +33,7 @@ from typing import Iterator, List, Optional
 
 from ..core.types import Definition, Module
 from ..projection.canonical import to_canonical
+from ..projection.cbor import canonical_cbor
 
 
 # ---------------------------------------------------------------------------
@@ -48,7 +54,7 @@ def _symbol_envelope(name: str, definition: Definition) -> dict:
 
 
 def symbol_bytes(name: str, definition: Definition) -> bytes:
-    """Canonical byte form of a single symbol.
+    """Canonical JSON byte form of a single symbol.
 
     The bytes are identical to what an independent implementation (e.g. the
     Rust crate) would produce for the same symbol — that is the whole point
@@ -64,14 +70,39 @@ def symbol_bytes(name: str, definition: Definition) -> bytes:
     ).encode("utf-8")
 
 
+def symbol_cbor_bytes(name: str, definition: Definition) -> bytes:
+    """Canonical CBOR byte form of a single symbol.
+
+    Parallel to :func:`symbol_bytes` but uses the CBOR (v0.2 binary)
+    canonical form. Typically 25-30% shorter than JSON; deterministic
+    by RFC 8949 §4.2.
+    """
+    envelope = _symbol_envelope(name, definition)
+    return canonical_cbor(envelope)
+
+
 def symbol_hash(name: str, definition: Definition) -> str:
-    """Content identity of a single symbol: ``sha256:<hex>``.
+    """Content identity of a single symbol over its JSON byte form.
 
     Stable across implementations. Two symbols with identical canonical
     bytes produce the same hash; any change to name, intent, signature,
     pre, post, or any candidate produces a new hash.
     """
     digest = hashlib.sha256(symbol_bytes(name, definition)).hexdigest()
+    return f"sha256:{digest}"
+
+
+def symbol_hash_cbor(name: str, definition: Definition) -> str:
+    """Content identity of a single symbol over its CBOR byte form.
+
+    A distinct identity from :func:`symbol_hash` — the same abstract
+    Definition has a JSON identity and a CBOR identity, and agents
+    exchanging one wire form need to agree on that wire form to share
+    identities. The two forms are interoperable at the Module level (a
+    consumer can materialize either from the in-memory form) but not at
+    the identity level.
+    """
+    digest = hashlib.sha256(symbol_cbor_bytes(name, definition)).hexdigest()
     return f"sha256:{digest}"
 
 
@@ -145,7 +176,7 @@ class SymbolStore:
     # -- Public API ------------------------------------------------------
 
     def put(self, name: str, definition: Definition) -> str:
-        """Store a symbol and return its content identity.
+        """Store a symbol in JSON form and return its content identity.
 
         Idempotent. If the symbol is already in the store, its existing
         bytes are verified and the identity is returned unchanged.
@@ -155,36 +186,81 @@ class SymbolStore:
         self._write_atomic(identity, data)
         return identity
 
+    def put_cbor(self, name: str, definition: Definition) -> str:
+        """Store a symbol in CBOR form and return its CBOR content identity.
+
+        Distinct from :meth:`put`: the identity is computed over the CBOR
+        byte form, so the same abstract Definition produces a different
+        identity when stored as CBOR vs. JSON. Agents exchanging content
+        addresses must agree on the wire form. On-disk layout uses the
+        ``.cbor`` suffix in place of ``.json`` so iterating the store
+        surfaces each artifact separately.
+
+        Why it's a separate identity rather than a reformat of an
+        existing one: content addressing is a property of bytes. If we
+        collapsed the two into one identity, a consumer could no longer
+        be certain which bytes were hashed. Better to have two honest
+        identities than one misleading one.
+        """
+        identity = symbol_hash_cbor(name, definition)
+        data = symbol_cbor_bytes(name, definition)
+        self._write_atomic(identity, data, suffix=".cbor")
+        return identity
+
     def has(self, identity: str) -> bool:
-        """Return True iff the store has an entry for this identity."""
-        return self._path_for(identity).exists()
+        """Return True iff the store has an entry for this identity.
+
+        An identity may be stored in JSON (`.json`) or CBOR (`.cbor`)
+        form; either presence satisfies this predicate.
+        """
+        return self._path_for(identity, ".json").exists() or self._path_for(
+            identity, ".cbor"
+        ).exists()
 
     def get_bytes(self, identity: str) -> bytes:
         """Return the stored canonical bytes for an identity.
 
-        On read the bytes are rehashed and compared to the identity. If the
-        two disagree, :class:`IntegrityError` is raised — corruption or
-        tampering on disk never returns a value.
+        Accepts either wire form. The returned bytes are always the
+        stored form (JSON bytes if stored as JSON, CBOR bytes if stored
+        as CBOR). On read the bytes are rehashed and compared to the
+        identity. If the two disagree, :class:`IntegrityError` is raised
+        — corruption or tampering on disk never returns a value.
         """
-        path = self._path_for(identity)
-        if not path.exists():
-            raise NotFound(identity)
-        data = path.read_bytes()
-        observed = f"sha256:{hashlib.sha256(data).hexdigest()}"
-        if observed != identity:
-            raise IntegrityError(expected=identity, actual=observed)
-        return data
+        # Try JSON first (v0.1 default), fall back to CBOR.
+        for suffix in (".json", ".cbor"):
+            path = self._path_for(identity, suffix)
+            if path.exists():
+                data = path.read_bytes()
+                observed = f"sha256:{hashlib.sha256(data).hexdigest()}"
+                if observed != identity:
+                    raise IntegrityError(expected=identity, actual=observed)
+                return data
+        raise NotFound(identity)
 
     def get(self, identity: str) -> dict:
-        """Return the parsed canonical JSON object for an identity."""
-        return json.loads(self.get_bytes(identity))
+        """Return the parsed canonical object (JSON-compatible) for an identity.
+
+        Auto-detects the wire form: a payload starting with `{` is
+        treated as JSON; otherwise as canonical CBOR. The returned dict
+        is shape-identical in either case — CBOR and JSON encode the
+        same abstract structure.
+        """
+        data = self.get_bytes(identity)
+        if data.startswith(b"{"):
+            return json.loads(data)
+        # CBOR path — decode using the canonical decoder so malformed
+        # or non-canonical payloads still surface cleanly.
+        from ..projection.cbor_decoder import decode_canonical_cbor
+
+        return decode_canonical_cbor(data)
 
     def iter_identities(self) -> Iterator[str]:
         """Yield every identity currently stored, in filesystem order.
 
         Iteration is not sorted because callers who care about ordering
         should sort themselves; imposing an order here would lie about
-        what the filesystem returns.
+        what the filesystem returns. Surfaces both JSON and CBOR artifacts
+        — each is a distinct identity.
         """
         base = self.root / "sha256"
         if not base.exists():
@@ -193,28 +269,34 @@ class SymbolStore:
             if not shard.is_dir() or len(shard.name) != 2:
                 continue
             for obj in shard.iterdir():
-                if obj.suffix != ".json":
+                if obj.suffix not in (".json", ".cbor"):
                     continue
                 yield f"sha256:{shard.name}{obj.stem}"
 
-    def put_module(self, module: Module) -> List[tuple[str, str]]:
+    def put_module(self, module: Module, *, cbor: bool = False) -> List[tuple[str, str]]:
         """Store every definition in a module.
 
         Returns a list of (symbol_name, identity) pairs, in declaration
         order. The module itself is not stored as a unit; it is
         reconstructable from the set of symbol identities plus a name
         lookup table (the return value is that table).
+
+        When ``cbor=True`` each symbol is stored in its CBOR canonical
+        form, which produces a different identity than the JSON form.
         """
         out: List[tuple[str, str]] = []
         for defn in module.symbols:
-            out.append((defn.name, self.put(defn.name, defn)))
+            if cbor:
+                out.append((defn.name, self.put_cbor(defn.name, defn)))
+            else:
+                out.append((defn.name, self.put(defn.name, defn)))
         return out
 
     # -- Internals -------------------------------------------------------
 
-    def _path_for(self, identity: str) -> Path:
+    def _path_for(self, identity: str, suffix: str = ".json") -> Path:
         digest = self._parse_identity(identity)
-        return self.root / "sha256" / digest[:2] / f"{digest[2:]}.json"
+        return self.root / "sha256" / digest[:2] / f"{digest[2:]}{suffix}"
 
     @classmethod
     def _parse_identity(cls, identity: str) -> str:
@@ -227,7 +309,7 @@ class SymbolStore:
             raise StoreError(f"malformed sha256 identity: {identity!r}")
         return digest
 
-    def _write_atomic(self, identity: str, data: bytes) -> None:
+    def _write_atomic(self, identity: str, data: bytes, suffix: str = ".json") -> None:
         # Verify first: the caller asked us to save bytes under an
         # identity; if the bytes do not hash to that identity, we refuse.
         # This is defense against the caller, not against the disk.
@@ -235,7 +317,7 @@ class SymbolStore:
         if observed != identity:
             raise IntegrityError(expected=identity, actual=observed)
 
-        path = self._path_for(identity)
+        path = self._path_for(identity, suffix)
         path.parent.mkdir(parents=True, exist_ok=True)
         if path.exists():
             # Idempotent: if someone already wrote these bytes, we're done.

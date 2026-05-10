@@ -163,6 +163,15 @@ JSON values (RFC 8259) under the following normalization:
 
 ## Canonical serialization
 
+Noema defines two canonical byte forms: a JSON form (v0.1 primary, used
+for debugging and interoperability) and a CBOR form (v0.2 binary, used
+for wire transport and storage efficiency). An implementation MAY
+produce either or both; when both are present they MUST agree on every
+abstract value (same Module → same JSON bytes, same Module → same CBOR
+bytes).
+
+### JSON byte form
+
 For content-addressing and wire transport, we define a single *canonical
 byte form* per document:
 
@@ -180,6 +189,28 @@ byte form* per document:
   control bytes; other control bytes below 0x20 use `\uXXXX`. U+007F
   (DEL) is emitted as its raw byte to match the Python reference.
 
+### CBOR byte form
+
+Encoded per RFC 8949 §4.2 Deterministically Encoded CBOR. The rules:
+
+- Integers use the shortest major-type-0/1 head. Integers outside the
+  `[-2^64, 2^64)` range use tagged bignum (tag 2 for positive, tag 3
+  for negative) with a shortest-byte-string body with no leading zero.
+- Floats use the shortest IEEE-754 binary encoding that preserves the
+  value exactly, including sign of zero: half-precision (`0xF9`) if
+  possible, else single (`0xFA`), else double (`0xFB`). NaN and
+  infinity MUST NOT appear in a canonical document.
+- Byte and text strings use the shortest length-prefixed head.
+  Indefinite-length strings MUST NOT appear.
+- Arrays use definite-length encoding.
+- Maps use definite-length encoding; pairs MUST be sorted by their
+  encoded key bytes in bytewise lexicographic order.
+- Simple values are restricted to `false` (0xF4), `true` (0xF5), and
+  `null` (0xF6). No other tags (apart from bignums as above) may appear.
+
+A CBOR byte form typically runs 25-30% shorter than the JSON byte form
+for the same abstract document, with no loss of fidelity.
+
 The canonical byte form is what gets hashed for content-addressing. Two
 documents that are structurally equal produce identical canonical byte form
 and therefore identical content hashes.
@@ -190,6 +221,16 @@ A symbol's identity is the SHA-256 of its canonical byte form, hex-encoded
 and prefixed with `sha256:`. The identity of a definition is the hash of its
 canonical JSON object (including its name as a key under a single-entry
 `symbols` map, so that a standalone definition has a stable hash).
+
+A symbol has two distinct identities — one computed over its JSON
+canonical bytes, one over its CBOR canonical bytes. Agents exchanging
+content-addressed references MUST agree on the wire form they use. The
+two identities cannot be computed from one another without
+materializing the symbol's abstract form and re-encoding; this is the
+correct behavior, because content addressing is a property of the bytes
+themselves, not of the abstract meaning. Collapsing the two identities
+would break the one-to-one correspondence between a hash and the bytes
+it names.
 
 Implementations are not required to compute hashes unless they participate
 in a content-addressed store. When they do, agreement is mandatory.

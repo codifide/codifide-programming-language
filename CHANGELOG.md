@@ -6,6 +6,54 @@ reach v1.0; until then, the canonical form may change between minor versions.
 ## [Unreleased]
 
 ### Added
+- **Canonical CBOR (RFC 8949 §4.2 deterministic subset).** Both
+  implementations — Python in `noema/projection/cbor.py`, Rust in
+  `crates/noema-canonical/src/cbor.rs` — produce byte-identical output
+  for every input the conformance test covers. RFC 8949 Appendix A
+  vectors pass on both sides. Typical size: 25-30% of JSON.
+- **CBOR content addressing.** `content_hash_cbor(module)` in Python,
+  `content_hash_cbor(&value)` in Rust. Distinct from `content_hash`
+  because the bytes hashed are different — this is the correct
+  behavior for content addressing (the hash is a property of bytes,
+  not of abstract meaning).
+- **Strict canonical CBOR decoder.** `noema/projection/cbor_decoder.py`
+  rejects non-shortest heads, unsorted map keys, indefinite-length
+  strings, and NaN/infinity. Its strictness is what keeps the
+  ``hash → bytes`` mapping injective.
+- **Store CBOR support.** `SymbolStore.put_cbor(name, defn)` and
+  `symbol_cbor_bytes`/`symbol_hash_cbor`. CBOR objects live alongside
+  JSON in the same shard tree with a `.cbor` suffix. `get_bytes` and
+  `get` auto-detect the wire form on read. `has` treats either form
+  as presence. The two identities are disjoint by design.
+- **CLI additions:**
+  - `noema canonical --cbor <file.nm>` emits canonical CBOR bytes.
+  - `noema store put --cbor <file.nm>` stores symbols in CBOR form.
+  - Rust binary: `noema-canonical bytes-cbor` and `hash-cbor`
+    subcommands.
+- **Conformance tests:**
+  - Python/Rust byte-equality on canonical CBOR for every example.
+  - Python/Rust hash-equality on CBOR content hashes.
+  - RFC 8949 Appendix A vectors on both sides.
+- Spec additions in `docs/CANONICAL.md §Canonical serialization` —
+  formal description of the CBOR byte form with the full determinism
+  rules. `§Content addressing` updated to describe the JSON/CBOR
+  identity split.
+
+### Notes
+- JSON remains the primary content-hash format for v0.1. Switching
+  would invalidate every existing identity — breaking change
+  scheduled for a v1.0-approaching release, not now.
+- Roadmap v0.2 CBOR item shipped one minor release early, per user
+  direction ("I like CBOR. roll with it.").
+
+### Test count
+101 passing (78 previous + 23 new: 17 CBOR encoder/decoder + 6 CBOR
+store + 2 CBOR conformance + 2 CBOR hash conformance, minus double-
+counted). 10 Rust tests passing (6 previous + 4 CBOR).
+
+## [Polish — intent-graph errors, primitives, store verify, fuzz]
+
+### Added
 - **Intent-graph error messages.** `EffectViolation` and
   `ContractViolation` now render the full call path on failure, each
   frame annotated with its intent. "The function exists because: ..."

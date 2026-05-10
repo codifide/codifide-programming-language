@@ -1,0 +1,186 @@
+dispatch:
+  id: sha256:pending
+  schema: noema.dispatch/0.1
+  subject: Canonical CBOR shipped, Python and Rust byte-agreeing
+  at: 2026-05-10T00:00:00Z
+  author: Glyph
+
+  intent: >
+    Record that RFC 8949 §4.2 Deterministically Encoded CBOR is a
+    first-class canonical form in Noema, implemented on both Python
+    and Rust sides with byte-level agreement proven on every example
+    and on RFC 8949 Appendix A test vectors. The v0.2 roadmap item
+    for CBOR shipped in v0.1-dev at the user's direction.
+
+  state:
+    shipped:
+      - claim: cbor.encoder.python
+      - claim: cbor.encoder.rust
+      - claim: cbor.decoder.python_strict
+      - claim: cbor.content_hash.python
+      - claim: cbor.content_hash.rust
+      - claim: cbor.rfc_8949_appendix_a_vectors_python
+      - claim: cbor.rfc_8949_appendix_a_vectors_rust
+      - claim: cbor.conformance.python_rust_byte_equal_on_examples
+      - claim: cbor.conformance.python_rust_hash_equal_on_examples
+      - claim: cbor.half_precision_shrinkage_preserves_signed_zero
+      - claim: cbor.bignum_handling_via_tag_2_and_3
+      - claim: cbor.map_keys_sorted_by_encoded_bytes
+      - claim: cbor.decoder_rejects_non_canonical_input
+      - claim: store.put_cbor_method
+      - claim: store.dual_identity_json_and_cbor
+      - claim: store.auto_detect_wire_form_on_read
+      - claim: cli.canonical_cbor_flag
+      - claim: cli.store_put_cbor_flag
+      - claim: cli.rust_bytes_cbor_and_hash_cbor_subcommands
+      - claim: spec.canonical_cbor_section_written
+      - claim: spec.content_addressing_describes_dual_identity
+      - claim: tests.suite_passing_101_of_101
+      - claim: rust_tests.suite_passing_10_of_10
+    in_flight: []
+    blocked: []
+    refused:
+      - claim: cbor.primary_content_hash_migration
+        why: >
+          Switching the primary hash from JSON to CBOR would
+          invalidate every existing JSON-based identity. That is a
+          breaking change scheduled for a v1.0-approaching release,
+          not now. Dual-identity is honest for the interim.
+      - claim: cbor.tag_registration_beyond_bignums
+        why: >
+          Canonical subset. Only bignum tags 2 and 3 are accepted.
+          Adding new tags would be a non-trivial spec extension and
+          has no identified use.
+      - claim: cbor.indefinite_length_strings
+        why: >
+          RFC 8949 §4.2 forbids them in deterministic encoding. We
+          refuse them on both encode and decode.
+
+  evidence:
+    - claim: tests.suite_passing_101_of_101
+      kind: test
+      source: python3 -m noema test
+      result: "Ran 101 tests in 0.55s; OK"
+      confidence: 1.0
+    - claim: rust_tests.suite_passing_10_of_10
+      kind: test
+      source: cargo test --release -p noema-canonical
+      result: 10 passed; 0 failed
+      confidence: 1.0
+    - claim: cbor.rfc_8949_appendix_a_vectors_python
+      kind: test
+      source: tests/test_cbor.py::RFC8949VectorsTests
+      result: >
+        36 vectors from RFC 8949 Appendix A — integers, floats
+        including signed zero and f16 subnormals, booleans, null,
+        arrays, maps, strings including Unicode — all produce
+        byte-identical canonical encodings.
+      confidence: 1.0
+    - claim: cbor.rfc_8949_appendix_a_vectors_rust
+      kind: test
+      source: cargo test -p noema-canonical cbor::tests
+      result: >
+        Four test methods covering integers, floats (including f16
+        shrinkage with signed zero), simple values/composites, and
+        map key sorting.
+      confidence: 1.0
+    - claim: cbor.conformance.python_rust_byte_equal_on_examples
+      kind: test
+      source: tests/test_conformance.py::test_rust_and_python_agree_on_canonical_cbor_bytes
+      result: >
+        Every .nm example (greet, sort, classify, unicode,
+        imports_demo) produces byte-identical canonical CBOR bytes
+        from Python's canonical_cbor_bytes and the Rust
+        `noema-canonical bytes-cbor` subcommand.
+      confidence: 1.0
+    - claim: cbor.conformance.python_rust_hash_equal_on_examples
+      kind: test
+      source: tests/test_conformance.py::test_rust_and_python_agree_on_cbor_content_hash
+      result: >
+        CBOR-derived SHA-256 identities agree on every example.
+      confidence: 1.0
+    - claim: cbor.half_precision_shrinkage_preserves_signed_zero
+      kind: test
+      source: tests/test_cbor.py::RFC8949VectorsTests::test_floats
+      result: >
+        0.0 encodes to f90000; -0.0 encodes to f98000; the sign is
+        preserved through the f64→f16 bit manipulation.
+      confidence: 1.0
+    - claim: cbor.decoder_rejects_non_canonical_input
+      kind: test
+      source: tests/test_cbor.py::DecoderRejectsNonCanonicalTests
+      result: >
+        Non-shortest integer heads, unsorted map keys,
+        indefinite-length strings, trailing bytes, NaN, and infinity
+        all raise ValueError from decode_canonical_cbor.
+      confidence: 1.0
+    - claim: store.dual_identity_json_and_cbor
+      kind: test
+      source: tests/test_cbor_store.py::CborStoreTests::test_json_and_cbor_produce_different_identities
+      result: >
+        Same abstract Module produces distinct JSON and CBOR
+        identities; both are simultaneously stored and fetchable.
+      confidence: 1.0
+    - claim: store.auto_detect_wire_form_on_read
+      kind: test
+      source: tests/test_cbor_store.py::CborStoreTests::test_get_decodes_cbor_automatically
+      result: >
+        store.get(cbor_id) returns the shape-identical canonical
+        object even though the stored bytes are CBOR.
+      confidence: 1.0
+    - claim: spec.canonical_cbor_section_written
+      kind: read
+      source: docs/CANONICAL.md §Canonical serialization / CBOR byte form
+      result: >
+        Formal description: shortest head, shortest float, signed-
+        zero preservation, sorted-by-encoded-bytes map keys,
+        bignum-only tags, refusal of NaN/infinity and
+        indefinite-length strings.
+      confidence: 1.0
+
+  unknowns:
+    - question: >
+        When does the primary content hash migrate from JSON to CBOR?
+      why_unknown: >
+        It's a breaking change; every existing JSON identity becomes
+        a historical artifact. The right moment is a v1.0-approach
+        release that coordinates with users of the store.
+      how_to_resolve: Write a migration plan; pick a version.
+    - question: >
+        Do the Rust and Python CBOR encoders agree on all IEEE-754
+        boundary cases, or only on the ones the example corpus
+        exercises?
+      why_unknown: >
+        Our test corpus covers representable-in-f16, representable-
+        in-f32-but-not-f16, f64-only, signed zero, and 1.1 (the
+        classic imprecise case). Not exhaustive.
+      how_to_resolve: >
+        Add a dedicated numeric-boundary conformance fixture
+        covering all 2^16 f16 bit patterns and selected f32 edges.
+    - question: >
+        Should the store expose a canonical "prefer CBOR, fall back
+        to JSON" read policy at the `get()` level so consumers do
+        not have to query by the specific form?
+      why_unknown: >
+        Design question, not a bug. Today get() auto-detects wire
+        form but the caller still has to know which *identity* to
+        ask for. A Module-level "both forms present" abstraction
+        would hide some of that.
+      how_to_resolve: Propose an API; measure usage.
+
+  next:
+    - action: numeric-boundary conformance fixture
+      depends_on: [cbor.conformance.python_rust_byte_equal_on_examples]
+      effect: "{}"
+    - action: decide JSON-to-CBOR primary hash migration
+      depends_on: [cbor.content_hash.python, cbor.content_hash.rust]
+      effect: "{}"
+    - action: CBOR-aware Sable re-audit
+      depends_on: [cbor.encoder.python, cbor.encoder.rust]
+      effect: "{}"
+
+  links:
+    canonical: docs/CANONICAL.md
+    human_readout: dispatches/2026-05-10-cbor.readout.md
+    rfc: https://www.rfc-editor.org/rfc/rfc8949.html
+    repo_path: .
