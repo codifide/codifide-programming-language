@@ -3,7 +3,38 @@
 All notable changes to Noema are recorded here. Releases follow semver once we
 reach v1.0; until then, the canonical form may change between minor versions.
 
-## [Unreleased]
+## [Unreleased — post-CBOR audit]
+
+### Fixed
+- **P1-5: Store write followed symlinks, leaking bytes outside the
+  store.** `SymbolStore._write_atomic` now resolves the target's parent
+  directory and refuses to write if the resolved path is not under
+  `self.root`. This catches the symlink-planted-in-shard-directory
+  attack that Sable found. Found by filesystem-surface probe in the
+  CBOR-neighborhood audit; regression test in
+  `tests/test_cbor_store.py::test_P1_5_write_refuses_to_follow_symlink_out_of_store`.
+- **P1-6: `store.get()` leaked `UnicodeDecodeError` on malformed
+  bytes.** The byte-sniffing dispatch (first byte is `{` → JSON, else
+  CBOR) is replaced with suffix-based dispatch honoring the producer's
+  wire form. Decoder exceptions from either path are wrapped in
+  `StoreError` so the typed-error discipline holds uniformly.
+  Regression tests for both malformed-CBOR and malformed-JSON paths.
+- **P1-7: Rust CLI hung forever on `/dev/zero`.** `fs::read_to_string`
+  is replaced with a bounded `File::open(...).take(cap).read_to_end`
+  with a 64 MiB limit. Past the cap the CLI exits non-zero with a
+  clean message. Regression test invokes the CLI on `/dev/zero` with
+  a 5-second timeout.
+
+### Added
+- `dispatches/2026-05-10-cbor-audit.md` — Sable's audit of the CBOR
+  neighborhood. Six probe batteries, ~80 adversarial inputs, three
+  P1 findings filed.
+
+### Test count
+105 passing (101 previous + 3 Python audit regressions + 1 Rust CLI
+audit regression).
+
+## [CBOR]
 
 ### Added
 - **Canonical CBOR (RFC 8949 §4.2 deterministic subset).** Both

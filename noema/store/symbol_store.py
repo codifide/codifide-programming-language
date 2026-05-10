@@ -240,19 +240,36 @@ class SymbolStore:
     def get(self, identity: str) -> dict:
         """Return the parsed canonical object (JSON-compatible) for an identity.
 
-        Auto-detects the wire form: a payload starting with `{` is
-        treated as JSON; otherwise as canonical CBOR. The returned dict
-        is shape-identical in either case — CBOR and JSON encode the
-        same abstract structure.
+        Decodes according to the wire form the bytes were stored under,
+        not a guess based on the leading byte. Security audit P1-6
+        (CBOR audit, 2026-05-10) caught that the previous byte-sniffing
+        dispatch leaked ``UnicodeDecodeError`` from ``json.loads`` when
+        CBOR bytes happened to start with ``0x7B``. Routing by suffix
+        honors the producer's intent and keeps decoder errors inside
+        the typed-error discipline.
         """
-        data = self.get_bytes(identity)
-        if data.startswith(b"{"):
-            return json.loads(data)
-        # CBOR path — decode using the canonical decoder so malformed
-        # or non-canonical payloads still surface cleanly.
-        from ..projection.cbor_decoder import decode_canonical_cbor
-
-        return decode_canonical_cbor(data)
+        # Find which suffix actually holds the bytes.
+        json_path = self._path_for(identity, ".json")
+        cbor_path = self._path_for(identity, ".cbor")
+        if json_path.exists():
+            data = self.get_bytes(identity)  # hash-verifies
+            try:
+                return json.loads(data)
+            except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+                # Translate any decode failure into a typed store error.
+                raise StoreError(
+                    f"cannot decode stored JSON for {identity}: {exc}"
+                ) from exc
+        if cbor_path.exists():
+            data = self.get_bytes(identity)  # hash-verifies
+            from ..projection.cbor_decoder import decode_canonical_cbor
+            try:
+                return decode_canonical_cbor(data)
+            except ValueError as exc:
+                raise StoreError(
+                    f"cannot decode stored CBOR for {identity}: {exc}"
+                ) from exc
+        raise NotFound(identity)
 
     def iter_identities(self) -> Iterator[str]:
         """Yield every identity currently stored, in filesystem order.
@@ -318,6 +335,34 @@ class SymbolStore:
             raise IntegrityError(expected=identity, actual=observed)
 
         path = self._path_for(identity, suffix)
+        # Security audit P1-5 (2026-05-10 CBOR audit): the shard
+        # directory or the target file may be a symlink pointing
+        # outside the store, in which case a naive write would leak
+        # legitimate bytes into attacker-controlled territory. Resolve
+        # the parent path and refuse if it escapes ``self.root``. We
+        # resolve the parent rather than the leaf so a not-yet-existing
+        # target file does not spuriously fail resolution.
+        try:
+            resolved_parent = path.parent.resolve(strict=False)
+            resolved_root = self.root.resolve(strict=False)
+        except OSError as exc:
+            raise StoreError(
+                f"cannot resolve store path for {identity}: {exc}"
+            ) from exc
+        # ``Path.is_relative_to`` exists in Python 3.9+; compare via
+        # ``parts`` for explicit control over the containment rule.
+        root_parts = resolved_root.parts
+        parent_parts = resolved_parent.parts
+        if (
+            len(parent_parts) < len(root_parts)
+            or parent_parts[: len(root_parts)] != root_parts
+        ):
+            raise StoreError(
+                f"refusing to write outside store root: "
+                f"{resolved_parent} is not within {resolved_root}. "
+                f"This usually means a symlink was planted inside the "
+                f"store's shard directory."
+            )
         path.parent.mkdir(parents=True, exist_ok=True)
         if path.exists():
             # Idempotent: if someone already wrote these bytes, we're done.

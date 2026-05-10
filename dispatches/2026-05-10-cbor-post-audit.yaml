@@ -1,0 +1,131 @@
+dispatch:
+  id: sha256:pending
+  schema: noema.dispatch/0.1
+  subject: Resolution of CBOR-audit P1 findings
+  at: 2026-05-10T00:00:00Z
+  author: Glyph
+
+  intent: >
+    Record closure of the three P1 findings from
+    dispatches/2026-05-10-cbor-audit.md. Every finding has a fix, a
+    regression test, and a named location in the source. Agents
+    consuming this dispatch can trust that the filesystem escape, the
+    get() error-type leak, and the Rust CLI denial-of-service are
+    resolved in 105-test-passing state.
+
+  state:
+    shipped:
+      - claim: audit.P1_5.symlink_escape_blocked
+      - claim: audit.P1_6.get_routes_by_suffix
+      - claim: audit.P1_6.decoder_errors_wrapped_in_store_error
+      - claim: audit.P1_7.rust_cli_bounded_read
+      - claim: tests.P1_5_regression
+      - claim: tests.P1_6_cbor_regression
+      - claim: tests.P1_6_json_regression
+      - claim: tests.P1_7_regression
+      - claim: tests.suite_passing_105_of_105
+    in_flight: []
+    blocked: []
+    refused:
+      - claim: audit.followup.openat_nofollow_hardening
+        why: >
+          The Path.resolve containment check catches the attack
+          Sable found. A second layer using openat+O_NOFOLLOW would
+          close TOCTOU races between resolve and open. Left as a
+          future hardening pass; the realistic attacker today does
+          not have the right tools to exploit the residual window.
+      - claim: audit.followup.cargo_fuzz_on_rust_cbor
+        why: >
+          Called out as the biggest remaining coverage gap in the
+          audit's "what I did not test" section. Infrastructure
+          lift; not a fix-now item.
+      - claim: audit.followup.decoder_allocation_bound
+        why: >
+          A CBOR payload claiming 1 GiB of length and delivering 1
+          GiB is accepted today. A max-allocation bound is prudent
+          before exposing the decoder to untrusted input over a
+          network. Scope for a future hardening pass.
+
+  evidence:
+    - claim: tests.suite_passing_105_of_105
+      kind: test
+      source: python3 -m noema test
+      result: "Ran 105 tests in 0.56s; OK"
+      confidence: 1.0
+    - claim: audit.P1_5.symlink_escape_blocked
+      kind: test
+      source: tests/test_cbor_store.py::test_P1_5_write_refuses_to_follow_symlink_out_of_store
+      result: >
+        Symlink planted at <store>/sha256/<XX> pointing at a victim
+        directory no longer leaks writes; store raises StoreError
+        with 'outside store root' message. Victim directory stays
+        empty.
+      confidence: 1.0
+    - claim: audit.P1_6.get_routes_by_suffix
+      kind: test
+      source: tests/test_cbor_store.py::test_P1_6_get_routes_by_suffix_not_by_first_byte
+      result: >
+        CBOR bytes starting with 0x7B (which would have routed to
+        json.loads under the old byte-sniffing dispatch) are now
+        decoded as CBOR because the file has a .cbor suffix. Malformed
+        CBOR surfaces as StoreError, not UnicodeDecodeError.
+      confidence: 1.0
+    - claim: audit.P1_6.decoder_errors_wrapped_in_store_error
+      kind: test
+      source: >
+        tests/test_cbor_store.py::test_P1_6_get_on_malformed_json_raises_store_error
+      result: >
+        Malformed JSON bytes at a .json file surface as StoreError,
+        not bare JSONDecodeError. Typed-error discipline holds on
+        both wire-form decoder paths.
+      confidence: 1.0
+    - claim: audit.P1_7.rust_cli_bounded_read
+      kind: test
+      source: tests/test_store.py::test_P1_7_rust_cli_refuses_dev_zero_and_does_not_hang
+      result: >
+        Rust CLI on /dev/zero exits with code 1 and message
+        "input exceeds 67108864 bytes; refuse to read more" within
+        the test's 5s timeout. No hang.
+      confidence: 1.0
+
+  unknowns:
+    - question: >
+        Is there a TOCTOU window between our parent-path resolve
+        and the actual write that a committed attacker with write
+        access to the shard directory could exploit?
+      why_unknown: >
+        Not stress-tested. The realistic attacker model at the
+        scale we operate today does not have the tools to exploit
+        this window, but "we can't exploit it" is not the same as
+        "it's closed".
+      how_to_resolve: >
+        Add a concurrency probe that races symlink-planting
+        against a put() and measure whether any write escapes.
+        If the window is exploitable, add the openat+O_NOFOLLOW
+        layer Sable called out.
+    - question: >
+        Does the P1-7 fix have the right size cap?
+      why_unknown: >
+        64 MiB is generous for a single module but arbitrary. A
+        principled cap would be derived from some expected maximum
+        module size under known-workload assumptions.
+      how_to_resolve: >
+        Collect real module sizes from any agent using the store;
+        set the cap to 10x the observed P99.
+
+  next:
+    - action: openat+O_NOFOLLOW hardening layer
+      depends_on: [audit.P1_5.symlink_escape_blocked]
+      effect: "{}"
+    - action: cargo-fuzz on Rust CBOR encoder/decoder
+      depends_on: []
+      effect: "{}"
+    - action: CBOR decoder allocation bound
+      depends_on: []
+      effect: "{}"
+
+  links:
+    audit_source: dispatches/2026-05-10-cbor-audit.md
+    canonical: docs/CANONICAL.md
+    human_readout: dispatches/2026-05-10-cbor-post-audit.readout.md
+    repo_path: .

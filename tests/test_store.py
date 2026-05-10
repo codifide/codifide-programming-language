@@ -289,6 +289,27 @@ class StoreRustConformance(unittest.TestCase):
             tmp_path.unlink(missing_ok=True)
         self.assertEqual(python_hash, result.stdout.strip())
 
+    def test_P1_7_rust_cli_refuses_dev_zero_and_does_not_hang(self) -> None:
+        # The Rust CLI previously read to EOF with no size cap. /dev/zero
+        # never EOFs, so the binary hung indefinitely — a DoS vector for
+        # any caller that passes attacker-controlled filenames. The cap
+        # on read size surfaces as a clean non-zero exit with a message.
+        import sys
+        if not Path("/dev/zero").exists():
+            self.skipTest("/dev/zero not available on this platform")
+        result = subprocess.run(
+            [str(self.RUST_BIN), "bytes-cbor", "/dev/zero"],
+            capture_output=True,
+            timeout=5,  # If we hang past this, the test fails anyway.
+        )
+        self.assertNotEqual(
+            result.returncode,
+            0,
+            "Rust CLI should reject /dev/zero, not exit successfully",
+        )
+        stderr = result.stderr.decode(errors="replace").lower()
+        self.assertIn("exceeds", stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

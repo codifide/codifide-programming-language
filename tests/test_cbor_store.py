@@ -111,6 +111,66 @@ class CborStoreTests(unittest.TestCase):
         cbor_bytes = symbol_cbor_bytes("hello", self.defn)
         self.assertLess(len(cbor_bytes), len(json_bytes))
 
+    # -- CBOR audit regressions (2026-05-10) ----------------------------
+
+    def test_P1_5_write_refuses_to_follow_symlink_out_of_store(self) -> None:
+        # An attacker who plants a symlink inside the shard tree pointing
+        # at a directory they control must not be able to redirect store
+        # writes into that directory. The store resolves the parent path
+        # and refuses to write outside its root.
+        import os
+        from noema.store import StoreError
+        # Pick a shard prefix corresponding to a real identity so the
+        # path we plant a symlink at matches the write target.
+        identity = self.store.put_cbor("hello", self.defn)
+        digest = identity.removeprefix("sha256:")
+        shard_prefix = digest[:2]
+
+        # Throw away the existing store state and rebuild with a
+        # symlink planted at the shard directory before any writes
+        # happen.
+        with tempfile.TemporaryDirectory() as outer:
+            evil = Path(outer) / "evil"
+            evil.mkdir()
+            root = Path(outer) / "store"
+            (root / "sha256").mkdir(parents=True)
+            os.symlink(str(evil), str(root / "sha256" / shard_prefix))
+            store = SymbolStore(root)
+            with self.assertRaises(StoreError) as cm:
+                store.put_cbor("hello", self.defn)
+            self.assertIn("outside store root", str(cm.exception).lower())
+            # And the evil directory stays empty.
+            self.assertEqual(list(evil.iterdir()), [])
+
+    def test_P1_6_get_routes_by_suffix_not_by_first_byte(self) -> None:
+        # Plant bytes in a .cbor file that happen to start with '{'.
+        # The previous byte-sniffing dispatch would route to json.loads
+        # and leak UnicodeDecodeError; suffix-based dispatch routes to
+        # the CBOR decoder which rejects the payload cleanly as a
+        # StoreError. The contract is "typed error, never host exception".
+        import hashlib
+        from noema.store import StoreError
+        # CBOR text-string head (0x7B = major 3, additional 27 = 8-byte
+        # length) followed by a length that runs past the data. Our
+        # canonical CBOR decoder rejects this.
+        evil = bytes([0x7B, 0, 0, 0, 0, 0, 0, 0, 4]) + b"abcd"
+        identity = f"sha256:{hashlib.sha256(evil).hexdigest()}"
+        self.store._write_atomic(identity, evil, suffix=".cbor")
+        with self.assertRaises(StoreError):
+            self.store.get(identity)
+
+    def test_P1_6_get_on_malformed_json_raises_store_error(self) -> None:
+        # Mirror case: a .json file with malformed JSON bytes whose
+        # hash happens to match. get() must raise StoreError, not a
+        # bare JSONDecodeError.
+        import hashlib
+        from noema.store import StoreError
+        evil = b"{not valid json"
+        identity = f"sha256:{hashlib.sha256(evil).hexdigest()}"
+        self.store._write_atomic(identity, evil, suffix=".json")
+        with self.assertRaises(StoreError):
+            self.store.get(identity)
+
 
 if __name__ == "__main__":
     unittest.main()

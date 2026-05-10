@@ -16,14 +16,21 @@
 //! Python reference is authoritative for parsing in v0.
 
 use std::env;
-use std::fs;
-use std::io::{self, Write};
+use std::fs::File;
+use std::io::{self, Read, Write};
 use std::process::ExitCode;
 
 use noema_canonical::{
     canonical_bytes, canonical_cbor, content_hash, content_hash_cbor,
     from_canonical_json, to_canonical_json,
 };
+
+/// Maximum input size. A canonical Noema module is typically under
+/// 100 KiB; 64 MiB is generously larger than any legitimate module
+/// while bounding adversarial reads. Without this cap, passing
+/// ``/dev/zero`` as the input file hangs indefinitely — the
+/// 2026-05-10 CBOR audit filed this as P1-7.
+const MAX_INPUT_BYTES: u64 = 64 * 1024 * 1024;
 
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().collect();
@@ -83,8 +90,8 @@ enum Output {
 }
 
 fn load_and_emit(path: &str, fmt: Format) -> Result<Output, Box<dyn std::error::Error>> {
-    let src = fs::read_to_string(path)?;
-    let parsed: serde_json::Value = serde_json::from_str(&src)?;
+    let src = read_bounded(path)?;
+    let parsed: serde_json::Value = serde_json::from_slice(&src)?;
     // Round-trip through the AST so the byte form we emit reflects what
     // a Rust consumer would produce from its own in-memory form.
     let module = from_canonical_json(&parsed)?;
@@ -95,4 +102,26 @@ fn load_and_emit(path: &str, fmt: Format) -> Result<Output, Box<dyn std::error::
         Format::CborBytes => Output::Bytes(canonical_cbor(&produced)?),
         Format::CborHash => Output::Text(content_hash_cbor(&produced)?),
     })
+}
+
+/// Read ``path`` into memory, capped at ``MAX_INPUT_BYTES``. Exceeding the
+/// cap is a hard error — we would rather refuse a legitimate large file
+/// than hang on ``/dev/zero`` or be starved by a slow producer.
+fn read_bounded(path: &str) -> io::Result<Vec<u8>> {
+    let file = File::open(path)?;
+    let mut buf = Vec::new();
+    // `take` limits bytes read before EOF; past the cap we peek one more
+    // byte to distinguish "exactly cap bytes" from "larger than cap".
+    let mut limited = file.take(MAX_INPUT_BYTES + 1);
+    limited.read_to_end(&mut buf)?;
+    if buf.len() as u64 > MAX_INPUT_BYTES {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!(
+                "input exceeds {} bytes; refuse to read more",
+                MAX_INPUT_BYTES
+            ),
+        ));
+    }
+    Ok(buf)
 }
