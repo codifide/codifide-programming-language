@@ -1,0 +1,118 @@
+dispatch:
+  id: sha256:pending  # replaced at commit time by content hash of this file
+  schema: noema.dispatch/0.1
+  subject: Noema v0 snapshot
+  at: 2026-05-10T00:00:00Z
+  author: Glyph
+
+  intent: >
+    Publish the state of Noema v0 to agent readers so another agent can
+    reconstruct project status, know what is uncertain, and act without
+    re-reading the repository.
+
+  state:
+    shipped:
+      - claim: canonical.json_schema.v0_1
+      - claim: surface_parser.ascii_and_glyph_forms
+      - claim: interpreter.tree_walking
+      - claim: interpreter.effect_enforcement
+      - claim: interpreter.pre_post_contract_checking
+      - claim: interpreter.multi_candidate_dispatch
+      - claim: interpreter.belief_dispatch
+      - claim: interpreter.first_class_bottom
+      - claim: examples.three_runnable
+      - claim: tests.suite_passing_19_of_19
+      - claim: cli.run_canonical_test
+    in_flight: []
+    blocked: []
+    refused:
+      - claim: cbor_serialization
+        why: v0 prefers JSON for human spot-checking during bootstrap
+      - claim: rust_runtime
+        why: semantics not yet stable; port is scheduled for v0.3
+      - claim: content_addressed_symbol_store
+        why: sha256 over canonical JSON will arrive with CBOR in v0.1
+
+  evidence:
+    - claim: tests.suite_passing_19_of_19
+      kind: test
+      source: python3 -m noema test
+      result: "Ran 19 tests in 0.003s; OK"
+      confidence: 1.0
+    - claim: examples.three_runnable
+      kind: run
+      source: >
+        python3 -m noema run examples/{greet,sort,classify}.nm
+      result: >
+        greet prints "Hello, Ada, it's HH:MM";
+        sort returns [1,1,2,3,3,4,5,5,6,9];
+        classify returns "cat"
+      confidence: 1.0
+    - claim: interpreter.effect_enforcement
+      kind: test
+      source: tests/test_runtime.py::test_undeclared_effect_is_rejected
+      result: EffectViolation raised on undeclared io.stdout
+      confidence: 1.0
+    - claim: interpreter.pre_post_contract_checking
+      kind: test
+      source: >
+        tests/test_runtime.py::test_precondition_failure,
+        test_postcondition_failure_is_reported_against_promiser
+      result: ContractViolation raised with kind in {"pre","post"}
+      confidence: 1.0
+    - claim: interpreter.belief_dispatch
+      kind: test
+      source: tests/test_runtime.py::test_belief_dispatch_picks_high_confidence_arm
+      result: High-confidence arm selected; Bottom propagated when below threshold
+      confidence: 1.0
+    - claim: canonical.json_schema.v0_1
+      kind: test
+      source: tests/test_canonical.py::test_round_trip_equality
+      result: parse -> to_canonical -> from_canonical -> to_canonical is structurally equal
+      confidence: 1.0
+    - claim: surface_parser.ascii_and_glyph_forms
+      kind: read
+      source: noema/parser/tokens.py
+      result: keyword table maps ASCII and glyph spellings to one canonical
+      confidence: 0.9
+    - claim: cli.run_canonical_test
+      kind: run
+      source: python3 -m noema --help
+      result: three subcommands registered; run/canonical/test all exercised
+      confidence: 1.0
+
+  unknowns:
+    - question: Does the surface parser handle deeply nested believe blocks?
+      why_unknown: no test exercises nesting deeper than one level
+      how_to_resolve: add a fixture with a believe-in-believe and run the suite
+    - question: Is the effect subset check sound when a user function calls another user function?
+      why_unknown: v0 relies on primitive-call-site checking; a callee's declared
+        effects should also be subset-checked against caller's declared effects
+      how_to_resolve: add a static pass that computes transitive effect LUB over
+        the call graph and compare against each definition's declared set
+    - question: Does the content-hash strategy survive ordering changes in JSON maps?
+      why_unknown: to_canonical sorts keys for serialization but from_canonical
+        does not re-sort; still fine for equality but not yet for hashing
+      how_to_resolve: normalize on serialize; write the test before v0.1 hashing
+    - question: Will belief-dispatch compose with future probabilistic primitives?
+      why_unknown: only vision.classify exists as a Belief-returning primitive
+      how_to_resolve: add a second Belief-returning primitive and a composition test
+
+  next:
+    - action: add transitive effect subset check
+      depends_on: [interpreter.effect_enforcement]
+      effect: "{}"
+    - action: add content-addressing of canonical form
+      depends_on: [canonical.json_schema.v0_1]
+      effect: "{}"
+    - action: add CBOR serialization alongside JSON
+      depends_on: [canonical.json_schema.v0_1]
+      effect: "{}"
+    - action: add nested-believe parser test
+      depends_on: [interpreter.belief_dispatch]
+      effect: "{}"
+
+  links:
+    canonical: projects/noema/docs/CANONICAL.md
+    human_readout: projects/noema/dispatches/2026-05-10-v0-snapshot.readout.md
+    repo_path: projects/noema/

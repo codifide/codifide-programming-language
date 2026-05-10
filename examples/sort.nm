@@ -1,0 +1,47 @@
+module sort_example
+
+# Multiple candidate bodies, one contract. The dispatcher picks the first
+# whose guard holds. Both candidates must satisfy the same post.
+
+def sort
+  intent "order a list ascending"
+  sig    (xs: List) -> List
+  effects {}
+  post   is_sorted(result)
+  post   is_permutation(result, xs)
+
+  cand
+    intent "tiny input fast path"
+    when   lt(len(xs), 3)
+    insertion(xs)
+
+  cand
+    intent "default"
+    insertion(xs)
+
+# v0 does not ship a real quicksort/timsort; insertion is our reference
+# implementation for both candidates. Multiple-candidate dispatch is
+# demonstrated; swapping in a faster body is a future exercise.
+
+def insertion
+  intent "insertion sort, reference implementation"
+  sig    (xs: List) -> List
+  effects {}
+  post   is_sorted(result)
+  post   is_permutation(result, xs)
+  cand
+    py_sort(xs)
+
+def py_sort
+  intent "delegate to the host's sort primitive"
+  sig    (xs: List) -> List
+  effects {}
+  cand
+    host_sorted(xs)
+
+def main
+  intent "sort a known input"
+  sig    () -> List
+  effects {}
+  cand
+    sort(list(3, 1, 4, 1, 5, 9, 2, 6, 5, 3))
