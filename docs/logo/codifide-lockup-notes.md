@@ -53,18 +53,34 @@ company context is implicit — no lockup needed.
 
 ## Color values (Codifide palette)
 
-Used consistently across the language mark:
+Used consistently across the language mark and wordmark:
 
-| Role                           | Hex        | Use                                |
-|--------------------------------|------------|------------------------------------|
-| Cyan — top-right edges         | `#3EA8C1`  | Hexagon top face echo              |
-| Blue — right/bottom edges      | `#2C6CB8`  | Hexagon right face, primary text   |
-| Purple — left edges            | `#6B4199`  | Hexagon left face echo             |
-| Navy — interior nodes, sub-brand | `#0A2E5E`  | Hypergraph, descriptor text      |
+| Role                              | Hex        | Use                                          |
+|-----------------------------------|------------|----------------------------------------------|
+| Cyan — top-right edges            | `#3EA8C1`  | Hexagon top face echo                        |
+| Blue — right/bottom edges         | `#2C6CB8`  | Hexagon right face                           |
+| Purple — left edges               | `#6B4199`  | Hexagon left face echo                       |
+| Light blue — "codi" wordmark half | `#3A8FC8`  | First syllable of the wordmark               |
+| Navy — "fide" half, sub-brand, interior nodes | `#1D3A7B` / `#0A2E5E` | Second syllable, descriptor, hypergraph |
 
 These are proposed matches derived from the company logo; a
 designer working from Codifide's brand guide should confirm exact
 values and update if needed.
+
+## The wordmark's split-color convention
+
+The company wordmark splits **codi** (lighter blue-cyan) from
+**fide** (deeper navy). The language wordmark reproduces that
+split exactly.
+
+The split is not arbitrary — it echoes the syllabic break in the
+name itself: **codi**(fied) + (fi)**de**lity. The design intent is
+already embedded in the company mark; we preserve it.
+
+Never recolor the wordmark into a single flat color unless the
+rendering context makes two colors impossible (single-color print,
+a terminal with no color support). In those cases use the navy
+value for the full word.
 
 ## What Option A is not
 

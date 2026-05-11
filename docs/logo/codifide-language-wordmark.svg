@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Codifide Language wordmark — mark + sub-brand typography.
+  Codifide Language wordmark — split-color wordmark matching the
+  company wordmark treatment.
 
-  Reads as:
-      [mark] codifide
-             language
+  "codi" renders in the lighter blue-cyan of the company wordmark,
+  "fide" in the deeper navy. The split echoes the syllabic break
+  in the name itself (codi-fied + fi-delity), which is the design
+  intent the Codifide company mark already encodes.
 
-  The primary word "codifide" is the company; "language" is the
-  sub-brand. Both set in the same monospace-adjacent typeface
-  used by the company mark, so the hierarchy is typographic
-  (weight and size) rather than visual-style-mismatch.
+  Below, the sub-brand descriptor "language" in navy, smaller
+  weight — the same visual hierarchy the company wordmark uses
+  for "confidence in code".
 
-  Colors match the company wordmark: medium blue for the
-  primary, deeper navy for the sub-brand descriptor, matching
-  Codifide's existing "confidence in code" treatment.
+  Layout:
+      [mark]    codifide
+                language
 -->
 <svg xmlns="http://www.w3.org/2000/svg"
      viewBox="0 0 420 100"
@@ -24,7 +25,7 @@
      font-family="ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace"
      font-weight="700">
 
-  <!-- Mark, color-matched to Codifide palette -->
+  <!-- Mark, color-matched to the Codifide palette -->
   <g>
     <polyline points="50,6 88,28 88,72"    stroke="#3EA8C1" />
     <polyline points="88,72 50,94 12,72"   stroke="#2C6CB8" />
@@ -37,18 +38,23 @@
     <line x1="61" y1="46" x2="53" y2="64" stroke="#0A2E5E" />
   </g>
 
-  <!-- Primary: "codifide" in company blue -->
+  <!-- Wordmark "codifide" as two text spans, split-colored to
+       match the company wordmark. Both spans share font size
+       and letter-spacing so only the color distinguishes them.
+       The `codi` span uses the lighter company blue; the `fide`
+       span uses the deeper navy. -->
   <text x="112" y="52"
         font-size="38"
         letter-spacing="1"
-        fill="#2C6CB8"
-        stroke="none">codifide</text>
+        stroke="none">
+    <tspan fill="#3A8FC8">codi</tspan><tspan fill="#1D3A7B">fide</tspan>
+  </text>
 
-  <!-- Sub-brand: "language" in navy, smaller weight -->
+  <!-- Sub-brand descriptor: "language" -->
   <text x="112" y="82"
         font-size="22"
         letter-spacing="4"
-        fill="#0A2E5E"
+        fill="#1D3A7B"
         stroke="none"
         font-weight="500">language</text>
 </svg>
