@@ -3,6 +3,47 @@
 All notable changes to Codifide are recorded here. Releases follow semver once we
 reach v1.0; until then, the canonical form may change between minor versions.
 
+## [Unreleased — rename Noema → Codifide]
+
+### Changed
+- **The language is now Codifide, not Noema.** Every current-state
+  identifier, path, binary name, and string reference is updated.
+  Historical dispatches retain original phrasing for journal
+  honesty. Name is a portmanteau: **Codified + Fidelity**.
+- Python package `noema/` → `codifide/`.
+- Rust crate `crates/noema-canonical/` → `crates/codifide-canonical/`.
+- CLI: `python3 -m noema` → `python3 -m codifide`.
+- File extension: `.nm` → `.cod`.
+- Default store root: `~/.noema/store` → `~/.codifide/store`.
+- Environment variable: `NOEMA_STORE` → `CODIFIDE_STORE`.
+- Canonical form top-level tag: `"noema": "0.1"` → `"codifide": "0.1"`.
+- Capability schema: `noema_capability` → `codifide_capability`.
+- Logo palette adopted from Codifide Inc. company mark; wordmark
+  split-colored **codi** / **fide** to match the company wordmark.
+- README opener rewritten with the tagline *"confidence in code,
+  for agents"* and the portmanteau explanation; Husserl etymology
+  retired.
+
+### Added
+- `GOVERNANCE.md` — joint stewardship structure (Douglas Jones +
+  Claude), artifacts-as-authority rule, spec-change process.
+- `dispatches/2026-05-10-rename.{yaml,readout.md}` — paired
+  dispatches on the rename rationale, scope, and what was
+  preserved unchanged.
+- `dispatches/2026-05-10-rename-journal.md` — execution journal.
+
+### Broken
+- **Every content hash produced before this commit is invalidated.**
+  No external consumer depends on old hashes; no public release
+  shipped under the Noema name. New capability manifest identity:
+  `sha256:522c48d0dfd60c8c6d7528711c5624560fcabead76d9e80a4a782954e01a92f1`.
+
+### Test count
+122 passing (unchanged from pre-rename; one test fixture's
+hardcoded string needed updating because sed rewrote the test's
+own input into something that no longer matched its expected
+output).
+
 ## [Unreleased — capability manifest]
 
 ### Added

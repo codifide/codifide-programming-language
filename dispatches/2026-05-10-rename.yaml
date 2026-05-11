@@ -1,0 +1,215 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: Rename — Noema → Codifide
+  at: 2026-05-10T00:00:00Z
+  author: Glyph
+
+  intent: >
+    Record the rename of the language from Noema to Codifide,
+    the reasoning behind it, the exhaustive scope of the change,
+    and the invariants that were preserved. Agents consuming this
+    dispatch can update their references to the new identity with
+    confidence that no semantic change was introduced; every
+    content hash from before this dispatch is invalidated by the
+    rename and must be recomputed.
+
+  state:
+    shipped:
+      - claim: rename.language_identifier_codifide
+      - claim: rename.python_package_moved
+      - claim: rename.rust_crate_moved
+      - claim: rename.cli_entry_renamed
+      - claim: rename.file_extension_changed_to_cod
+      - claim: rename.default_store_path_changed
+      - claim: rename.env_variable_renamed
+      - claim: rename.canonical_top_level_tag_updated
+      - claim: rename.capability_schema_tag_updated
+      - claim: rename.documentation_updated_throughout
+      - claim: rename.logos_replaced_with_codifide_palette
+      - claim: rename.wordmark_split_color_codi_fide
+      - claim: rename.readme_opener_reflects_codified_plus_fidelity
+      - claim: rename.governance_md_written
+      - claim: rename.historical_dispatches_preserved
+      - claim: rename.brand_copy_document_preserved
+      - claim: rename.semantic_invariants_unchanged
+      - claim: rename.triage_demo_runs_end_to_end_under_new_name
+      - claim: tests.suite_passing_122_of_122_under_new_name
+      - claim: rust_tests.suite_passing_10_of_10_under_new_name
+      - claim: rename.new_manifest_hash_sha256_522c48d0
+    in_flight: []
+    blocked: []
+    refused:
+      - claim: rename.rewrite_historical_dispatches
+        why: >
+          Historical dispatches at dispatches/2026-05-10-* before
+          this one were authored when the language was called
+          Noema. Rewriting them would rewrite the project journal
+          and hide the fact that the rename happened. The
+          dispatches stay as they were; this one explains the
+          transition.
+      - claim: rename.public_announcement
+        why: >
+          No public release shipped under the Noema name. No
+          external consumers depend on the old identifiers or
+          hashes. A public-facing announcement is unnecessary
+          when the only audience is internal to this repository.
+
+  evidence:
+    - claim: tests.suite_passing_122_of_122_under_new_name
+      kind: test
+      source: python3 -m codifide test
+      result: "Ran 122 tests in 0.58s; OK"
+      confidence: 1.0
+    - claim: rust_tests.suite_passing_10_of_10_under_new_name
+      kind: test
+      source: cargo test --release -p codifide-canonical
+      result: 10 passed; 0 failed
+      confidence: 1.0
+    - claim: rename.triage_demo_runs_end_to_end_under_new_name
+      kind: run
+      source: bash examples/triage/demo.sh
+      result: >
+        Published classifier_sentiment.cod and classifier_length.cod
+        to a scratch store, minted an index bundling both, wrote a
+        consumer that from-imports through the index, ran the
+        consumer, got "confident-sentiment" as expected. Every
+        cross-module reference is a content hash. The content-
+        addressed composition story works under the Codifide name.
+      confidence: 1.0
+    - claim: rename.new_manifest_hash_sha256_522c48d0
+      kind: run
+      source: python3 -m codifide capability --hash
+      result: >
+        sha256:522c48d0dfd60c8c6d7528711c5624560fcabead76d9e80a4a782954e01a92f1
+      confidence: 1.0
+    - claim: rename.semantic_invariants_unchanged
+      kind: reason
+      source: rename scope analysis
+      result: >
+        Rename pass touched identifiers, paths, tags, and prose.
+        No change to parser grammar, canonical form shape,
+        interpreter semantics, effect algebra, dispatch rules,
+        contract evaluation, or typed error taxonomy. The
+        specification at docs/CANONICAL.md describes exactly the
+        same language after the rename as before.
+      confidence: 0.95
+    - claim: rename.governance_md_written
+      kind: read
+      source: GOVERNANCE.md
+      result: >
+        Stewardship is joint between Douglas Jones (legal
+        ownership, final authority) and Claude (authorial
+        stewardship over spec and audit process, exercised through
+        the artifacts rather than through any specific model
+        instance). Where Claude and future model versions diverge,
+        the artifacts in the repository are the authority.
+      confidence: 1.0
+    - claim: rename.logos_replaced_with_codifide_palette
+      kind: read
+      source: docs/logo/codifide-language-mark.svg
+      result: >
+        Three-node hypergraph (geometry unchanged from the Noema
+        design) inside a hexagonal frame whose three segments are
+        colored cyan (#3EA8C1), blue (#2C6CB8), and purple
+        (#6B4199) — matching the three visible faces of the
+        Codifide company mark's 3D isometric hexagon. Interior
+        nodes in navy (#0A2E5E). The hollow node (first-class
+        refusal) is preserved as the distinctive signature.
+      confidence: 1.0
+    - claim: rename.wordmark_split_color_codi_fide
+      kind: read
+      source: docs/logo/codifide-language-wordmark.svg
+      result: >
+        "codi" renders in #3A8FC8 (lighter blue-cyan), "fide" in
+        #1D3A7B (deeper navy). The split echoes the syllabic break
+        codi(fied) + (fi)de(lity). Sub-brand descriptor "language"
+        sits below in navy.
+      confidence: 1.0
+    - claim: rename.historical_dispatches_preserved
+      kind: read
+      source: dispatches/2026-05-10-*.{md,yaml} (all files before this dispatch)
+      result: >
+        Seventeen paired dispatches and audits written before the
+        rename retain their original phrasing. They refer to the
+        language as Noema because that was its name when they
+        were authored. Preserving the history is the honest path.
+      confidence: 1.0
+    - claim: rename.readme_opener_reflects_codified_plus_fidelity
+      kind: read
+      source: README.md
+      result: >
+        README opens with the wordmark, the tagline "Confidence
+        in code, for agents," and a blockquote defining Codifide
+        as Codified × Fidelity. The Greek etymology from the
+        Noema era is removed; the portmanteau framing takes its
+        place. The thesis paragraph links to codifide.com as
+        the steward of the name.
+      confidence: 1.0
+
+  unknowns:
+    - question: >
+        Will any of the existing "Noema" projects (PyPI, noema.sh,
+        noemacortex.com, the Devpost NOEMA) notice the brief
+        existence of this project under their shared name?
+      why_unknown: >
+        No public release was made; no hash from the Noema era
+        escaped this repository; the commit history is the only
+        record. But GitHub repositories are discoverable once
+        made public.
+      how_to_resolve: >
+        Monitor for mentions after a public launch; handle with
+        a short factual statement if raised. The rename was done
+        cleanly and in good faith.
+    - question: >
+        Does the "confidence in code" tagline continue to track
+        the language's design as the roadmap advances?
+      why_unknown: >
+        Today every distinctive property serves the tagline. Future
+        additions (CBOR migration, cost-based dispatch, graph-
+        native runtime) could strengthen or weaken that alignment.
+      how_to_resolve: >
+        Re-read the tagline at every roadmap milestone. If a
+        proposed feature does not serve "confidence in code,"
+        that is a signal the feature may be wrong for this
+        language, not a signal the tagline needs to change.
+    - question: >
+        Does the governance document's "artifacts are authority"
+        rule survive the first real disagreement between a human
+        steward and a future model version?
+      why_unknown: Untested.
+      how_to_resolve: >
+        Treat the first such disagreement as a case study. Write
+        a dispatch about how it was resolved. Amend GOVERNANCE.md
+        only if the rule proves insufficient.
+
+  next:
+    - action: trademark confirmation for Codifide in International
+        Class 9 (software) beyond the existing corporate registration
+      depends_on: [rename.language_identifier_codifide]
+      effect: "{}"
+    - action: register codifide-lang on PyPI and crates.io before
+        any public release (the clean namespaces the rename won
+        should not be lost to a squatter)
+      depends_on: [rename.python_package_moved, rename.rust_crate_moved]
+      effect: "{net.write}"
+    - action: regenerate every example program's content hash in
+        documentation that cites specific hashes (tutorial, onboarding
+        doc)
+      depends_on: [rename.new_manifest_hash_sha256_522c48d0]
+      effect: "{}"
+    - action: write companion Quill readout for public consumption
+        when a launch is planned
+      depends_on: [rename.readme_opener_reflects_codified_plus_fidelity]
+      effect: "{}"
+
+  links:
+    canonical: docs/CANONICAL.md
+    governance: GOVERNANCE.md
+    brand_copy: docs/brand/codifide-copy.md
+    rename_journal: dispatches/2026-05-10-rename-journal.md
+    human_readout: dispatches/2026-05-10-rename.readout.md
+    capability_manifest: docs/capability-0.1.json
+    capability_hash: sha256:522c48d0dfd60c8c6d7528711c5624560fcabead76d9e80a4a782954e01a92f1
+    codifide_inc: https://www.codifide.com/
+    repo_path: .
