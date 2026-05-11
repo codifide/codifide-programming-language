@@ -17,6 +17,7 @@
 - Structural diff and merge
 - ~~Richer primitive library (math, collections, string)~~ ✅
 - Better error messages that walk the intent graph ✅
+- ✅ Capability manifest (agent-facing self-description)
 
 ## v0.2
 - ✅ CBOR serialization alongside JSON (shipped one release early).

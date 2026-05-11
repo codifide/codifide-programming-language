@@ -84,6 +84,32 @@ def cmd_test(args: argparse.Namespace) -> int:
     return 0 if runner.run(suite).wasSuccessful() else 1
 
 
+def cmd_capability(args: argparse.Namespace) -> int:
+    """Print the capability manifest — Noema's agent-facing language interface.
+
+    The manifest is derived from the current implementation so there is
+    no authoring drift: what you see is what the runtime exposes. See
+    ``docs/CAPABILITY.md`` for the schema and rationale.
+    """
+    from .capability import generate_capability
+
+    manifest = generate_capability()
+    if args.cbor:
+        from .projection.cbor import canonical_cbor
+        sys.stdout.buffer.write(canonical_cbor(manifest))
+        return 0
+    if args.hash:
+        from .projection.cbor import canonical_cbor
+        import hashlib
+        # Hash over canonical CBOR bytes — the stable binary form.
+        # Agents that want a JSON-based hash can compute it themselves.
+        digest = hashlib.sha256(canonical_cbor(manifest)).hexdigest()
+        print(f"sha256:{digest}")
+        return 0
+    print(json.dumps(manifest, indent=2, sort_keys=True))
+    return 0
+
+
 # ---------------------------------------------------------------------------
 # Symbol store
 # ---------------------------------------------------------------------------
@@ -297,6 +323,22 @@ def main(argv=None) -> int:
 
     p_test = sub.add_parser("test", help="run the test suite")
     p_test.set_defaults(func=cmd_test)
+
+    p_cap = sub.add_parser(
+        "capability",
+        help="print the capability manifest describing the language interface",
+    )
+    p_cap.add_argument(
+        "--cbor",
+        action="store_true",
+        help="emit canonical CBOR bytes instead of pretty-printed JSON",
+    )
+    p_cap.add_argument(
+        "--hash",
+        action="store_true",
+        help="print sha256:<hex> over canonical CBOR bytes of the manifest",
+    )
+    p_cap.set_defaults(func=cmd_capability)
 
     # Symbol store. A store root can be passed via --store or the
     # NOEMA_STORE environment variable; defaults to ~/.noema/store.

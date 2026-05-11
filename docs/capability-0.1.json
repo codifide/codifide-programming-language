@@ -1,0 +1,590 @@
+{
+  "ast_kinds": {
+    "attr": {
+      "description": "Field access on a value that exposes a mapping-like interface. Also used for dotted primitive names like ``clock.now`` when the target is an unbound reference.",
+      "fields": [
+        {
+          "name": "target",
+          "type": "Expr"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ]
+    },
+    "believe": {
+      "description": "Belief dispatch. Arms are evaluated in order; the first arm whose condition is truthy returns its value. The subject is bound to the local name ``it`` inside every arm and inside ``else``. The ``else`` arm is required; partial belief dispatch is a structural error.",
+      "fields": [
+        {
+          "name": "subject",
+          "type": "Expr"
+        },
+        {
+          "name": "arms",
+          "type": "array<pairs<Expr,Expr>>"
+        },
+        {
+          "name": "else",
+          "type": "Expr"
+        }
+      ]
+    },
+    "bind": {
+      "description": "Introduce a local binding for the scope of the body expression. ``name`` is in scope inside ``in``, not inside ``expr``.",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "expr",
+          "type": "Expr"
+        },
+        {
+          "name": "in",
+          "type": "Expr"
+        }
+      ]
+    },
+    "bottom": {
+      "description": "First-class refusal. Callers must handle it in a ``believe`` arm or at a call site; an unhandled ``bottom`` propagating to the top-level caller raises ``RefusalError``.",
+      "fields": []
+    },
+    "call": {
+      "description": "A call to a named function or primitive. User functions resolve against the module's symbols and imports; unresolved names fall through to the primitive registry.",
+      "fields": [
+        {
+          "name": "fn",
+          "type": "string"
+        },
+        {
+          "name": "args",
+          "type": "array<Expr>"
+        }
+      ]
+    },
+    "concat": {
+      "description": "String concatenation. Kept distinct from ``call`` so the result type stays statically ``String`` without requiring a type system.",
+      "fields": [
+        {
+          "name": "parts",
+          "type": "array<Expr>"
+        }
+      ]
+    },
+    "lit": {
+      "description": "A literal value carrying its type, confidence, and provenance \u2014 the small knowledge-graph shape of every Noema value.",
+      "fields": [
+        {
+          "name": "value",
+          "type": "json"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "conf",
+          "type": "float"
+        },
+        {
+          "name": "provenance",
+          "type": "string"
+        }
+      ]
+    },
+    "ref": {
+      "description": "A reference to a bound name in the current environment.",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ]
+    },
+    "seq": {
+      "description": "Sequential composition. Steps run in order; the result is the last step's value. Present for side-effect composition in the tree-walking runtime; a dataflow runtime would infer order from dependencies.",
+      "fields": [
+        {
+          "name": "steps",
+          "type": "array<Expr>"
+        }
+      ]
+    }
+  },
+  "effects": [
+    "clock.read",
+    "io.stdout",
+    "model.vision"
+  ],
+  "errors": [
+    {
+      "fatal": false,
+      "name": "NoemaError",
+      "when": "Base class for all Noema-level errors. Not raised directly."
+    },
+    {
+      "fatal": true,
+      "name": "ParseError",
+      "when": "The surface syntax does not parse."
+    },
+    {
+      "fatal": true,
+      "name": "EffectViolation",
+      "when": "A primitive or user call's effect is not in the budget."
+    },
+    {
+      "fatal": true,
+      "name": "ContractViolation",
+      "when": "A pre or post clause did not hold."
+    },
+    {
+      "fatal": true,
+      "name": "DispatchError",
+      "when": "No candidate guard matched and no default exists."
+    },
+    {
+      "fatal": true,
+      "name": "RefusalError",
+      "when": "\u22a5 escaped a context with no handler."
+    },
+    {
+      "fatal": true,
+      "name": "RecursionLimitError",
+      "when": "Call depth exceeded the interpreter's bound."
+    },
+    {
+      "fatal": true,
+      "name": "PrimitiveError",
+      "when": "A primitive call failed in the host (e.g., divide by zero)."
+    },
+    {
+      "fatal": true,
+      "name": "BottomPropagationError",
+      "when": "\u22a5 reached a primitive that cannot consume it."
+    }
+  ],
+  "generator": "noema-python-0.1.0",
+  "literal_types": [
+    "Any",
+    "Bool",
+    "Clock",
+    "Float",
+    "Image",
+    "Int",
+    "Label",
+    "List",
+    "Number",
+    "String",
+    "Unit"
+  ],
+  "noema_capability": "0.1",
+  "noema_schema": "0.1",
+  "primitives": [
+    {
+      "effect": null,
+      "name": "abs",
+      "returns": "Number"
+    },
+    {
+      "effect": null,
+      "name": "add",
+      "returns": "Number"
+    },
+    {
+      "effect": null,
+      "name": "and",
+      "returns": "Bool"
+    },
+    {
+      "effect": null,
+      "name": "append",
+      "returns": "List"
+    },
+    {
+      "effect": null,
+      "name": "belief",
+      "returns": "Any"
+    },
+    {
+      "effect": null,
+      "name": "ceil",
+      "returns": "Int"
+    },
+    {
+      "effect": "clock.read",
+      "name": "clock.now",
+      "returns": "Clock"
+    },
+    {
+      "effect": null,
+      "name": "conf",
+      "returns": "Float"
+    },
+    {
+      "effect": null,
+      "name": "contains",
+      "returns": "Bool"
+    },
+    {
+      "effect": null,
+      "name": "contains_item",
+      "returns": "Bool"
+    },
+    {
+      "effect": null,
+      "name": "div",
+      "returns": "Number"
+    },
+    {
+      "effect": null,
+      "name": "ends_with",
+      "returns": "Bool"
+    },
+    {
+      "effect": null,
+      "name": "eq",
+      "returns": "Bool"
+    },
+    {
+      "effect": "model.vision",
+      "name": "escalate",
+      "returns": "String"
+    },
+    {
+      "effect": null,
+      "name": "floor",
+      "returns": "Int"
+    },
+    {
+      "effect": null,
+      "name": "ge",
+      "returns": "Bool"
+    },
+    {
+      "effect": null,
+      "name": "gt",
+      "returns": "Bool"
+    },
+    {
+      "effect": null,
+      "name": "head",
+      "returns": "Any"
+    },
+    {
+      "effect": null,
+      "name": "host_image",
+      "returns": "Image"
+    },
+    {
+      "effect": null,
+      "name": "host_sorted",
+      "returns": "List"
+    },
+    {
+      "effect": "io.stdout",
+      "name": "io.say",
+      "returns": "String"
+    },
+    {
+      "effect": null,
+      "name": "is_bottom",
+      "returns": "Bool"
+    },
+    {
+      "effect": null,
+      "name": "is_permutation",
+      "returns": "Bool"
+    },
+    {
+      "effect": null,
+      "name": "is_sorted",
+      "returns": "Bool"
+    },
+    {
+      "effect": null,
+      "name": "join",
+      "returns": "String"
+    },
+    {
+      "effect": null,
+      "name": "le",
+      "returns": "Bool"
+    },
+    {
+      "effect": null,
+      "name": "len",
+      "returns": "Int"
+    },
+    {
+      "effect": null,
+      "name": "list",
+      "returns": "List"
+    },
+    {
+      "effect": null,
+      "name": "lower",
+      "returns": "String"
+    },
+    {
+      "effect": null,
+      "name": "lt",
+      "returns": "Bool"
+    },
+    {
+      "effect": null,
+      "name": "max",
+      "returns": "Number"
+    },
+    {
+      "effect": null,
+      "name": "max_of",
+      "returns": "Any"
+    },
+    {
+      "effect": null,
+      "name": "min",
+      "returns": "Number"
+    },
+    {
+      "effect": null,
+      "name": "min_of",
+      "returns": "Any"
+    },
+    {
+      "effect": null,
+      "name": "mod",
+      "returns": "Int"
+    },
+    {
+      "effect": null,
+      "name": "mul",
+      "returns": "Number"
+    },
+    {
+      "effect": null,
+      "name": "ne",
+      "returns": "Bool"
+    },
+    {
+      "effect": null,
+      "name": "neg",
+      "returns": "Number"
+    },
+    {
+      "effect": null,
+      "name": "not",
+      "returns": "Bool"
+    },
+    {
+      "effect": null,
+      "name": "or",
+      "returns": "Bool"
+    },
+    {
+      "effect": null,
+      "name": "pow",
+      "returns": "Number"
+    },
+    {
+      "effect": null,
+      "name": "replace",
+      "returns": "String"
+    },
+    {
+      "effect": null,
+      "name": "reverse",
+      "returns": "List"
+    },
+    {
+      "effect": null,
+      "name": "round",
+      "returns": "Int"
+    },
+    {
+      "effect": null,
+      "name": "split",
+      "returns": "List"
+    },
+    {
+      "effect": null,
+      "name": "starts_with",
+      "returns": "Bool"
+    },
+    {
+      "effect": null,
+      "name": "str",
+      "returns": "String"
+    },
+    {
+      "effect": null,
+      "name": "sub",
+      "returns": "Number"
+    },
+    {
+      "effect": null,
+      "name": "sum",
+      "returns": "Number"
+    },
+    {
+      "effect": null,
+      "name": "tail",
+      "returns": "List"
+    },
+    {
+      "effect": null,
+      "name": "trim",
+      "returns": "String"
+    },
+    {
+      "effect": null,
+      "name": "upper",
+      "returns": "String"
+    },
+    {
+      "effect": "model.vision",
+      "name": "vision.classify",
+      "returns": "Label"
+    }
+  ],
+  "surface_keywords": {
+    "keywords": [
+      {
+        "ascii": [
+          "believe"
+        ],
+        "canonical": "believe",
+        "glyphs": [
+          "\u22a8"
+        ]
+      },
+      {
+        "ascii": [
+          "bottom"
+        ],
+        "canonical": "bottom",
+        "glyphs": [
+          "\u22a5"
+        ]
+      },
+      {
+        "ascii": [
+          "cand"
+        ],
+        "canonical": "cand",
+        "glyphs": [
+          "\u0192"
+        ]
+      },
+      {
+        "ascii": [
+          "def"
+        ],
+        "canonical": "def",
+        "glyphs": [
+          "\u2261"
+        ]
+      },
+      {
+        "ascii": [
+          "effects"
+        ],
+        "canonical": "effects",
+        "glyphs": [
+          "\u26a1"
+        ]
+      },
+      {
+        "ascii": [
+          "else"
+        ],
+        "canonical": "else",
+        "glyphs": []
+      },
+      {
+        "ascii": [
+          "intent"
+        ],
+        "canonical": "intent",
+        "glyphs": [
+          "\u27e1"
+        ]
+      },
+      {
+        "ascii": [
+          "post"
+        ],
+        "canonical": "post",
+        "glyphs": [
+          "\u22a3"
+        ]
+      },
+      {
+        "ascii": [
+          "pre"
+        ],
+        "canonical": "pre",
+        "glyphs": [
+          "\u22a2"
+        ]
+      },
+      {
+        "ascii": [
+          "sig"
+        ],
+        "canonical": "sig",
+        "glyphs": [
+          "\u03c3"
+        ]
+      },
+      {
+        "ascii": [
+          "when"
+        ],
+        "canonical": "when",
+        "glyphs": [
+          "\u00bf"
+        ]
+      }
+    ],
+    "operators": [
+      {
+        "ascii": [
+          "=>"
+        ],
+        "canonical": "arm",
+        "glyphs": [
+          "\u21d2"
+        ]
+      },
+      {
+        "ascii": [
+          "->"
+        ],
+        "canonical": "arrow",
+        "glyphs": [
+          "\u2192"
+        ]
+      },
+      {
+        "ascii": [
+          "<-"
+        ],
+        "canonical": "bind",
+        "glyphs": [
+          "\u2190"
+        ]
+      },
+      {
+        "ascii": [
+          "++"
+        ],
+        "canonical": "concat",
+        "glyphs": [
+          "\u2295"
+        ]
+      }
+    ]
+  }
+}

@@ -3,6 +3,57 @@
 All notable changes to Noema are recorded here. Releases follow semver once we
 reach v1.0; until then, the canonical form may change between minor versions.
 
+## [Unreleased — capability manifest]
+
+### Added
+- **Capability manifest.** `noema capability` emits a structured,
+  content-addressed document describing the language's full interface
+  to agent consumers: AST node kinds, primitives with their effect
+  labels and return types, the effect vocabulary, typed error classes,
+  literal types, and the surface keyword tables. The manifest is
+  generated from the implementation — primitive registry, error class
+  hierarchy, parser keyword tables — so drift between manifest and
+  runtime is caught by the test suite, not discovered at consumer
+  time.
+- `noema capability --cbor` emits canonical CBOR bytes (about 47% of
+  JSON size). `noema capability --hash` prints the SHA-256 identity
+  of the manifest over its canonical CBOR bytes.
+- `docs/CAPABILITY.md` — spec for the manifest format, including
+  stability rules and cross-implementation equivalence under the
+  generator-field-elided comparison.
+- `docs/capability-0.1.json` — the checked-in manifest for the
+  current Python reference. Drift test keeps it in sync.
+- `tests/test_capability.py` — 12 tests covering manifest-
+  implementation agreement, drift detection, canonical form
+  stability, and the error / primitive / keyword agreement surface.
+
+### Test count
+122 passing (110 previous + 12 capability).
+
+## [Hardening + first real Noema program]
+
+### Fixed
+- **Decoder allocation bound.** `decode_canonical_cbor` now accepts a
+  `max_payload` argument (default 64 MiB, matching the Rust CLI cap)
+  and refuses length prefixes above the bound before any allocation.
+- **TOCTOU symlink defense.** `SymbolStore._write_atomic` refuses to
+  write when the shard directory or the target path is itself a
+  symlink, closing the resolve→rename window.
+
+### Added
+- `belief(value, conf)` primitive — lets user code construct
+  confidence-annotated values without needing a model primitive.
+- `examples/triage/` — the first Noema program that uses the
+  language's distinctive capabilities together: two pure classifiers
+  (sentiment, length), a composing pipeline with belief dispatch
+  and first-class refusal, and a demo script that publishes, indexes,
+  imports, and runs end-to-end via content addressing.
+- Regression tests for the two hardening fixes, plus full primitive
+  exercise for `belief(value, conf)`.
+
+### Test count
+110 passing (105 previous + 5 new).
+
 ## [Unreleased — post-CBOR audit]
 
 ### Fixed

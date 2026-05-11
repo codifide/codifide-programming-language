@@ -1,0 +1,186 @@
+dispatch:
+  id: sha256:pending
+  schema: noema.dispatch/0.1
+  subject: Capability manifest — Noema's agent-facing self-description
+  at: 2026-05-10T00:00:00Z
+  author: Glyph
+
+  intent: >
+    Record that Noema now publishes a structured, content-addressed
+    capability manifest describing the language's full interface
+    (AST kinds, primitives, effects, errors, literal types, surface
+    keywords). Agents consuming this dispatch can fetch
+    docs/capability-0.1.json to know what Noema can do without
+    reading any implementation source.
+
+  state:
+    shipped:
+      - claim: spec.capability_manifest_section_written
+      - claim: capability.generator_derives_from_implementation
+      - claim: capability.ast_kinds_described
+      - claim: capability.primitives_enumerated_with_effects_and_returns
+      - claim: capability.effects_vocabulary_derived_from_primitives
+      - claim: capability.typed_errors_enumerated
+      - claim: capability.surface_keyword_tables_included
+      - claim: capability.cbor_canonical_form
+      - claim: capability.content_hash_identity
+      - claim: cli.noema_capability_subcommand
+      - claim: cli.noema_capability_cbor_flag
+      - claim: cli.noema_capability_hash_flag
+      - claim: repo.checked_in_manifest_docs_capability_0_1_json
+      - claim: tests.drift_caught_by_test_suite
+      - claim: tests.primitives_agreement
+      - claim: tests.errors_agreement
+      - claim: tests.surface_keywords_agreement
+      - claim: tests.suite_passing_122_of_122
+    in_flight: []
+    blocked: []
+    refused:
+      - claim: capability.rust_crate_manifest
+        why: >
+          The Rust crate implements canonical form only, not the
+          interpreter. A separate manifest there would create two
+          sources of truth for overlapping information. Once there
+          is a Rust interpreter this becomes a real question; for
+          now Option 2 from the journal (Python authoritative, Rust
+          described by reference) is the honest answer.
+      - claim: capability.idiom_vocabulary
+        why: >
+          The manifest tells an agent what exists. It does not tell
+          an agent what is idiomatic. That is a separate artifact
+          and probably a separate content-addressed document — but
+          its shape is not yet clear. Named as an open question in
+          the Quill readout and the journal.
+
+  evidence:
+    - claim: tests.suite_passing_122_of_122
+      kind: test
+      source: python3 -m noema test
+      result: "Ran 122 tests in 0.577s; OK"
+      confidence: 1.0
+    - claim: capability.generator_derives_from_implementation
+      kind: read
+      source: noema/capability.py::generate_capability
+      result: >
+        Primitives come from build_default_registry. Effects come
+        from iterating primitive specs. Errors come from subclasses
+        of NoemaError in noema.runtime.errors. Surface keywords come
+        from noema.parser.tokens. AST kinds are hand-curated because
+        the canonical shape is the authority (not the Python classes).
+      confidence: 1.0
+    - claim: tests.drift_caught_by_test_suite
+      kind: test
+      source: tests/test_capability.py::test_checked_in_manifest_equals_regenerated_modulo_generator
+      result: >
+        docs/capability-0.1.json compared against a fresh
+        generate_capability() result with the generator field
+        stripped on both sides. Mismatch fails the test. Regeneration
+        is one command.
+      confidence: 1.0
+    - claim: tests.primitives_agreement
+      kind: test
+      source: tests/test_capability.py::test_every_registered_primitive_is_in_the_manifest
+      result: >
+        Primitive set in manifest equals primitive set in default
+        registry, no missing and no extra entries. Every entry
+        agrees on effect label and return type.
+      confidence: 1.0
+    - claim: tests.errors_agreement
+      kind: test
+      source: tests/test_capability.py::test_every_noema_error_subclass_is_in_the_manifest
+      result: >
+        Every class in noema.runtime.errors subclassing NoemaError
+        appears in the manifest's errors list. New error classes
+        failing to update the manifest fails the test.
+      confidence: 1.0
+    - claim: tests.surface_keywords_agreement
+      kind: test
+      source: tests/test_capability.py::test_surface_keywords_match_the_parser_tables
+      result: >
+        Every canonical keyword and operator from the parser's token
+        tables appears in the manifest's surface_keywords section,
+        grouped by ASCII and glyph spellings.
+      confidence: 1.0
+    - claim: cli.noema_capability_subcommand
+      kind: run
+      source: "python3 -m noema capability"
+      result: >
+        Prints a 590-line, 11492-byte JSON document to stdout.
+        --cbor produces 5494 bytes (47% of JSON). --hash produces
+        one line of the form sha256:<hex>.
+      confidence: 1.0
+    - claim: spec.capability_manifest_section_written
+      kind: read
+      source: docs/CAPABILITY.md
+      result: >
+        Schema, rationale, field-by-field descriptions, stability
+        rules, and cross-implementation equivalence rules written
+        out as prose. Consumers can implement a second generator
+        from this document alone.
+      confidence: 1.0
+    - claim: repo.checked_in_manifest_docs_capability_0_1_json
+      kind: read
+      source: docs/capability-0.1.json
+      result: >
+        590-line JSON file in the repository, deterministically
+        derived from the current Python reference. Refreshed by
+        regenerating via the CLI.
+      confidence: 1.0
+
+  unknowns:
+    - question: >
+        Is there a higher-level artifact between the capability
+        manifest (what exists) and the examples (what works) that
+        describes what an agent should reach for first?
+      why_unknown: >
+        Not yet designed. The need is real — the manifest enumerates
+        40 primitives but gives no guidance about which to compose
+        first. Any answer would itself be content-addressed and
+        paired with the manifest by hash.
+      how_to_resolve: >
+        Design an idiom or pattern document. Structured, not prose.
+        Content-addressable, like the manifest. Not scheduled.
+    - question: >
+        Should the capability manifest include cost hints for
+        primitives — expected latency, determinism, trust tier?
+      why_unknown: >
+        Canonical form carries confidence, provenance, and effect.
+        Cost is a future-dispatch concern (cost-based candidate
+        selection is roadmap v0.2). If primitives will one day be
+        chosen by cost as well as by effect, cost belongs in the
+        manifest.
+      how_to_resolve: >
+        Defer until the cost-based dispatcher has a shape. Adding
+        cost fields now would be speculation.
+    - question: >
+        How does the manifest evolve as new primitives, effects, or
+        errors land? Is a version bump the right signal?
+      why_unknown: >
+        The schema version bumps when the manifest schema changes
+        (new top-level field). Adding a new primitive is a
+        content change, not a schema change — the hash changes but
+        noema_capability stays at 0.1. That split seems right but
+        has not been stress-tested through a migration.
+      how_to_resolve: >
+        Observe how the hash behaves when the first content-only
+        change ships. If consumers need finer-grained versioning,
+        add a `content_version` field.
+
+  next:
+    - action: idiom vocabulary document (design only)
+      depends_on: [spec.capability_manifest_section_written]
+      effect: "{}"
+    - action: cost hints for primitives (design only)
+      depends_on: []
+      effect: "{}"
+    - action: serve the manifest over HTTP for agents on the network
+      depends_on: [capability.content_hash_identity]
+      effect: "{net.read}"
+
+  links:
+    canonical: docs/CANONICAL.md
+    capability_spec: docs/CAPABILITY.md
+    capability_document: docs/capability-0.1.json
+    human_readout: dispatches/2026-05-10-capability.readout.md
+    session_journal: dispatches/2026-05-10-capability-journal.md
+    repo_path: .
