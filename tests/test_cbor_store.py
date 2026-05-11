@@ -171,6 +171,37 @@ class CborStoreTests(unittest.TestCase):
         with self.assertRaises(StoreError):
             self.store.get(identity)
 
+    def test_P1_5_toctou_target_is_symlink_at_write_time(self) -> None:
+        # The containment check passed at resolve-time; an attacker
+        # then planted a symlink at the exact target path before our
+        # write. The second defensive layer — refusing to write when
+        # the target path is itself a symlink — must catch this.
+        import os
+        from noema.store import StoreError
+        # Compute a real identity so the hash check succeeds.
+        data = symbol_cbor_bytes("hello", self.defn)
+        identity = symbol_hash_cbor("hello", self.defn)
+        digest = identity.removeprefix("sha256:")
+
+        # Pre-create the shard directory and plant a symlink at the
+        # target path pointing at an out-of-store file.
+        shard = Path(self._tmp.name) / "sha256" / digest[:2]
+        shard.mkdir(parents=True, exist_ok=True)
+        evil_target = Path(self._tmp.name).parent / "evil_target.cbor"
+        # Make sure we cleanup.
+        self.addCleanup(lambda: evil_target.unlink(missing_ok=True))
+        target_path = shard / f"{digest[2:]}.cbor"
+        os.symlink(str(evil_target), str(target_path))
+
+        # Writing into the store must refuse rather than follow the
+        # symlink and write into evil_target.
+        with self.assertRaises(StoreError) as cm:
+            self.store.put_cbor("hello", self.defn)
+        self.assertIn("symlink", str(cm.exception).lower())
+        # And the victim file stays absent (or at least, was not
+        # written to).
+        self.assertFalse(evil_target.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

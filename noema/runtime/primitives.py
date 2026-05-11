@@ -226,6 +226,26 @@ def build_default_registry(trace: EffectTrace) -> PrimitiveRegistry:
     # -- Confidence (pure) ---------------------------------------------------
     reg.register("conf", _conf, returns="Float")
 
+    # Construct a Belief from a value and a confidence score. Lets user
+    # code produce confidence-annotated values without needing a model
+    # primitive — useful for deterministic classifiers, rule-based
+    # heuristics, and anywhere else confidence is derived from the
+    # input rather than measured by a model.
+    def _mk_belief(value: Any, conf: Any) -> Belief:
+        unwrapped = _unwrap(value)
+        wrapped = (
+            value if isinstance(value, Value)
+            else Value(payload=unwrapped, type="Any", provenance=("belief",))
+        )
+        c = float(_num(conf))
+        if c < 0.0 or c > 1.0:
+            raise ValueError(
+                f"belief confidence must be in [0.0, 1.0], got {c}"
+            )
+        return Belief(about=wrapped, conf=c)
+
+    reg.register("belief", _mk_belief, returns="Any")
+
     # -- I/O -----------------------------------------------------------------
     def io_say(msg: Any) -> Any:
         text = str(_unwrap(msg))

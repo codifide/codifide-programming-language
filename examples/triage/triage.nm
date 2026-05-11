@@ -1,0 +1,109 @@
+module triage
+
+# The triage pipeline: compose two classifiers and decide how to route
+# a message. Demonstrates belief dispatch, intent preservation, and
+# first-class refusal working together.
+#
+# The pattern: ask the high-confidence classifier first. If it's sure,
+# route based on its answer. If it's not sure, fall back to a cheaper
+# signal. If neither is sure, refuse — a triage system that guesses
+# under uncertainty is worse than one that escalates to a human.
+#
+# In a production system, each `classify_*` below would be imported
+# from a content-addressed symbol store:
+#
+#     import classify_sentiment = sha256:<hash>
+#     import classify_length    = sha256:<hash>
+#
+# For this v0 demonstration both live in this file.
+
+def classify_sentiment
+  intent "label a message by sentiment with keyword-derived confidence"
+  sig    (msg: String) -> Label
+  effects {}
+  cand
+    intent "positive keywords — confident"
+    when   contains(lower(msg), "great")
+    belief("positive", 0.90)
+  cand
+    intent "negative keywords — confident"
+    when   contains(lower(msg), "terrible")
+    belief("negative", 0.90)
+  cand
+    intent "no strong signal — abstain at low confidence"
+    belief("neutral", 0.35)
+
+def classify_length
+  intent "label a message by length with a derived confidence"
+  sig    (msg: String) -> Label
+  effects {}
+  cand
+    intent "short — confident"
+    when   lt(len(msg), 10)
+    belief("short", 0.95)
+  cand
+    intent "medium — ambiguous zone"
+    when   lt(len(msg), 40)
+    belief("medium", 0.70)
+  cand
+    intent "long — confident"
+    belief("long", 0.95)
+
+def triage_route
+  intent "decide how to handle an incoming message, refusing rather than guessing"
+  sig    (msg: String) -> Decision
+  effects {}
+  cand
+    sentiment <- classify_sentiment(msg)
+    believe sentiment
+      ge(conf(sentiment), 0.85) => sentiment_to_route(sentiment)
+      else                      => fallback_to_length(msg)
+
+def sentiment_to_route
+  intent "map a confident sentiment label to a routing decision"
+  sig    (label: Label) -> Decision
+  effects {}
+  cand
+    intent "positive goes to the fast lane"
+    when   eq(label, "positive")
+    "auto-approve"
+  cand
+    intent "negative goes to escalation"
+    when   eq(label, "negative")
+    "escalate-to-human"
+  cand
+    intent "anything else — unexpected high-confidence label"
+    bottom
+
+def fallback_to_length
+  intent "when sentiment is uncertain, route by message length"
+  sig    (msg: String) -> Decision
+  effects {}
+  cand
+    length_label <- classify_length(msg)
+    believe length_label
+      ge(conf(length_label), 0.90) => length_to_route(length_label)
+      else                         => bottom
+
+def length_to_route
+  intent "map a confident length label to a routing decision"
+  sig    (label: Label) -> Decision
+  effects {}
+  cand
+    intent "short messages get the fast lane"
+    when   eq(label, "short")
+    "auto-approve"
+  cand
+    intent "long messages get escalated"
+    when   eq(label, "long")
+    "escalate-to-human"
+  cand
+    intent "anything else — refuse rather than guess"
+    bottom
+
+def main
+  intent "run triage on a test message"
+  sig    () -> Decision
+  effects {}
+  cand
+    triage_route("this is a great product")

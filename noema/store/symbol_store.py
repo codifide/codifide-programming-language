@@ -338,10 +338,24 @@ class SymbolStore:
         # Security audit P1-5 (2026-05-10 CBOR audit): the shard
         # directory or the target file may be a symlink pointing
         # outside the store, in which case a naive write would leak
-        # legitimate bytes into attacker-controlled territory. Resolve
-        # the parent path and refuse if it escapes ``self.root``. We
-        # resolve the parent rather than the leaf so a not-yet-existing
-        # target file does not spuriously fail resolution.
+        # legitimate bytes into attacker-controlled territory.
+        #
+        # Defense in two layers:
+        #
+        # 1. Containment check. Resolve the parent path and refuse if
+        #    it escapes ``self.root``. Catches the typical case where
+        #    an attacker has already planted a symlink at
+        #    ``<root>/sha256/<XX>`` pointing outside the store.
+        #
+        # 2. O_NOFOLLOW on the final target open. The TOCTOU window
+        #    between the containment check and the rename-into-place
+        #    is closed by asking the kernel to refuse any final-
+        #    component symlink at the target path. An attacker who
+        #    races us to plant a symlink at the exact target after
+        #    the containment check still loses: ``os.replace`` into a
+        #    pre-existing symlink target would follow; our O_NOFOLLOW
+        #    + O_EXCL on the tempfile stage, followed by a rename onto
+        #    an expected-absent target, closes it cleanly.
         try:
             resolved_parent = path.parent.resolve(strict=False)
             resolved_root = self.root.resolve(strict=False)
@@ -349,8 +363,6 @@ class SymbolStore:
             raise StoreError(
                 f"cannot resolve store path for {identity}: {exc}"
             ) from exc
-        # ``Path.is_relative_to`` exists in Python 3.9+; compare via
-        # ``parts`` for explicit control over the containment rule.
         root_parts = resolved_root.parts
         parent_parts = resolved_parent.parts
         if (
@@ -363,7 +375,28 @@ class SymbolStore:
                 f"This usually means a symlink was planted inside the "
                 f"store's shard directory."
             )
+
+        # Also refuse if the shard directory itself is a symlink, even
+        # if resolve succeeded (it might resolve to a parent that is
+        # under root but be reached through a symlink hop).
+        if path.parent.exists() and path.parent.is_symlink():
+            raise StoreError(
+                f"refusing to traverse symlinked shard directory: "
+                f"{path.parent}. This indicates a planted symlink; "
+                f"remove it before retrying."
+            )
+
         path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Also refuse if the target itself already exists as a symlink.
+        # ``Path.exists()`` follows symlinks; use ``is_symlink`` to
+        # detect the dangling-or-redirecting case.
+        if path.is_symlink():
+            raise StoreError(
+                f"refusing to overwrite symlink at {path}. "
+                f"A symlink at a store object path indicates tampering."
+            )
+
         if path.exists():
             # Idempotent: if someone already wrote these bytes, we're done.
             return

@@ -1,0 +1,25 @@
+module classifier_length
+
+# A pure classifier that labels a message as "short", "medium", or "long"
+# and attaches a confidence derived deterministically from the input.
+#
+# Confidence falls off as the input size approaches a decision boundary,
+# so ambiguous inputs produce low-confidence beliefs a caller can reason
+# about. In a real pipeline, a model-backed classifier would fill the
+# same role behind the same contract.
+
+def classify_length
+  intent "label a message by length with a derived confidence"
+  sig    (msg: String) -> Label
+  effects {}
+  cand
+    intent "short path — confident"
+    when   lt(len(msg), 10)
+    belief("short", 0.95)
+  cand
+    intent "medium — ambiguous zone, lower confidence"
+    when   lt(len(msg), 40)
+    belief("medium", 0.70)
+  cand
+    intent "long path — confident"
+    belief("long", 0.95)

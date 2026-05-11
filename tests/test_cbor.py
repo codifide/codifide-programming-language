@@ -205,5 +205,63 @@ class DecoderRejectsNonCanonicalTests(unittest.TestCase):
             decode_canonical_cbor(inf_f64)
 
 
+class DecoderAllocationBoundTests(unittest.TestCase):
+    """The decoder refuses to honor adversarial length prefixes.
+
+    Sable's CBOR audit named this as a hardening gap: a payload that
+    claims a 1 GiB byte string and honestly delivers 1 GiB of content
+    would be accepted, happily allocating a 1 GiB buffer at attacker
+    direction. The decoder now caps single-payload lengths at
+    MAX_PAYLOAD_BYTES by default, and refuses claims above the cap
+    without touching the buffer.
+    """
+
+    def test_huge_byte_string_claim_is_rejected_without_allocation(self) -> None:
+        # Head: major 2 (byte string), additional 27 (8-byte length
+        # follows), then claim a value that genuinely requires the
+        # 8-byte encoding (above 2^32). The payload itself is only the
+        # 9-byte head — we never reach the "byte string runs past end
+        # of input" branch because the length claim exceeds the cap.
+        # Using 5 GiB: above 2^32 so the 8-byte head is canonical,
+        # well above our 64 MiB default cap so the bound triggers.
+        huge_claim = bytes([0x5b]) + (5 * 1024 * 1024 * 1024).to_bytes(8, "big")
+        with self.assertRaises(ValueError) as cm:
+            decode_canonical_cbor(huge_claim)
+        self.assertIn("exceeds max_payload", str(cm.exception))
+
+    def test_huge_text_string_claim_is_rejected(self) -> None:
+        # Same pattern for text strings (major 3). Use 5 GiB so the
+        # 8-byte head is canonical.
+        huge_claim = bytes([0x7b]) + (5 * 1024 * 1024 * 1024).to_bytes(8, "big")
+        with self.assertRaises(ValueError) as cm:
+            decode_canonical_cbor(huge_claim)
+        self.assertIn("exceeds max_payload", str(cm.exception))
+
+    def test_huge_array_claim_refused_against_remaining_bytes(self) -> None:
+        # An array claiming 2^32 items with no body cannot possibly be
+        # valid — an N-item array takes at least N bytes. The decoder
+        # rejects the claim against available bytes rather than trying
+        # to pre-allocate a 4-billion-item list.
+        huge_array = bytes([0x9a]) + (0xFFFF_FFFF).to_bytes(4, "big")
+        with self.assertRaises(ValueError) as cm:
+            decode_canonical_cbor(huge_array)
+        msg = str(cm.exception).lower()
+        # Either the bounds check on items-vs-remaining-bytes, or the
+        # "unexpected end of CBOR input" path; both are fine.
+        self.assertTrue(
+            "claims" in msg or "unexpected end" in msg,
+            f"expected typed rejection, got: {cm.exception!r}",
+        )
+
+    def test_caller_can_raise_the_cap(self) -> None:
+        # Encoder produces a 100-byte string; decoder with a 50-byte
+        # cap refuses it, with a 200-byte cap accepts it. The cap is a
+        # policy knob, not a hardcoded constant.
+        encoded = canonical_cbor("a" * 100)
+        with self.assertRaises(ValueError):
+            decode_canonical_cbor(encoded, max_payload=50)
+        self.assertEqual(decode_canonical_cbor(encoded, max_payload=200), "a" * 100)
+
+
 if __name__ == "__main__":
     unittest.main()

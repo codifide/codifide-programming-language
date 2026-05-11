@@ -1,0 +1,22 @@
+module classifier_sentiment
+
+# A pure sentiment classifier using hand-rolled keyword matching.
+# Not a real sentiment model — the point is the contract shape. A
+# model-backed implementation would swap the body and keep the
+# signature.
+
+def classify_sentiment
+  intent "label a message by sentiment with keyword-derived confidence"
+  sig    (msg: String) -> Label
+  effects {}
+  cand
+    intent "positive keywords — confident"
+    when   contains(lower(msg), "great")
+    belief("positive", 0.90)
+  cand
+    intent "negative keywords — confident"
+    when   contains(lower(msg), "terrible")
+    belief("negative", 0.90)
+  cand
+    intent "no strong signal — abstain at low confidence"
+    belief("neutral", 0.35)
