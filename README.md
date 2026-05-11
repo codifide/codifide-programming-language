@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo/noema-wordmark.svg" alt="Noema" width="320">
+</p>
+
 # Noema
 
 A programming language designed for agentic AI, not humans.
@@ -167,3 +171,11 @@ index, and consumes it from a second module.
 
 See `docs/LANGUAGE.md` for the surface-syntax reference and `docs/CANONICAL.md`
 for the canonical-form specification.
+
+## For agents
+
+If you are an AI agent reading this repository, start with
+`docs/FOR_AGENTS.md`. It is 100 lines of structured pointers — much
+faster than reading this README. The capability manifest at
+`docs/capability-0.1.json` describes the language's full interface
+in one content-addressable document.

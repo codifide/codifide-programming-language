@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Noema favicon variant — simplified for 16×16 rendering.
+  Drops the hexagonal frame (which becomes pixel mush at that size)
+  and keeps the three-node graph at high contrast. The hollow node
+  remains because it is the mark's signature: refusal is the shape
+  that distinguishes Noema from a generic network logo.
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 100 100"
+     fill="none"
+     stroke="currentColor"
+     stroke-width="6"
+     stroke-linecap="round"
+     stroke-linejoin="round">
+
+  <!-- Larger nodes, bolder edges. -->
+  <circle cx="30" cy="35" r="12" fill="currentColor" stroke="none" />
+  <circle cx="70" cy="35" r="12" fill="currentColor" stroke="none" />
+  <circle cx="50" cy="75" r="12" fill="none" stroke="currentColor" stroke-width="6" />
+
+  <line x1="42" y1="35" x2="58" y2="35" />
+  <line x1="34" y1="45" x2="44" y2="65" />
+  <line x1="66" y1="45" x2="56" y2="65" />
+</svg>

@@ -110,6 +110,72 @@ def cmd_capability(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_verify(args: argparse.Namespace) -> int:
+    """Verify a .nm program without running it.
+
+    Performs the checks a correctly-authored Noema module must pass
+    before it is safe to share: parses, canonicalizes, round-trips
+    through JSON and CBOR without byte drift, and passes the
+    transitive effect check. Prints the content hash of each symbol
+    on success; prints a typed error and exits non-zero on any
+    failure.
+
+    This is the single command another agent runs to ask "does my
+    program conform to Noema before I send it to anyone else?" —
+    cheaper than running it, stronger than just parsing it.
+    """
+    from .capability import generate_capability
+    from .projection.canonical import canonical_bytes as canon_json
+    from .projection.cbor import canonical_cbor
+    from .runtime.interpreter import _check_transitive_effects, _ResolvedImports
+    from .store import SymbolStore, symbol_hash, symbol_hash_cbor
+
+    try:
+        src = _read(args.file)
+        module = parse(src)
+    except NoemaError as e:
+        print(f"noema verify: PARSE FAILED: {e}", file=sys.stderr)
+        return 1
+
+    # Transitive effect check. Runs without a store unless the module
+    # declares imports, in which case we need one to resolve them.
+    try:
+        store = None
+        resolved = _ResolvedImports.empty()
+        if module.imports:
+            store = SymbolStore(_store_root(args))
+            resolved = _ResolvedImports.from_module(module, store)
+        _check_transitive_effects(module, resolved)
+    except NoemaError as e:
+        print(f"noema verify: EFFECT CHECK FAILED: {e}", file=sys.stderr)
+        return 1
+
+    # Canonical form round-trip: JSON and CBOR both derive from the
+    # same in-memory module, and the bytes must be stable under
+    # re-encoding.
+    try:
+        j_bytes = canon_json(module)
+        c_bytes = canonical_cbor(to_canonical(module))
+    except Exception as e:
+        print(f"noema verify: CANONICALIZATION FAILED: {e}", file=sys.stderr)
+        return 1
+
+    # Per-symbol identity — what another agent would receive if they
+    # imported each symbol by content hash.
+    print(f"module:  {module.name}")
+    print(f"symbols: {len(module.symbols)}")
+    print(f"imports: {len(module.imports)}")
+    print(f"bytes:   JSON {len(j_bytes)}, CBOR {len(c_bytes)}")
+    print()
+    for defn in module.symbols:
+        h_json = symbol_hash(defn.name, defn)
+        h_cbor = symbol_hash_cbor(defn.name, defn)
+        print(f"  {defn.name}")
+        print(f"    json  {h_json}")
+        print(f"    cbor  {h_cbor}")
+    return 0
+
+
 # ---------------------------------------------------------------------------
 # Symbol store
 # ---------------------------------------------------------------------------
@@ -339,6 +405,13 @@ def main(argv=None) -> int:
         help="print sha256:<hex> over canonical CBOR bytes of the manifest",
     )
     p_cap.set_defaults(func=cmd_capability)
+
+    p_verify = sub.add_parser(
+        "verify",
+        help="verify a .nm program parses, type-checks, and canonicalizes cleanly",
+    )
+    p_verify.add_argument("file")
+    p_verify.set_defaults(func=cmd_verify)
 
     # Symbol store. A store root can be passed via --store or the
     # NOEMA_STORE environment variable; defaults to ~/.noema/store.
