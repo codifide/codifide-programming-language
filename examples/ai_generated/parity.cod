@@ -1,0 +1,17 @@
+module parity_example
+
+# Parity check using the real primitive `mod` (not the `%` operator).
+
+def is_even
+  intent "return true iff n is an even integer"
+  sig    (n: Int) -> Bool
+  effects {}
+  cand
+    eq(mod(n, 2), 0)
+
+def main
+  intent "check parity of a known input"
+  sig    () -> Bool
+  effects {}
+  cand
+    is_even(42)

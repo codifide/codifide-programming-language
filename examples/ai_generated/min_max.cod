@@ -1,0 +1,19 @@
+module min_max_example
+
+# Finds the minimum and maximum values in a list.
+# Uses the `min_of` and `max_of` primitives.
+
+def find_min_max
+  intent "return a list containing the min and max of the input list"
+  sig    (xs: List) -> List
+  effects {}
+  pre    gt(len(xs), 0)
+  cand
+    list(min_of(xs), max_of(xs))
+
+def main
+  intent "find min and max of a known list"
+  sig    () -> List
+  effects {}
+  cand
+    find_min_max(list(7, 2, 9, 4, 1))

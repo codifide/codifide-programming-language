@@ -1,0 +1,19 @@
+module split_join_example
+
+# Splits a string by spaces and returns the list of parts.
+# Uses the `split` primitive.
+
+def split_string
+  intent "split a string by spaces"
+  sig    (text: String) -> List
+  effects {}
+  pre    ne(text, "")
+  cand
+    split(text, " ")
+
+def main
+  intent "demonstrate split"
+  sig    () -> List
+  effects {}
+  cand
+    split_string("hello world from codifide")

@@ -1,0 +1,16 @@
+module time_greet_example
+
+def greet_by_time
+  intent "greet user based on current hour"
+  sig    (name: String) -> String
+  effects {io.stdout, clock.read}
+  pre    ne(name, "")
+  post   contains(result, name)
+  cand
+    hour <- clock.hour
+    when lt(hour, 12)
+      io.say("Good morning, " ++ name)
+    when lt(hour, 18)
+      io.say("Good afternoon, " ++ name)
+    when ge(hour, 18)
+      io.say("Good evening, " ++ name)

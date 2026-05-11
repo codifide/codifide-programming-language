@@ -1,0 +1,19 @@
+module average_example
+
+# Average of a list of numbers, computed via `sum` / `len` and `div`.
+# Pure: no effects declared.
+
+def average
+  intent "compute the arithmetic mean of a non-empty list of numbers"
+  sig    (xs: List) -> Number
+  effects {}
+  pre    gt(len(xs), 0)
+  cand
+    div(sum(xs), len(xs))
+
+def main
+  intent "average a known input list"
+  sig    () -> Number
+  effects {}
+  cand
+    average(list(2, 4, 6, 8, 10))

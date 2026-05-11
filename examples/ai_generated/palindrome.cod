@@ -1,0 +1,21 @@
+module palindrome_example
+
+# Checks if a list is a palindrome by comparing it to its own reversal.
+# Uses the `reverse` and `eq` primitives.
+
+def is_palindrome
+  intent "return true iff a list reads the same forwards and backwards"
+  sig    (xs: List) -> Bool
+  effects {}
+  cand
+    eq(xs, reverse(xs))
+
+def main
+  intent "check a known palindrome and a known non-palindrome"
+  sig    () -> List
+  effects {}
+  cand
+    list(
+      is_palindrome(list(1, 2, 3, 2, 1)),
+      is_palindrome(list(1, 2, 3, 4, 5))
+    )

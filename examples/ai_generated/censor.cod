@@ -1,0 +1,20 @@
+module censor_example
+
+# Replaces a specific word in a string with a placeholder.
+# Uses the `replace` string primitive.
+
+def censor
+  intent "replace all occurrences of a word in a string with '***'"
+  sig    (text: String, word: String) -> String
+  effects {}
+  pre    ne(text, "")
+  pre    ne(word, "")
+  cand
+    replace(text, word, "***")
+
+def main
+  intent "censor a known word from a known sentence"
+  sig    () -> String
+  effects {}
+  cand
+    censor("the quick brown fox jumps over the lazy dog", "fox")

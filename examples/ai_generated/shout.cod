@@ -1,0 +1,29 @@
+module shout_example
+
+# Normalize a string (trim whitespace, uppercase it) and announce it.
+# Demonstrates pure string primitives plus an effectful announce step.
+
+def normalize
+  intent "trim surrounding whitespace and uppercase the input"
+  sig    (s: String) -> String
+  effects {}
+  pre    ne(s, "")
+  post   eq(result, upper(trim(s)))
+  cand
+    upper(trim(s))
+
+def shout
+  intent "print the normalized form of the input"
+  sig    (s: String) -> String
+  effects {io.stdout}
+  pre    ne(s, "")
+  cand
+    loud <- normalize(s)
+    io.say(loud)
+
+def main
+  intent "entry point"
+  sig    () -> String
+  effects {io.stdout}
+  cand
+    shout("  hello agents  ")

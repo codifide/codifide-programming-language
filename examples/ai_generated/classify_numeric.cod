@@ -1,0 +1,34 @@
+module classify_numeric_example
+
+# Classifies a number into "low", "medium", or "high" using guarded
+# candidates. Demonstrates multi-candidate dispatch.
+
+def classify_number
+  intent "return a label for a number based on its value"
+  sig    (n: Number) -> String
+  effects {}
+
+  cand
+    intent "handle low numbers"
+    when   lt(n, 10)
+    "low"
+
+  cand
+    intent "handle medium numbers"
+    when   le(n, 100)
+    "medium"
+
+  cand
+    intent "handle high numbers"
+    "high"
+
+def main
+  intent "classify a set of known inputs"
+  sig    () -> List
+  effects {}
+  cand
+    list(
+      classify_number(5),
+      classify_number(50),
+      classify_number(500)
+    )

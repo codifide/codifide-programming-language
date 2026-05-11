@@ -1,0 +1,10 @@
+module reverse_example
+
+def reverse
+  intent "reverse a string"
+  sig    (text: String) -> String
+  effects {}
+  pre    ne(text, "")
+  post   eq(result, reverse(text))
+  cand
+    result <- str.reverse(text)

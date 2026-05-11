@@ -1,0 +1,24 @@
+module belief_example
+
+# Classify a number as "small" or "large" using guarded candidates.
+
+def classify_number
+  intent "classify a number as small or large"
+  sig    (n: Number) -> String
+  effects {}
+
+  cand
+    intent "small number"
+    when   lt(n, 10)
+    "small"
+
+  cand
+    intent "large number"
+    "large"
+
+def main
+  intent "classify a number"
+  sig    () -> String
+  effects {}
+  cand
+    classify_number(5)

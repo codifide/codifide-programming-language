@@ -1,0 +1,10 @@
+module parity_example
+
+def is_even
+  intent "check if a number is even"
+  sig    (n: Int) -> Bool
+  effects {}
+  pre    ge(n, 0)
+  post   eq(result, n % 2 == 0)
+  cand
+    result <- eq(n % 2, 0)
