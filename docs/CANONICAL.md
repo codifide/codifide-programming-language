@@ -4,8 +4,11 @@ The canonical form is the source of truth. Surface text is a projection. Two
 programs are the same program iff their canonical forms are equal under the
 normalization rules below.
 
-In v0 we serialize canonical form as JSON. CBOR and a content-addressed store
-are planned.
+In v0.1 the canonical form serializes to both JSON (primary,
+human-inspectable) and CBOR (binary, RFC 8949 §4.2 deterministic
+subset, about 25-30% smaller than JSON). Content addressing over
+either byte form is operational through the symbol store described
+in §Symbol store below.
 
 This document is the specification an independent implementer should be able
 to follow without reading the reference Python source. Where the reference

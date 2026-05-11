@@ -456,7 +456,7 @@ def _rand_cand_block(rng: random.Random) -> str:
 
 
 def _generate_grammar_adjacent_source(rng: random.Random) -> str:
-    """Compose a random .nm-ish source from mostly-valid fragments."""
+    """Compose a random .cod-ish source from mostly-valid fragments."""
     parts: list[str] = []
     # Maybe a module line.
     if rng.random() < 0.3:

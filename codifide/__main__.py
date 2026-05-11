@@ -1,14 +1,20 @@
 """Codifide CLI.
 
 Subcommands:
-    run <file.nm>            Parse and execute a Codifide program.
-    canonical <file.nm>      Print the canonical JSON projection.
-    test                     Run the Codifide test suite.
-    store put <file.nm>      Store every symbol in a module by content hash.
-    store get <hash>         Print the canonical JSON for a stored symbol.
-    store list               List every stored symbol identity.
-    store hash <file.nm>     Print (name, hash) pairs for a module's symbols.
-    store index name=<id>... Publish an index module bundling name->id pairs.
+    run <file.cod>            Parse and execute a Codifide program.
+    canonical <file.cod>      Print the canonical JSON projection.
+    verify <file.cod>         Verify a program parses, type-checks,
+                              and canonicalizes cleanly; print per-
+                              symbol content hashes.
+    capability                Print the capability manifest.
+    test                      Run the Codifide test suite.
+    store put <file.cod>      Store every symbol in a module by content hash.
+    store get <hash>          Print the canonical JSON for a stored symbol.
+    store list                List every stored symbol identity.
+    store hash <file.cod>     Print (name, hash) pairs for a module's symbols.
+    store index name=<id>...  Publish an index module bundling name->id pairs.
+    store verify <hash>       Walk a stored module's imports and report
+                              any pointees missing from the store.
 
 The CLI is deliberately minimal. Codifide's surface is a projection; a richer
 interaction is better done over the canonical form (see codifide.projection).
