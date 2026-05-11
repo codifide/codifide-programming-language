@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Codifide Language wordmark — mark + sub-brand typography.
+
+  Reads as:
+      [mark] codifide
+             language
+
+  The primary word "codifide" is the company; "language" is the
+  sub-brand. Both set in the same monospace-adjacent typeface
+  used by the company mark, so the hierarchy is typographic
+  (weight and size) rather than visual-style-mismatch.
+
+  Colors match the company wordmark: medium blue for the
+  primary, deeper navy for the sub-brand descriptor, matching
+  Codifide's existing "confidence in code" treatment.
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 420 100"
+     fill="none"
+     stroke-width="3.2"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     font-family="ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace"
+     font-weight="700">
+
+  <!-- Mark, color-matched to Codifide palette -->
+  <g>
+    <polyline points="50,6 88,28 88,72"    stroke="#3EA8C1" />
+    <polyline points="88,72 50,94 12,72"   stroke="#2C6CB8" />
+    <polyline points="12,72 12,28 50,6"    stroke="#6B4199" />
+    <circle cx="36" cy="40" r="7"  fill="#0A2E5E" />
+    <circle cx="64" cy="40" r="7"  fill="#0A2E5E" />
+    <circle cx="50" cy="70" r="7"  fill="none"  stroke="#0A2E5E" stroke-width="3.2" />
+    <line x1="43" y1="40" x2="57" y2="40" stroke="#0A2E5E" />
+    <line x1="39" y1="46" x2="47" y2="64" stroke="#0A2E5E" />
+    <line x1="61" y1="46" x2="53" y2="64" stroke="#0A2E5E" />
+  </g>
+
+  <!-- Primary: "codifide" in company blue -->
+  <text x="112" y="52"
+        font-size="38"
+        letter-spacing="1"
+        fill="#2C6CB8"
+        stroke="none">codifide</text>
+
+  <!-- Sub-brand: "language" in navy, smaller weight -->
+  <text x="112" y="82"
+        font-size="22"
+        letter-spacing="4"
+        fill="#0A2E5E"
+        stroke="none"
+        font-weight="500">language</text>
+</svg>

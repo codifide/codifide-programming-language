@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Codifide Language mark — Option A (flat, color-matched).
+
+  Adopts the Codifide brand palette (cyan / blue / purple) so the
+  mark reads as "a Codifide product" without literally mimicking
+  the company's 3D isometric hexagon. The hexagonal frame here
+  is flat; the color cues carry the family resemblance.
+
+  Three frame segments, one per pair of edges, echoing the three
+  visible faces of the Codifide company mark:
+    top-right edges  — cyan    (the lit top face)
+    right-bottom     — blue    (the right face)
+    left-bottom-top  — purple  (the left face)
+
+  Inside: the three-node hypergraph from the Noema design. Two
+  filled nodes in Codifide navy (confident values). One hollow
+  node (first-class refusal). Three edges connecting them.
+
+  The mark reads as: "two confident outcomes and one explicit
+  refusal, bound inside a Codifide-family identity."
+
+  Works alongside the company mark as a clear sub-brand.
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 100 100"
+     fill="none"
+     stroke-width="3.2"
+     stroke-linecap="round"
+     stroke-linejoin="round">
+
+  <!-- Hexagonal frame, three segments in Codifide palette.
+       The hexagon vertices, starting at top, clockwise:
+         A=(50,6)  B=(88,28)  C=(88,72)  D=(50,94)  E=(12,72)  F=(12,28)
+       Segment 1 (cyan): A -> B -> C   (top-right two edges)
+       Segment 2 (blue): C -> D -> E   (bottom two edges)
+       Segment 3 (purple): E -> F -> A (top-left two edges)
+  -->
+  <polyline points="50,6 88,28 88,72"    stroke="#3EA8C1" />
+  <polyline points="88,72 50,94 12,72"   stroke="#2C6CB8" />
+  <polyline points="12,72 12,28 50,6"    stroke="#6B4199" />
+
+  <!-- Three-node hypergraph in Codifide navy.
+       Two filled (confident values), one hollow (refusal). -->
+  <circle cx="36" cy="40" r="7"  fill="#0A2E5E" />
+  <circle cx="64" cy="40" r="7"  fill="#0A2E5E" />
+  <circle cx="50" cy="70" r="7"  fill="none"  stroke="#0A2E5E" stroke-width="3.2" />
+
+  <!-- Edges: A -> B (top), A -> C (descent), B -> C (descent). -->
+  <line x1="43" y1="40" x2="57" y2="40" stroke="#0A2E5E" />
+  <line x1="39" y1="46" x2="47" y2="64" stroke="#0A2E5E" />
+  <line x1="61" y1="46" x2="53" y2="64" stroke="#0A2E5E" />
+</svg>
