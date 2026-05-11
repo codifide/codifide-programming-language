@@ -30,10 +30,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from noema import canonical_bytes, parse, run, to_canonical
-from noema.core.types import Module
-from noema.runtime.errors import NoemaError, ParseError
-from noema.store import SymbolStore
+from codifide import canonical_bytes, parse, run, to_canonical
+from codifide.core.types import Module
+from codifide.runtime.errors import CodifideError, ParseError
+from codifide.store import SymbolStore
 
 
 LIB_SRC = """
@@ -300,7 +300,7 @@ def shout
         # The index is not an effect laundering tool. A pure consumer
         # importing an impure symbol through an index must still fail
         # the transitive effect check.
-        from noema.runtime.errors import EffectViolation
+        from codifide.runtime.errors import EffectViolation
 
         src = f"""
 module consumer

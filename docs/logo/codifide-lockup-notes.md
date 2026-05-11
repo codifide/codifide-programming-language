@@ -16,7 +16,7 @@ navy). Pick the one that matches the context.
   on README headers, documentation pages, and anywhere the full
   language identity needs to appear together.
 
-- The legacy **`noema-*.svg`** files remain in this directory
+- The legacy **`codifide-*.svg`** files remain in this directory
   for historical reference during the rename transition. They
   will be removed once the Codifide rename is finalized.
 

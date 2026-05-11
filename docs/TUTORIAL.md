@@ -1,4 +1,4 @@
-# Noema — Tutorial
+# Codifide — Tutorial
 
 A walk-through that takes you from a fresh clone to a symbol stored by
 content hash, an index published, and a consumer module running against
@@ -13,22 +13,22 @@ Every command shown here has been run. Every snippet is either copied from
 - A Unix-like shell.
 - Optional: Rust toolchain (`cargo`) for the conformance tests.
 
-No pip installs. Noema's runtime has no third-party dependencies.
+No pip installs. Codifide's runtime has no third-party dependencies.
 
 Verify the suite passes:
 
 ```bash
-python3 -m noema test
+python3 -m codifide test
 ```
 
 You should see `Ran 68 tests` and `OK`. If the Rust toolchain is absent,
 two conformance tests skip with a clear reason and the remainder pass.
 
-## 1. Your first Noema program
+## 1. Your first Codifide program
 
-The simplest Noema program that does something visible is `examples/greet.nm`:
+The simplest Codifide program that does something visible is `examples/greet.cod`:
 
-```noema
+```codifide
 module greet_example
 
 def greet
@@ -52,7 +52,7 @@ def main
 Run it:
 
 ```bash
-python3 -m noema run examples/greet.nm
+python3 -m codifide run examples/greet.cod
 ```
 
 You should see something like:
@@ -78,9 +78,9 @@ They are the signature of the function, and the interpreter enforces them.
 ## 2. Contracts and effects
 
 To see what the effect check actually catches, try adding a forbidden
-effect. Save this as `/tmp/bad.nm`:
+effect. Save this as `/tmp/bad.cod`:
 
-```noema
+```codifide
 module bad_example
 
 def shout
@@ -94,18 +94,18 @@ def shout
 Run it:
 
 ```bash
-python3 -m noema run /tmp/bad.nm
+python3 -m codifide run /tmp/bad.cod
 ```
 
 The interpreter rejects the program before any body runs:
 
 ```
-noema: 'shout' performed effect 'io.stdout' which is not in its declared set {}
+codifide: 'shout' performed effect 'io.stdout' which is not in its declared set {}
 ```
 
-Now try the transitive case. Save this as `/tmp/launder.nm`:
+Now try the transitive case. Save this as `/tmp/launder.cod`:
 
-```noema
+```codifide
 module launder_example
 
 def loud
@@ -124,13 +124,13 @@ def quiet
 ```
 
 ```bash
-python3 -m noema run /tmp/launder.nm
+python3 -m codifide run /tmp/launder.cod
 ```
 
 Same kind of rejection, this time at the module-load static pass:
 
 ```
-noema: 'quiet' performed effect 'io.stdout' which is not in its declared set {}
+codifide: 'quiet' performed effect 'io.stdout' which is not in its declared set {}
 ```
 
 The interesting idea: effects are not checked at call sites alone. A pure
@@ -145,16 +145,16 @@ Contracts describe state; they do not modify it.
 Clean up:
 
 ```bash
-rm /tmp/bad.nm /tmp/launder.nm
+rm /tmp/bad.cod /tmp/launder.cod
 ```
 
 ## 3. Belief dispatch and refusal
 
-Values in Noema carry confidence. A primitive that produces uncertain
+Values in Codifide carry confidence. A primitive that produces uncertain
 output — a classifier, a model call — returns a `Belief`, which pairs a
 value with a confidence score. `believe` dispatches on that score:
 
-```noema
+```codifide
 def classify
   intent "label an image, refuse rather than guess"
   sig    (img: Image) -> Label
@@ -170,7 +170,7 @@ def classify
 Run it:
 
 ```bash
-python3 -m noema run examples/classify.nm
+python3 -m codifide run examples/classify.cod
 ```
 
 Output:
@@ -181,12 +181,12 @@ cat
 
 The `test_image()` primitive returns an image tagged `"cat"` with
 confidence `0.92`, which satisfies the first arm. Try editing
-`examples/classify.nm` (or a copy) to change the confidence in the
+`examples/classify.cod` (or a copy) to change the confidence in the
 `host_image("cat", 0.92)` line to `0.5`. Now both arms fail and the
 function returns `bottom`. Since nothing handles the refusal, you get:
 
 ```
-noema: 'main' returned ⊥ (refusal) and no caller chose to handle it. ...
+codifide: 'main' returned ⊥ (refusal) and no caller chose to handle it. ...
 ```
 
 The interesting idea: refusal is first-class. `bottom` is a value that
@@ -201,16 +201,16 @@ an accident.
 Look at the canonical form of a program:
 
 ```bash
-python3 -m noema canonical examples/greet.nm | head -20
+python3 -m codifide canonical examples/greet.cod | head -20
 ```
 
-This prints the JSON hypergraph. That JSON is the truth; the `.nm` file
+This prints the JSON hypergraph. That JSON is the truth; the `.cod` file
 is one projection of it. The byte form of that JSON is what gets hashed.
 
-Store every symbol in `greet.nm`:
+Store every symbol in `greet.cod`:
 
 ```bash
-python3 -m noema store put examples/greet.nm
+python3 -m codifide store put examples/greet.cod
 ```
 
 Output (your hashes will match; they are deterministic):
@@ -220,19 +220,19 @@ sha256:5abe9a7b3cd284bc27b652cf71a55b70dbda6b4c0de3bb84cfe98d29b7fd995b	greet
 sha256:76d89b68148a414676f1c0597ecd6a4df7e872552209e67835abed8fc4c95bd0	main
 ```
 
-The store defaults to `~/.noema/store`. Override with `--store <path>` or
-`$NOEMA_STORE` if you want a scratch location.
+The store defaults to `~/.codifide/store`. Override with `--store <path>` or
+`$CODIFIDE_STORE` if you want a scratch location.
 
 List what the store holds:
 
 ```bash
-python3 -m noema store list
+python3 -m codifide store list
 ```
 
 Fetch a symbol by its identity:
 
 ```bash
-python3 -m noema store get sha256:5abe9a7b3cd284bc27b652cf71a55b70dbda6b4c0de3bb84cfe98d29b7fd995b
+python3 -m codifide store get sha256:5abe9a7b3cd284bc27b652cf71a55b70dbda6b4c0de3bb84cfe98d29b7fd995b
 ```
 
 The printed JSON is the exact canonical form that was hashed. Re-running
@@ -247,9 +247,9 @@ an integrity error rather than returning a value.
 
 ## 5. Importing a symbol by hash
 
-Publish a small library. Put this in `/tmp/lib.nm`:
+Publish a small library. Put this in `/tmp/lib.cod`:
 
-```noema
+```codifide
 module greet_lib
 
 def hello
@@ -263,7 +263,7 @@ def hello
 Store it and note the identity:
 
 ```bash
-python3 -m noema store put /tmp/lib.nm
+python3 -m codifide store put /tmp/lib.cod
 ```
 
 Output:
@@ -272,10 +272,10 @@ Output:
 sha256:88e8d6d28dd0d98dc86002b6ab71d16b616bb2e441f155e955797a34f23be403	hello
 ```
 
-Now write a consumer. Put this in `/tmp/consumer.nm`, substituting the
+Now write a consumer. Put this in `/tmp/consumer.cod`, substituting the
 identity you just received:
 
-```noema
+```codifide
 module consumer
 
 import hello = sha256:88e8d6d28dd0d98dc86002b6ab71d16b616bb2e441f155e955797a34f23be403
@@ -291,7 +291,7 @@ def main
 Run it:
 
 ```bash
-python3 -m noema run /tmp/consumer.nm
+python3 -m codifide run /tmp/consumer.cod
 ```
 
 Output:
@@ -310,20 +310,20 @@ Try tampering. Find the file on disk (the store's layout is Git-style
 sharded):
 
 ```bash
-find ~/.noema/store -name '*.json' | head
+find ~/.codifide/store -name '*.json' | head
 ```
 
 Edit one of them to change a character inside the JSON (a value, a
 string — anything). Run your consumer again:
 
 ```bash
-python3 -m noema run /tmp/consumer.nm
+python3 -m codifide run /tmp/consumer.cod
 ```
 
 You get:
 
 ```
-noema: cannot resolve import 'hello' = sha256:...: integrity check failed: expected '...', got '...'
+codifide: cannot resolve import 'hello' = sha256:...: integrity check failed: expected '...', got '...'
 ```
 
 The store rehashes bytes before returning them. Corrupted or tampered
@@ -334,7 +334,7 @@ is an integrity boundary. An adversary who wants to substitute a
 more-effectful body has to mint a new identity, which every consumer
 would have to actively update to. The effect set is part of the hash.
 
-Restore the original by running `python3 -m noema store put /tmp/lib.nm`
+Restore the original by running `python3 -m codifide store put /tmp/lib.cod`
 again — idempotent writes re-put the correct bytes.
 
 ## 6. Publishing an index and using it
@@ -347,7 +347,7 @@ identity.
 Mint an index over the `hello` symbol you just stored:
 
 ```bash
-python3 -m noema store index --name greet_index \
+python3 -m codifide store index --name greet_index \
     hello=sha256:88e8d6d28dd0d98dc86002b6ab71d16b616bb2e441f155e955797a34f23be403
 ```
 
@@ -361,9 +361,9 @@ That is the index's identity. It is content-addressed like any other
 module — same entries produce the same hash, renaming the module produces
 a different hash, entry order does not affect the hash.
 
-Now write a consumer that pulls through the index. Replace `/tmp/consumer.nm`:
+Now write a consumer that pulls through the index. Replace `/tmp/consumer.cod`:
 
-```noema
+```codifide
 module consumer_via_index
 
 from sha256:89653ceea414125c8c52a1113f1fb85ff0c206c71f38ecb7896fefdff63dcf46 import hello
@@ -379,7 +379,7 @@ def main
 Run it:
 
 ```bash
-python3 -m noema run /tmp/consumer.nm
+python3 -m codifide run /tmp/consumer.cod
 ```
 
 Output:
@@ -396,7 +396,7 @@ index is not a concept the runtime knows about.
 Clean up:
 
 ```bash
-rm /tmp/lib.nm /tmp/consumer.nm
+rm /tmp/lib.cod /tmp/consumer.cod
 ```
 
 The interesting idea: indices separate discovery from identity without

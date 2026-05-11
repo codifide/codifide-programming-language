@@ -3,10 +3,10 @@
 The parser's job is to turn surface text into a Module or raise a
 ``ParseError``. That is the only contract the embedding host can rely on.
 Anything else leaking out — a bare ``LexError``, a ``RecursionError``,
-a hang — is a parser bug: it means a malicious or malformed .nm file can
+a hang — is a parser bug: it means a malicious or malformed .cod file can
 crash or wedge the host process.
 
-These tests feed a large set of adversarial inputs through ``noema.parse``
+These tests feed a large set of adversarial inputs through ``codifide.parse``
 and assert the only-two-outcomes invariant. Each parse is bounded by a
 one-second SIGALRM so infinite-loop bugs surface as failures rather than
 as a stuck test run.
@@ -20,8 +20,8 @@ import string
 import unittest
 from typing import Callable
 
-import noema
-from noema.runtime.errors import ParseError
+import codifide
+from codifide.runtime.errors import ParseError
 
 
 # ---------------------------------------------------------------------------
@@ -119,7 +119,7 @@ ADVERSARIAL_INPUTS: list[tuple[str, str]] = [
     # Glyph that collides with the expression lexer's unknown-char path.
     ("lone_bottom_glyph_expr", _valid_skeleton("    ⊥")),
 
-    # A keyword used as a definition name. Noema does not currently
+    # A keyword used as a definition name. Codifide does not currently
     # forbid this; whatever the outcome, it must be ParseError or OK.
     (
         "keyword_as_def_name",
@@ -321,7 +321,7 @@ class ParserFuzzTests(unittest.TestCase):
     def _assert_parses_or_parse_errors(self, label: str, source: str) -> None:
         """Invariant: parse(source) either returns a Module or raises ParseError."""
         def _attempt() -> object:
-            return noema.parse(source)
+            return codifide.parse(source)
 
         try:
             result = _with_timeout(_attempt, seconds=1)
@@ -335,7 +335,7 @@ class ParserFuzzTests(unittest.TestCase):
             )
         except BaseException as exc:  # noqa: BLE001 — we want to catch anything
             # This is the bug-reporting path. Any non-ParseError exception
-            # that escapes noema.parse is a contract violation.
+            # that escapes codifide.parse is a contract violation.
             self.fail(
                 f"parse raised {type(exc).__module__}.{type(exc).__name__} "
                 f"on input {label!r}: {exc!r}. "

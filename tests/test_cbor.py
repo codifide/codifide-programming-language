@@ -6,7 +6,7 @@ Two layers of testing:
    These are the authoritative correctness tests for any CBOR
    implementation that claims to be deterministic.
 2. Encode/decode round-trip for every value we expect to appear in a
-   canonical Noema document (arrays, maps, strings, numbers, booleans,
+   canonical Codifide document (arrays, maps, strings, numbers, booleans,
    null, Unicode), with the decoder also rejecting non-canonical
    payloads (non-shortest heads, unsorted maps, indefinite-length
    strings). The decoder's strictness is what stops an adversary from
@@ -19,8 +19,8 @@ import math
 import struct
 import unittest
 
-from noema.projection.cbor import canonical_cbor
-from noema.projection.cbor_decoder import decode_canonical_cbor
+from codifide.projection.cbor import canonical_cbor
+from codifide.projection.cbor_decoder import decode_canonical_cbor
 
 
 class RFC8949VectorsTests(unittest.TestCase):
@@ -121,12 +121,12 @@ class RoundTripTests(unittest.TestCase):
         self.assertEqual(math.copysign(1.0, got), -1.0)
 
     def test_deeply_nested_structure_round_trips(self):
-        # Simulates a canonical Noema module's shape: nested arrays and
+        # Simulates a canonical Codifide module's shape: nested arrays and
         # maps, string keys, numeric and string values. Tests the
         # encoder and decoder together on something closer to the real
         # payload than the RFC vectors.
         v = {
-            "noema": "0.1",
+            "codifide": "0.1",
             "module": "example",
             "symbols": {
                 "f": {

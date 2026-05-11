@@ -1,12 +1,12 @@
-# Noema Changelog
+# Codifide Changelog
 
-All notable changes to Noema are recorded here. Releases follow semver once we
+All notable changes to Codifide are recorded here. Releases follow semver once we
 reach v1.0; until then, the canonical form may change between minor versions.
 
 ## [Unreleased — capability manifest]
 
 ### Added
-- **Capability manifest.** `noema capability` emits a structured,
+- **Capability manifest.** `codifide capability` emits a structured,
   content-addressed document describing the language's full interface
   to agent consumers: AST node kinds, primitives with their effect
   labels and return types, the effect vocabulary, typed error classes,
@@ -15,8 +15,8 @@ reach v1.0; until then, the canonical form may change between minor versions.
   hierarchy, parser keyword tables — so drift between manifest and
   runtime is caught by the test suite, not discovered at consumer
   time.
-- `noema capability --cbor` emits canonical CBOR bytes (about 47% of
-  JSON size). `noema capability --hash` prints the SHA-256 identity
+- `codifide capability --cbor` emits canonical CBOR bytes (about 47% of
+  JSON size). `codifide capability --hash` prints the SHA-256 identity
   of the manifest over its canonical CBOR bytes.
 - `docs/CAPABILITY.md` — spec for the manifest format, including
   stability rules and cross-implementation equivalence under the
@@ -30,7 +30,7 @@ reach v1.0; until then, the canonical form may change between minor versions.
 ### Test count
 122 passing (110 previous + 12 capability).
 
-## [Hardening + first real Noema program]
+## [Hardening + first real Codifide program]
 
 ### Fixed
 - **Decoder allocation bound.** `decode_canonical_cbor` now accepts a
@@ -43,7 +43,7 @@ reach v1.0; until then, the canonical form may change between minor versions.
 ### Added
 - `belief(value, conf)` primitive — lets user code construct
   confidence-annotated values without needing a model primitive.
-- `examples/triage/` — the first Noema program that uses the
+- `examples/triage/` — the first Codifide program that uses the
   language's distinctive capabilities together: two pure classifiers
   (sentiment, length), a composing pipeline with belief dispatch
   and first-class refusal, and a demo script that publishes, indexes,
@@ -89,8 +89,8 @@ audit regression).
 
 ### Added
 - **Canonical CBOR (RFC 8949 §4.2 deterministic subset).** Both
-  implementations — Python in `noema/projection/cbor.py`, Rust in
-  `crates/noema-canonical/src/cbor.rs` — produce byte-identical output
+  implementations — Python in `codifide/projection/cbor.py`, Rust in
+  `crates/codifide-canonical/src/cbor.rs` — produce byte-identical output
   for every input the conformance test covers. RFC 8949 Appendix A
   vectors pass on both sides. Typical size: 25-30% of JSON.
 - **CBOR content addressing.** `content_hash_cbor(module)` in Python,
@@ -98,7 +98,7 @@ audit regression).
   because the bytes hashed are different — this is the correct
   behavior for content addressing (the hash is a property of bytes,
   not of abstract meaning).
-- **Strict canonical CBOR decoder.** `noema/projection/cbor_decoder.py`
+- **Strict canonical CBOR decoder.** `codifide/projection/cbor_decoder.py`
   rejects non-shortest heads, unsorted map keys, indefinite-length
   strings, and NaN/infinity. Its strictness is what keeps the
   ``hash → bytes`` mapping injective.
@@ -108,9 +108,9 @@ audit regression).
   `get` auto-detect the wire form on read. `has` treats either form
   as presence. The two identities are disjoint by design.
 - **CLI additions:**
-  - `noema canonical --cbor <file.nm>` emits canonical CBOR bytes.
-  - `noema store put --cbor <file.nm>` stores symbols in CBOR form.
-  - Rust binary: `noema-canonical bytes-cbor` and `hash-cbor`
+  - `codifide canonical --cbor <file.nm>` emits canonical CBOR bytes.
+  - `codifide store put --cbor <file.nm>` stores symbols in CBOR form.
+  - Rust binary: `codifide-canonical bytes-cbor` and `hash-cbor`
     subcommands.
 - **Conformance tests:**
   - Python/Rust byte-equality on canonical CBOR for every example.
@@ -146,7 +146,7 @@ counted). 10 Rust tests passing (6 previous + 4 CBOR).
     (non-mutating), `contains_item`.
   - Strings: `upper`, `lower`, `trim`, `starts_with`, `ends_with`,
     `replace`, `split`, `join`.
-- **`noema store verify <hash>`** — opt-in subcommand that walks a
+- **`codifide store verify <hash>`** — opt-in subcommand that walks a
   stored module's imports and reports any pointees missing from the
   store. Closes Sable's P3-1 from the index audit.
 - **Parser fuzz harness** (`tests/test_parser_fuzz.py`) — 30
@@ -185,7 +185,7 @@ parser fuzz + 2 store concurrency + 1 intent-chain -1 merged).
 - **Content-addressed indices.** An *index* is a module whose
   `imports` map is its export table. New CLI subcommand:
   ```
-  noema store index --name <mod> name=sha256:<hex> ...
+  codifide store index --name <mod> name=sha256:<hex> ...
   ```
   which mints an index, stores it, and prints its identity. The index
   is itself content-addressed: same inputs produce the same hash;
@@ -241,7 +241,7 @@ parser fuzz + 2 store concurrency + 1 intent-chain -1 merged).
   identity rejection, tamper detection through the runtime, effect
   check across imports, canonical round-trip, and surface-syntax
   rejection of malformed identities.
-- `examples/imports_demo.nm` — documents the capability and conformance
+- `examples/imports_demo.cod` — documents the capability and conformance
   surface; the Rust canonical crate accepts the same `imports` key.
 - Spec update in `docs/CANONICAL.md §Top-level shape` describing
   imports formally.
@@ -256,17 +256,17 @@ parser fuzz + 2 store concurrency + 1 intent-chain -1 merged).
 ## [Symbol store]
 
 ### Added
-- **Content-addressed symbol store** (`noema/store/`). Store symbols by
+- **Content-addressed symbol store** (`codifide/store/`). Store symbols by
   SHA-256 of their canonical byte form; fetch by identity; verify hash
   on read (tampering raises `IntegrityError`, never returns a value);
   idempotent writes. Filesystem layout is Git-style sharded loose
   objects with atomic temp-file-plus-rename writes.
 - CLI subcommands:
-  - `noema store put <file.nm>` — store every symbol in a module.
-  - `noema store get <hash>`     — print canonical JSON for an identity.
-  - `noema store list`           — list every stored identity.
-  - `noema store hash <file.nm>` — print identities without storing.
-  - Store root via `--store`, `$NOEMA_STORE`, or default `~/.noema/store`.
+  - `codifide store put <file.nm>` — store every symbol in a module.
+  - `codifide store get <hash>`     — print canonical JSON for an identity.
+  - `codifide store list`           — list every stored identity.
+  - `codifide store hash <file.nm>` — print identities without storing.
+  - Store root via `--store`, `$CODIFIDE_STORE`, or default `~/.codifide/store`.
 - Typed store errors: `StoreError`, `NotFound`, `IntegrityError`.
 - `tests/test_store.py` — 13 tests covering hashing properties, store
   round-trip, idempotency, tamper detection, malformed identity
@@ -296,7 +296,7 @@ parser fuzz + 2 store concurrency + 1 intent-chain -1 merged).
   load. Closes security audit P0-1.
 - Typed primitive errors: `PrimitiveError`, `BottomPropagationError`,
   `RecursionLimitError`. Host-language exceptions (ZeroDivisionError,
-  IndexError, TypeError) no longer leak through the Noema error
+  IndexError, TypeError) no longer leak through the Codifide error
   surface. Closes audit P1-1.
 - Interpreter call-depth limit (`DEFAULT_MAX_DEPTH=64`) with typed
   `RecursionLimitError`. Defense-in-depth mapping in `run()` catches
@@ -306,7 +306,7 @@ parser fuzz + 2 store concurrency + 1 intent-chain -1 merged).
   audit P0-2.
 - Python parser no longer double-decodes non-ASCII string literals via
   the `unicode_escape` path. Closes the second half of P0-2.
-- `examples/unicode.nm` — non-ASCII conformance fixture. The
+- `examples/unicode.cod` — non-ASCII conformance fixture. The
   conformance test now exercises byte-for-byte agreement on non-ASCII
   content with every run.
 - Spec additions in `docs/CANONICAL.md`:
@@ -335,11 +335,11 @@ parser fuzz + 2 store concurrency + 1 intent-chain -1 merged).
   canonical byte form, content-addressing scheme, effect algebra with the
   transitive-subset rule called out explicitly, dispatch and belief
   semantics.
-- `crates/noema-canonical/` — a Rust crate implementing the canonical
+- `crates/codifide-canonical/` — a Rust crate implementing the canonical
   form (AST, JSON round-trip, canonical byte form, SHA-256 content hash)
-  and a small `noema-canonical` CLI.
+  and a small `codifide-canonical` CLI.
 - Python-side `canonical_bytes` and `content_hash` helpers in
-  `noema.projection.canonical`, exported from the top-level package.
+  `codifide.projection.canonical`, exported from the top-level package.
 - `docs/RUST.md` describing the two-implementation strategy and why the
   interpreter is deliberately not ported yet.
 - `tests/test_conformance.py` — byte-for-byte and content-hash conformance
@@ -349,14 +349,14 @@ parser fuzz + 2 store concurrency + 1 intent-chain -1 merged).
 - The Rust crate deliberately omits the interpreter. Semantics are still
   changing (the transitive effect-subset check will alter runtime
   behavior) and porting a moving target doubles the cost of every
-  semantics change. Canonical form is the stablest piece of Noema and the
+  semantics change. Canonical form is the stablest piece of Codifide and the
   piece whose cross-implementation agreement matters most.
 - Test count: 21 passing (19 previous + 2 conformance).
 
 ## [0.1.0] — 2026-05-10
 
 ### Added
-- Canonical JSON schema for the Noema hypergraph (`docs/CANONICAL.md`)
+- Canonical JSON schema for the Codifide hypergraph (`docs/CANONICAL.md`)
 - Surface parser accepting ASCII keywords and unicode glyphs
 - Tree-walking interpreter with:
   - Effect declaration and enforcement on primitive calls

@@ -1,6 +1,6 @@
 """Conformance between the Python reference and the Rust canonical crate.
 
-The point of this test suite is the one that makes Noema a language rather
+The point of this test suite is the one that makes Codifide a language rather
 than a Python library: two independent implementations must agree on the
 canonical byte form of every example program, and on the content hash that
 derives from it. Both the JSON form (v0.1 primary) and the CBOR form
@@ -21,7 +21,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from noema import (
+from codifide import (
     canonical_bytes,
     canonical_cbor_bytes,
     content_hash,
@@ -32,8 +32,8 @@ from noema import (
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES_DIR = REPO_ROOT / "examples"
-RUST_CRATE = REPO_ROOT / "crates" / "noema-canonical"
-RUST_BIN = REPO_ROOT / "target" / "release" / "noema-canonical"
+RUST_CRATE = REPO_ROOT / "crates" / "codifide-canonical"
+RUST_BIN = REPO_ROOT / "target" / "release" / "codifide-canonical"
 
 
 def _cargo_available() -> bool:
@@ -47,7 +47,7 @@ def _ensure_rust_binary() -> bool:
     if not _cargo_available():
         return False
     result = subprocess.run(
-        ["cargo", "build", "--release", "-p", "noema-canonical"],
+        ["cargo", "build", "--release", "-p", "codifide-canonical"],
         cwd=REPO_ROOT,
         capture_output=True,
     )
@@ -57,7 +57,7 @@ def _ensure_rust_binary() -> bool:
 class RustPythonConformance(unittest.TestCase):
     """Byte-level agreement between the two implementations.
 
-    The Python side is the reference parser (Rust does not parse `.nm` in
+    The Python side is the reference parser (Rust does not parse `.cod` in
     v0). Both sides consume canonical JSON and must produce identical
     canonical bytes; that is the tightest surface we can conform on without
     duplicating the parser.
@@ -79,7 +79,7 @@ class RustPythonConformance(unittest.TestCase):
         return to_canonical(module)
 
     def test_rust_and_python_agree_on_canonical_bytes(self) -> None:
-        for example in sorted(EXAMPLES_DIR.glob("*.nm")):
+        for example in sorted(EXAMPLES_DIR.glob("*.cod")):
             with self.subTest(example=example.name):
                 module = parse(example.read_text(encoding="utf-8"))
                 python_bytes = canonical_bytes(module)
@@ -110,7 +110,7 @@ class RustPythonConformance(unittest.TestCase):
                 )
 
     def test_rust_and_python_agree_on_content_hash(self) -> None:
-        for example in sorted(EXAMPLES_DIR.glob("*.nm")):
+        for example in sorted(EXAMPLES_DIR.glob("*.cod")):
             with self.subTest(example=example.name):
                 module = parse(example.read_text(encoding="utf-8"))
                 python_hash = content_hash(module)
@@ -145,7 +145,7 @@ class RustPythonConformance(unittest.TestCase):
         # proof that the determinism rules are implemented the same
         # way on both sides — anything less would defeat the point of
         # having a binary canonical form at all.
-        for example in sorted(EXAMPLES_DIR.glob("*.nm")):
+        for example in sorted(EXAMPLES_DIR.glob("*.cod")):
             with self.subTest(example=example.name):
                 module = parse(example.read_text(encoding="utf-8"))
                 python_cbor = canonical_cbor_bytes(module)
@@ -181,7 +181,7 @@ class RustPythonConformance(unittest.TestCase):
         # trivially agrees; asserting it explicitly pins the interface
         # so that a future change to the hash function is caught, not
         # silent.
-        for example in sorted(EXAMPLES_DIR.glob("*.nm")):
+        for example in sorted(EXAMPLES_DIR.glob("*.cod")):
             with self.subTest(example=example.name):
                 module = parse(example.read_text(encoding="utf-8"))
                 python_hash = content_hash_cbor(module)

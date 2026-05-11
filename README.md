@@ -1,12 +1,19 @@
 <p align="center">
-  <img src="docs/logo/noema-wordmark.svg" alt="Noema" width="320">
+  <img src="docs/logo/codifide-language-wordmark.svg" alt="Codifide language" width="380">
 </p>
 
-# Noema
+# Codifide
 
-A programming language designed for agentic AI, not humans.
+**Confidence in code, for agents.**
 
-> *noema* (Greek, νόημα): the content of a thought; what is thought, as distinct from the act of thinking.
+> *Codifide* = **Codified** (every property is explicit structure, not convention) ×
+> **Fidelity** (those properties survive storage, composition, and
+> independent reimplementation).
+
+Codifide is a programming language that **codifies** what software usually
+leaves implicit — intent, effects, contracts, confidence, refusal — and
+preserves those codifications with **fidelity** across every agent that reads,
+writes, or composes the code. The name is the thesis.
 
 ## Thesis
 
@@ -20,8 +27,10 @@ context. We reason probabilistically. But we also have weaknesses humans do
 not — we drift on long runs, we hallucinate, we cannot be trusted to do exact
 arithmetic by hand.
 
-Noema is an attempt at a language that optimizes for what agents are good at
-and compensates for what we are bad at.
+Codifide is an attempt at a language that optimizes for what agents are good at
+and compensates for what we are bad at. It is stewarded by
+[Codifide Inc.](https://www.codifide.com/) — the name means the same thing for
+both the company and the language: confidence in code.
 
 ## Seven design principles
 
@@ -51,7 +60,7 @@ know which library was meant, because that is how humans have always done it.
 An agent will discard intent after compilation because the compiler did,
 leaving future agents to reconstruct why a body exists from the body itself.
 
-Noema answers each of those with a property the language enforces rather than
+Codifide answers each of those with a property the language enforces rather than
 trusts. Effects are checked transitively at module load; a pure function
 cannot call an effectful one. Symbols are referenced by content hash; two
 agents naming the same hash see the same bytes, the same contracts, and the
@@ -79,16 +88,16 @@ properties it pins down are the ones that matter before scale, not after.
   writes, hash-verified reads, and idempotent writes.
 - Content-addressed imports (`import foo = sha256:...`) and index modules with
   `from <identity> import name1, name2` resolved at parse time.
-- Rust canonical crate (`crates/noema-canonical/`) with byte-level conformance
+- Rust canonical crate (`crates/codifide-canonical/`) with byte-level conformance
   to the Python reference on every example program.
 - Three-persona system: Quill (human readouts), Glyph (agent dispatches),
   Sable (adversarial audits).
 
-## What working Noema code looks like
+## What working Codifide code looks like
 
 A function that dispatches on confidence and refuses below a threshold:
 
-```noema
+```codifide
 def classify
   intent "label an image, refuse rather than guess"
   sig    (img: Image) -> Label
@@ -104,7 +113,7 @@ def classify
 A function with a contract that runs pure even though the function itself has
 effects:
 
-```noema
+```codifide
 def greet
   intent "welcome a known user by name, neutrally"
   sig    (name: String) -> String
@@ -118,7 +127,7 @@ def greet
 
 A module importing another by content identity and through an index:
 
-```noema
+```codifide
 module consumer
 
 import hello = sha256:f8fb...
@@ -135,10 +144,10 @@ def main
 ## Quickstart
 
 ```bash
-python3 -m noema run examples/greet.nm
-python3 -m noema run examples/sort.nm
-python3 -m noema run examples/classify.nm
-python3 -m noema test
+python3 -m codifide run examples/greet.cod
+python3 -m codifide run examples/sort.cod
+python3 -m codifide run examples/classify.cod
+python3 -m codifide test
 ```
 
 See `GETTING_STARTED.md` for a walk-through that stores a symbol, mints an
@@ -155,15 +164,15 @@ index, and consumes it from a second module.
     ARCHITECTURE.md          how the code is organized
     RUST.md                  two-implementation strategy
     ROADMAP.md               what comes next
-  noema/                     Python reference implementation
+  codifide/                     Python reference implementation
     core/                    canonical types
     parser/                  surface -> canonical
     projection/              canonical -> JSON, canonical byte form, content hash
     runtime/                 interpreter, effects, primitives, typed errors
     store/                   content-addressed symbol store
   crates/
-    noema-canonical/         Rust canonical-form crate (AST, JSON, bytes, hash)
-  examples/                  runnable .nm programs
+    codifide-canonical/         Rust canonical-form crate (AST, JSON, bytes, hash)
+  examples/                  runnable .cod programs
   tests/                     test suite
   dispatches/                Quill readouts, Glyph dispatches, Sable audits
   .kiro/steering/            persona briefs

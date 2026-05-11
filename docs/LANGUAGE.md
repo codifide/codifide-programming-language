@@ -1,4 +1,4 @@
-# Noema — Language Tour
+# Codifide — Language Tour
 
 This is the v0 language. Expect it to change. The canonical form is stable
 before the surface syntax is. Where this document and `docs/CANONICAL.md`
@@ -6,7 +6,7 @@ disagree, the canonical-form specification is the truth.
 
 ## Surface syntax
 
-Noema source is a projection of a hypergraph. v0 supports one projection: an
+Codifide source is a projection of a hypergraph. v0 supports one projection: an
 ASCII-compatible line-oriented form where every keyword has an optional
 unicode glyph. The unicode form is canonical for display; the ASCII form
 exists so humans can type it on a US keyboard while we bootstrap.
@@ -34,7 +34,7 @@ The parser accepts either form and emits the canonical form on projection.
 
 ## A first program
 
-```noema
+```codifide
 module greet_example
 
 def greet
@@ -103,7 +103,7 @@ describe state, they do not modify it.
 
 ## Multiple candidate bodies
 
-```noema
+```codifide
 def sort
   intent "order a list ascending"
   sig    (xs: List) -> List
@@ -131,7 +131,7 @@ as pre and post.
 Values carry confidence. `believe` dispatches on it without the caller
 having to know the internals:
 
-```noema
+```codifide
 def classify
   intent "label an image, refuse rather than guess"
   sig    (img: Image) -> Label
@@ -156,7 +156,7 @@ surface forms exist.
 
 ### Direct import
 
-```noema
+```codifide
 import hello = sha256:f8fb5fda1b2462e7fb60641ad2bc4901439719966d4fe8610ea388b8685b321a
 ```
 
@@ -178,7 +178,7 @@ definitions of its own. Its job is to say "if you want `hello`, it is at
 
 A consumer writes:
 
-```noema
+```codifide
 from sha256:5899ab1c... import hello, goodbye
 ```
 
@@ -226,13 +226,13 @@ exceptions do not leak through. The eight kinds are:
 | `PrimitiveError`           | A primitive call failed in the host (e.g. divide by zero).  |
 | `RecursionLimitError`      | Call depth exceeded the interpreter's bound (default 64).   |
 
-All errors inherit from `NoemaError` so a host can catch Noema-level
+All errors inherit from `CodifideError` so a host can catch Codifide-level
 failures separately from Python-level ones.
 
 ## Recursion limit
 
 The interpreter bounds its own call depth (default 64) and raises
-`RecursionLimitError` past that bound. The limit exists because a Noema
+`RecursionLimitError` past that bound. The limit exists because a Codifide
 program is untrusted input to its host; without an explicit bound a
 pathological module could exhaust the Python stack and crash the embedding
 process. A defense-in-depth handler in `run()` also maps Python's own
@@ -244,15 +244,15 @@ process. A defense-in-depth handler in `run()` also maps Python's own
 The Python reference ships a content-addressed symbol store and a matching
 CLI:
 
-- `noema store put <file.nm>` — store every symbol in a module.
-- `noema store get <hash>` — print canonical JSON for an identity.
-- `noema store list` — list every stored identity.
-- `noema store hash <file.nm>` — print identities without storing.
-- `noema store index --name <mod> name=sha256:<hex> ...` — mint an index
+- `codifide store put <file.nm>` — store every symbol in a module.
+- `codifide store get <hash>` — print canonical JSON for an identity.
+- `codifide store list` — list every stored identity.
+- `codifide store hash <file.nm>` — print identities without storing.
+- `codifide store index --name <mod> name=sha256:<hex> ...` — mint an index
   from name-to-identity pairs, store it, and print its identity.
 
-The store root resolves from `--store`, then `$NOEMA_STORE`, then
-`~/.noema/store`. See `docs/CANONICAL.md §Symbol store` for the three
+The store root resolves from `--store`, then `$CODIFIDE_STORE`, then
+`~/.codifide/store`. See `docs/CANONICAL.md §Symbol store` for the three
 properties a conforming store must uphold.
 
 ## What v0 does not have yet

@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import unittest
 
-from noema import parse
-from noema.core.types import Believe, Bind, Call, Concat, Lit
-from noema.runtime.errors import ParseError
+from codifide import parse
+from codifide.core.types import Believe, Bind, Call, Concat, Lit
+from codifide.runtime.errors import ParseError
 
 
 class ParserTests(unittest.TestCase):
@@ -36,7 +36,7 @@ def noop
 
     def test_missing_intent_is_rejected(self) -> None:
         # The single most important invariant of the language. Losing it
-        # would defeat the point of Noema.
+        # would defeat the point of Codifide.
         src = """
 def bad
   sig    () -> Int

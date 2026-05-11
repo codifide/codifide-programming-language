@@ -1,6 +1,6 @@
 """End-to-end runtime tests.
 
-Each test runs a full Noema program and asserts on the result and, where
+Each test runs a full Codifide program and asserts on the result and, where
 relevant, the error it provokes. These are the regression tests for the v0
 semantics.
 """
@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import unittest
 
-from noema import parse, run
-from noema.runtime.errors import (
+from codifide import parse, run
+from codifide.runtime.errors import (
     BottomPropagationError,
     ContractViolation,
     DispatchError,
@@ -37,7 +37,7 @@ def answer
     def test_sort_example_end_to_end(self) -> None:
         # Loads the real example file so we also exercise the file layout.
         from pathlib import Path
-        src = (Path(__file__).resolve().parent.parent / "examples" / "sort.nm").read_text()
+        src = (Path(__file__).resolve().parent.parent / "examples" / "sort.cod").read_text()
         result = run(parse(src), "main")
         self.assertEqual(result, [1, 1, 2, 3, 3, 4, 5, 5, 6, 9])
 
@@ -148,7 +148,7 @@ def liar
 
     def test_belief_dispatch_picks_high_confidence_arm(self) -> None:
         from pathlib import Path
-        src = (Path(__file__).resolve().parent.parent / "examples" / "classify.nm").read_text()
+        src = (Path(__file__).resolve().parent.parent / "examples" / "classify.cod").read_text()
         result = run(parse(src), "main")
         self.assertEqual(result, "cat")
 
@@ -244,7 +244,7 @@ def boom
 
     def test_P1_2_recursion_limit_is_enforced(self) -> None:
         # Generate a 500-deep call chain; default interpreter depth is 64
-        # so this must trip with a typed Noema error (not Python's
+        # so this must trip with a typed Codifide error (not Python's
         # RecursionError) well before it reaches the bottom.
         parts = []
         for i in range(500):

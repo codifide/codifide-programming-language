@@ -8,7 +8,7 @@ assert the invariants the store advertises:
 
   1. Many writers ``put``-ing the same symbol end up with exactly one
      object on disk, all of them receive the same identity back, and no
-     ``.noema-*.tmp`` temp files are left behind.
+     ``.codifide-*.tmp`` temp files are left behind.
   2. Writers operating on distinct symbols never trip over each other —
      every symbol lands in its own shard directory and nothing leaks.
 
@@ -24,8 +24,8 @@ from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from typing import List
 
-import noema
-from noema.store import SymbolStore
+import codifide
+from codifide.store import SymbolStore
 
 
 # ---------------------------------------------------------------------------
@@ -51,7 +51,7 @@ def _worker_put_same_symbol(root: str) -> str:
     Returns the identity the store produced so the parent can compare
     identities across workers.
     """
-    module = noema.parse(SAME_SYMBOL_SOURCE)
+    module = codifide.parse(SAME_SYMBOL_SOURCE)
     store = SymbolStore(root)
     return store.put("hello", module.symbols[0])
 
@@ -74,7 +74,7 @@ def _worker_put_unique_symbol(args: tuple[str, int]) -> tuple[str, str]:
         f"  cand\n"
         f"    {worker_id}\n"
     )
-    module = noema.parse(source)
+    module = codifide.parse(source)
     store = SymbolStore(root)
     return name, store.put(name, module.symbols[0])
 
@@ -93,11 +93,11 @@ def _list_objects(root: Path) -> List[Path]:
 
 
 def _list_temp_files(root: Path) -> List[Path]:
-    """Return every leftover ``.noema-*.tmp`` file under ``<root>/sha256``.
+    """Return every leftover ``.codifide-*.tmp`` file under ``<root>/sha256``.
 
-    The store writes through ``tempfile.mkstemp(prefix='.noema-',
+    The store writes through ``tempfile.mkstemp(prefix='.codifide-',
     suffix='.tmp', ...)`` and renames the result into place. A crashed
-    or interrupted write would leave a ``.noema-*.tmp`` behind, so
+    or interrupted write would leave a ``.codifide-*.tmp`` behind, so
     finding any after a clean run indicates a bug in the write path.
     """
     base = root / "sha256"
@@ -105,7 +105,7 @@ def _list_temp_files(root: Path) -> List[Path]:
         return []
     # Pattern covers both shard-level and base-level locations so a
     # leaked temp anywhere in the store tree is surfaced.
-    return sorted(base.glob("**/.noema-*.tmp"))
+    return sorted(base.glob("**/.codifide-*.tmp"))
 
 
 # ---------------------------------------------------------------------------
@@ -118,7 +118,7 @@ class StoreConcurrencyTests(unittest.TestCase):
 
     # Using 'spawn' makes the test behave the same on macOS (default
     # 'spawn'), Linux ('fork' default), and anywhere else. It also makes
-    # each worker import noema fresh, which more faithfully exercises
+    # each worker import codifide fresh, which more faithfully exercises
     # the cross-process write path.
     _MP_CONTEXT = multiprocessing.get_context("spawn")
     _N_WORKERS = 8

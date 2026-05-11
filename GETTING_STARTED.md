@@ -1,11 +1,11 @@
-# Getting Started with Noema
+# Getting Started with Codifide
 
 This is the fastest path back into the project after time away.
 
 ## Run the suite
 
 ```bash
-python3 -m noema test
+python3 -m codifide test
 ```
 
 Expect 68 tests passing in well under a second. Two of those (Rust
@@ -15,7 +15,7 @@ is.
 Rust canonical crate:
 
 ```bash
-cargo test --release -p noema-canonical
+cargo test --release -p codifide-canonical
 ```
 
 Expect 6 tests passing.
@@ -23,22 +23,22 @@ Expect 6 tests passing.
 ## Run the examples
 
 ```bash
-python3 -m noema run examples/greet.nm
-python3 -m noema run examples/sort.nm
-python3 -m noema run examples/classify.nm
-python3 -m noema run examples/unicode.nm
+python3 -m codifide run examples/greet.cod
+python3 -m codifide run examples/sort.cod
+python3 -m codifide run examples/classify.cod
+python3 -m codifide run examples/unicode.cod
 ```
 
-`examples/imports_demo.nm` has a placeholder identity by design and is not
+`examples/imports_demo.cod` has a placeholder identity by design and is not
 runnable as written; see `docs/TUTORIAL.md §5` for a real import walk-through.
 
 ## Look at the canonical form
 
 ```bash
-python3 -m noema canonical examples/greet.nm
+python3 -m codifide canonical examples/greet.cod
 ```
 
-This prints the JSON hypergraph. That JSON is the truth; the `.nm` file is
+This prints the JSON hypergraph. That JSON is the truth; the `.cod` file is
 one projection of it.
 
 ## Try the full story
@@ -47,20 +47,20 @@ Store, index, import, consume — the end-to-end path agents actually take:
 
 ```bash
 # 1. Run a program.
-python3 -m noema run examples/greet.nm
+python3 -m codifide run examples/greet.cod
 
 # 2. Store every symbol from a module by content hash.
-python3 -m noema store put examples/greet.nm
+python3 -m codifide store put examples/greet.cod
 
 # 3. List what's in the store.
-python3 -m noema store list
+python3 -m codifide store list
 
 # 4. Mint an index over some of those symbols. Substitute the hashes
 #    you just received.
-python3 -m noema store index --name greet_index \
+python3 -m codifide store index --name greet_index \
     greet=sha256:<hash-from-step-2>
 
-# 5. Consume the index from a new module. Write this to /tmp/consumer.nm
+# 5. Consume the index from a new module. Write this to /tmp/consumer.cod
 #    with the index hash from step 4:
 #
 #      module consumer
@@ -72,7 +72,7 @@ python3 -m noema store index --name greet_index \
 #        cand
 #          greet("Ada")
 #
-python3 -m noema run /tmp/consumer.nm
+python3 -m codifide run /tmp/consumer.cod
 ```
 
 The full walk-through, with explanations and the security properties at
@@ -90,12 +90,12 @@ each step, is in `docs/TUTORIAL.md`.
 | Read about the Rust crate               | `docs/RUST.md`                          |
 | See what's coming next                  | `docs/ROADMAP.md`                       |
 | See what shipped                        | `CHANGELOG.md`                          |
-| Read core types                         | `noema/core/types.py`                   |
-| Read the interpreter                    | `noema/runtime/interpreter.py`          |
-| Read effect enforcement                 | `noema/runtime/interpreter.py` (`_check_transitive_effects`) |
-| Read the primitive registry             | `noema/runtime/primitives.py`           |
-| Read the symbol store                   | `noema/store/symbol_store.py`           |
-| Read the Rust canonical implementation  | `crates/noema-canonical/src/`           |
+| Read core types                         | `codifide/core/types.py`                   |
+| Read the interpreter                    | `codifide/runtime/interpreter.py`          |
+| Read effect enforcement                 | `codifide/runtime/interpreter.py` (`_check_transitive_effects`) |
+| Read the primitive registry             | `codifide/runtime/primitives.py`           |
+| Read the symbol store                   | `codifide/store/symbol_store.py`           |
+| Read the Rust canonical implementation  | `crates/codifide-canonical/src/`           |
 | Add a test                              | `tests/test_*.py`                       |
 | Read about personas                     | `.kiro/steering/personas.md`            |
 | Read the dispatches in order            | `dispatches/` (filename-sorted)         |
@@ -104,13 +104,13 @@ each step, is in `docs/TUTORIAL.md`.
 
 - **Store and consume a symbol.** Walk through `docs/TUTORIAL.md §4-§6`.
   That is the story content addressing exists to tell.
-- **Add a primitive.** Edit `noema/runtime/primitives.py`, register a new
+- **Add a primitive.** Edit `codifide/runtime/primitives.py`, register a new
   `reg.register(...)` call with its effect label and return type, then add
-  a test that uses it in a `.nm` fixture.
+  a test that uses it in a `.cod` fixture.
 - **Add a language construct.** Add the node type to
-  `noema/core/types.py`, handle it in the parser (`noema/parser/`), project
-  it in `noema/projection/canonical.py`, evaluate it in
-  `noema/runtime/interpreter.py`, mirror it in the Rust crate, and write a
+  `codifide/core/types.py`, handle it in the parser (`codifide/parser/`), project
+  it in `codifide/projection/canonical.py`, evaluate it in
+  `codifide/runtime/interpreter.py`, mirror it in the Rust crate, and write a
   round-trip test plus a conformance test.
 - **Publish a new dispatch.** Quill produces a `.readout.md`; Glyph
   produces a `.yaml` with the same `subject`. Both land in `dispatches/`.
@@ -136,6 +136,6 @@ each step, is in `docs/TUTORIAL.md`.
   recursion raises a typed `RecursionLimitError`.
 - Symbol-store identities are `sha256:` followed by 64 lowercase hex
   characters. Anything else is a `ParseError` or `StoreError`.
-- Imports require a store. `python3 -m noema run` opens one on demand;
-  pass `--store <path>` or set `$NOEMA_STORE` to override the default
-  `~/.noema/store`.
+- Imports require a store. `python3 -m codifide run` opens one on demand;
+  pass `--store <path>` or set `$CODIFIDE_STORE` to override the default
+  `~/.codifide/store`.

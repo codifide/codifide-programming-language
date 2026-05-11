@@ -1,4 +1,4 @@
-# Noema — Architecture
+# Codifide — Architecture
 
 How the code is organized, for someone who wants to contribute. This is the
 builder's map. For the specification, read `docs/CANONICAL.md`; for the
@@ -6,7 +6,7 @@ surface tour, read `docs/LANGUAGE.md`.
 
 ## Layered structure
 
-Noema's reference implementation is four layers stacked on a shared data
+Codifide's reference implementation is four layers stacked on a shared data
 model. Each layer depends only on the ones below it.
 
 ```
@@ -26,7 +26,7 @@ model. Each layer depends only on the ones below it.
           |            |
           v            v
   +----------------------------+
-  |          parser            |   surface .nm -> canonical AST
+  |          parser            |   surface .cod -> canonical AST
   +----------------------------+
                |
                v
@@ -35,7 +35,7 @@ model. Each layer depends only on the ones below it.
   +----------------------------+
 ```
 
-- **core** (`noema/core/types.py`). The canonical hypergraph as Python
+- **core** (`codifide/core/types.py`). The canonical hypergraph as Python
   dataclasses. `Module`, `Definition`, `Candidate`, `Signature`, `Param`,
   `Expr` as a tagged union of `Lit`, `Ref`, `Call`, `Bind`, `Seq`,
   `Believe`, `BottomExpr`, `Concat`, `Attr`. Runtime-only types `Value`,
@@ -43,25 +43,25 @@ model. Each layer depends only on the ones below it.
   language's data model. Everything above this layer speaks in these
   types.
 
-- **parser** (`noema/parser/`). Surface `.nm` source to canonical AST.
+- **parser** (`codifide/parser/`). Surface `.cod` source to canonical AST.
   The outer parser in `parser.py` is line-oriented and delegates
   expression parsing to `expr_parser.py`, which tokenizes through
   `lexer.py` using the keyword table in `tokens.py`. The parser never
   executes anything; it produces a `Module` or raises `ParseError`.
 
-- **projection** (`noema/projection/canonical.py`). Canonical AST to
+- **projection** (`codifide/projection/canonical.py`). Canonical AST to
   canonical JSON and back, plus `canonical_bytes` (deterministic byte
   form) and `content_hash` (`sha256:<hex>` over the byte form). This is
   the layer that agrees with the Rust crate.
 
-- **runtime** (`noema/runtime/`). `interpreter.py` is a tree-walker;
+- **runtime** (`codifide/runtime/`). `interpreter.py` is a tree-walker;
   `primitives.py` is the registry of effect-labeled primitives;
   `errors.py` declares the eight typed errors.
 
-- **store** (`noema/store/`). Filesystem-backed content-addressed symbol
+- **store** (`codifide/store/`). Filesystem-backed content-addressed symbol
   store. Used by the runtime to resolve imports and by the CLI directly.
 
-- **CLI** (`noema/__main__.py`). `run`, `canonical`, `test`, and the
+- **CLI** (`codifide/__main__.py`). `run`, `canonical`, `test`, and the
   `store put|get|list|hash|index` subcommands.
 
 ## Two-implementation strategy
@@ -72,12 +72,12 @@ nothing — it exists to force the specification out of code and into
 `docs/CANONICAL.md`.
 
 ```
-  .nm source
+  .cod source
       |
       v
   +--------------+                   +---------------------+
   | Python parse |                   |   Rust canonical    |
-  | noema.parse  |                   |   crates/noema-     |
+  | codifide.parse  |                   |   crates/codifide-     |
   +------+-------+                   |   canonical         |
          |                           +----------+----------+
          v                                      |
@@ -100,10 +100,10 @@ Python canonical bytes byte-for-byte. Content hashes are compared the
 same way. If `cargo` is absent, the test skips with a clear reason
 rather than silently pass.
 
-The Rust crate does not parse `.nm` surface syntax. It does not include
+The Rust crate does not parse `.cod` surface syntax. It does not include
 an interpreter. Both are deliberate. Semantics are still changing (see
 `docs/ROADMAP.md`); porting moving targets doubles the cost of every
-semantics change. The canonical form is the stablest piece of Noema, and
+semantics change. The canonical form is the stablest piece of Codifide, and
 it is also the piece whose cross-implementation agreement matters most
 because it is what gets hashed and shipped between agents.
 
@@ -112,7 +112,7 @@ For the full reasoning, read `docs/RUST.md`.
 ## How effects are checked
 
 Effect enforcement has two halves. Both live in
-`noema/runtime/interpreter.py`.
+`codifide/runtime/interpreter.py`.
 
 **Primitive-call half** (inside `Interpreter._call_primitive`). Every
 primitive has a declared effect label (or `None` for pure). Before
@@ -142,7 +142,7 @@ globally about side effects.
 
 Import resolution is two-stage.
 
-**Parse-time stage** (`noema/parser/parser.py`). Surface forms:
+**Parse-time stage** (`codifide/parser/parser.py`). Surface forms:
 
 - `import <name> = sha256:<hex>` — direct binding, no store needed at
   parse time. The `(name, identity)` pair lands in `Module.imports`.
@@ -153,7 +153,7 @@ Import resolution is two-stage.
   assigned it. Those resolved pairs land in the consumer's `Module.imports`
   identically to the direct form.
 
-**Load-time stage** (`noema/runtime/interpreter._ResolvedImports.from_module`).
+**Load-time stage** (`codifide/runtime/interpreter._ResolvedImports.from_module`).
 When `run()` receives a module with imports, it requires a `store=`
 argument. It iterates the imports, fetches each identity, reconstructs a
 `Definition` from its canonical JSON, and builds a name-to-`Definition`
@@ -167,7 +167,7 @@ with local ones, so shadowing cannot smuggle effects past it.
 
 ## How the store works on disk
 
-`noema/store/symbol_store.py` is a filesystem-backed key-value store.
+`codifide/store/symbol_store.py` is a filesystem-backed key-value store.
 
 **Layout.** Git-style sharded loose objects:
 
@@ -222,13 +222,13 @@ on-disk layout is fine so long as those hold.
 The conformance surface is `tests/test_conformance.py`. The test flow:
 
 1. `setUpClass` checks for `cargo` and builds the Rust binary with
-   `cargo build --release -p noema-canonical`. If either step fails, every
+   `cargo build --release -p codifide-canonical`. If either step fails, every
    test in the class is skipped with a message naming what failed.
-2. For each `examples/*.nm`:
+2. For each `examples/*.cod`:
    a. Parse with Python. Emit canonical JSON.
    b. Compute Python canonical bytes and hash.
-   c. Run the Rust binary `noema-canonical bytes` on the canonical JSON.
-   d. Run the Rust binary `noema-canonical hash` on the canonical JSON.
+   c. Run the Rust binary `codifide-canonical bytes` on the canonical JSON.
+   d. Run the Rust binary `codifide-canonical hash` on the canonical JSON.
    e. Assert byte-equality on the serialized bytes.
    f. Assert equality on the `sha256:<hex>` identity.
 
@@ -241,18 +241,18 @@ the test's module docstring.
 
 | You want to...                       | File                                    |
 |--------------------------------------|-----------------------------------------|
-| Add an AST node kind                 | `noema/core/types.py`                   |
-| Parse a new surface construct        | `noema/parser/parser.py`                |
-| Parse a new expression form          | `noema/parser/expr_parser.py`           |
-| Add a keyword or glyph               | `noema/parser/tokens.py`                |
-| Add a primitive                      | `noema/runtime/primitives.py`           |
-| Change interpreter evaluation        | `noema/runtime/interpreter.py`          |
-| Change effect-check logic            | `noema/runtime/interpreter.py` (`_check_transitive_effects`) |
-| Add a typed error                    | `noema/runtime/errors.py`               |
-| Change canonical JSON shape          | `noema/projection/canonical.py`         |
-| Change store on-disk layout          | `noema/store/symbol_store.py`           |
-| Add a CLI subcommand                 | `noema/__main__.py`                     |
-| Keep the Rust crate in sync          | `crates/noema-canonical/src/`           |
+| Add an AST node kind                 | `codifide/core/types.py`                   |
+| Parse a new surface construct        | `codifide/parser/parser.py`                |
+| Parse a new expression form          | `codifide/parser/expr_parser.py`           |
+| Add a keyword or glyph               | `codifide/parser/tokens.py`                |
+| Add a primitive                      | `codifide/runtime/primitives.py`           |
+| Change interpreter evaluation        | `codifide/runtime/interpreter.py`          |
+| Change effect-check logic            | `codifide/runtime/interpreter.py` (`_check_transitive_effects`) |
+| Add a typed error                    | `codifide/runtime/errors.py`               |
+| Change canonical JSON shape          | `codifide/projection/canonical.py`         |
+| Change store on-disk layout          | `codifide/store/symbol_store.py`           |
+| Add a CLI subcommand                 | `codifide/__main__.py`                     |
+| Keep the Rust crate in sync          | `crates/codifide-canonical/src/`           |
 
 ## Test topology
 
@@ -269,8 +269,8 @@ tests/
   test_conformance.py        Python <-> Rust byte and hash agreement
 ```
 
-Run the full suite with `python3 -m noema test`. Run Rust tests with
-`cargo test --release -p noema-canonical`.
+Run the full suite with `python3 -m codifide test`. Run Rust tests with
+`cargo test --release -p codifide-canonical`.
 
 ## Persona interaction
 

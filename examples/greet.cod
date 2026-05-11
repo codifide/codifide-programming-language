@@ -1,0 +1,23 @@
+module greet_example
+
+# A first Codifide program. Note:
+#   - `intent` is mandatory.
+#   - `effects` declares everything the body is allowed to do.
+#   - `post` is machine-checkable, not aspirational.
+
+def greet
+  intent "welcome a known user by name, neutrally"
+  sig    (name: String) -> String
+  effects {io.stdout, clock.read}
+  pre    ne(name, "")
+  post   contains(result, name)
+  cand
+    now <- clock.now
+    io.say("Hello, " ++ name ++ ", it's " ++ now.hm)
+
+def main
+  intent "entry point"
+  sig    () -> String
+  effects {io.stdout, clock.read}
+  cand
+    greet("Ada")

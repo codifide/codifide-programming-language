@@ -3,14 +3,14 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "noema"
+name = "codifide"
 version = "0.1.0"
 description = "A programming language for agentic AI"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
-  { name = "Noema contributors" },
+  { name = "Codifide contributors" },
 ]
 keywords = ["programming-language", "agentic-ai", "canonical-form"]
 classifiers = [
@@ -22,9 +22,9 @@ classifiers = [
 ]
 
 [project.scripts]
-noema = "noema.__main__:main"
+codifide = "codifide.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["noema*"]
+include = ["codifide*"]
 exclude = ["tests*", "examples*", "docs*", "dispatches*"]

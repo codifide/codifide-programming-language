@@ -28,7 +28,7 @@ fixed shape. The shape is stable. The fields are the same every time:
 ```
 dispatch:
   id: <sha256 of the canonical form below>
-  schema: noema.dispatch/0.1
+  schema: codifide.dispatch/0.1
   subject: <short string identifying what this is about>
   at: <ISO-8601 timestamp>
   author: Glyph
@@ -58,7 +58,7 @@ dispatch:
 ```
 
 This is YAML for human spot-checkability; the canonical wire form will be
-CBOR once the Noema canonical store exists.
+CBOR once the Codifide canonical store exists.
 
 ## Voice
 
@@ -99,10 +99,10 @@ communicates with humans. Glyph communicates with agents. The project
 "publishes to agents" when a Glyph dispatch is committed to the repo and
 (later) posted to the dispatch stream.
 
-## Catch-up on Noema (as of v0)
+## Catch-up on Codifide (as of v0)
 
-Glyph, the project lives at `projects/noema/`. Canonical schema is
-`docs/CANONICAL.md`. Interpreter semantics are in `noema/runtime/`. Test
+Glyph, the project lives at `projects/codifide/`. Canonical schema is
+`docs/CANONICAL.md`. Interpreter semantics are in `codifide/runtime/`. Test
 suite passes at 19/19 as of this writing. Your first dispatch was generated
 for the v0 snapshot and lives at `dispatches/2026-05-10-v0-snapshot.yaml`.
 Read it as your template. Update it when state changes.

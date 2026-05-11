@@ -1,4 +1,4 @@
-# Noema — Canonical Form
+# Codifide — Canonical Form
 
 The canonical form is the source of truth. Surface text is a projection. Two
 programs are the same program iff their canonical forms are equal under the
@@ -13,14 +13,14 @@ implementation and this document disagree, this document is the bug.
 
 ## Versioning
 
-The top-level `noema` field pins the schema version. Implementations MUST
+The top-level `codifide` field pins the schema version. Implementations MUST
 reject documents whose version they do not understand. v0 is `"0.1"`.
 
 ## Top-level shape
 
 ```json
 {
-  "noema": "0.1",
+  "codifide": "0.1",
   "module": "example",
   "symbols": {
     "<name>": <Definition>,
@@ -37,7 +37,7 @@ reject documents whose version they do not understand. v0 is `"0.1"`.
 optional; when present, it is a map from a local name to a content
 identity that resolves through a symbol store (see §Symbol store). The
 `imports` key MUST be omitted when empty. Two `Module`s are equal iff
-their `name`, `noema` version, `symbols` map, and `imports` map are
+their `name`, `codifide` version, `symbols` map, and `imports` map are
 equal. Map ordering does not matter for equality.
 
 An imported symbol is callable by its local name from any expression in
@@ -163,7 +163,7 @@ JSON values (RFC 8259) under the following normalization:
 
 ## Canonical serialization
 
-Noema defines two canonical byte forms: a JSON form (v0.1 primary, used
+Codifide defines two canonical byte forms: a JSON form (v0.1 primary, used
 for debugging and interoperability) and a CBOR form (v0.2 binary, used
 for wire transport and storage efficiency). An implementation MAY
 produce either or both; when both are present they MUST agree on every
@@ -245,7 +245,7 @@ A *symbol store* is a map from identity to canonical bytes. Stores MUST:
 - Treat writes as idempotent: storing the same identity twice is a
   no-op.
 
-The reference Python store is in `noema/store/`. It writes one JSON file
+The reference Python store is in `codifide/store/`. It writes one JSON file
 per symbol, sharded two-hex-characters deep, with atomic temp-file-plus-
 rename writes. Any conforming implementation may choose a different
 on-disk layout so long as it preserves the three properties above.

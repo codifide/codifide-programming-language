@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# End-to-end demonstration of Noema's content-addressed composition.
+# End-to-end demonstration of Codifide's content-addressed composition.
 #
 # 1. Publish two classifier symbols to a scratch store.
 # 2. Mint an index bundling those classifiers under stable names.
@@ -15,19 +15,19 @@ set -euo pipefail
 
 cd "$(dirname "$0")/../.."
 
-export NOEMA_STORE="$(mktemp -d)"
-trap "rm -rf '$NOEMA_STORE'" EXIT
+export CODIFIDE_STORE="$(mktemp -d)"
+trap "rm -rf '$CODIFIDE_STORE'" EXIT
 
 echo "=== 1. Publish classifiers to the store ==="
-python3 -m noema store put examples/triage/classifier_sentiment.nm
-python3 -m noema store put examples/triage/classifier_length.nm
+python3 -m codifide store put examples/triage/classifier_sentiment.cod
+python3 -m codifide store put examples/triage/classifier_length.cod
 echo
 
-SENTIMENT_ID=$(python3 -m noema store hash examples/triage/classifier_sentiment.nm | awk '{print $1}')
-LENGTH_ID=$(python3 -m noema store hash examples/triage/classifier_length.nm | awk '{print $1}')
+SENTIMENT_ID=$(python3 -m codifide store hash examples/triage/classifier_sentiment.cod | awk '{print $1}')
+LENGTH_ID=$(python3 -m codifide store hash examples/triage/classifier_length.cod | awk '{print $1}')
 
 echo "=== 2. Mint an index bundling both classifiers ==="
-INDEX_LINE=$(python3 -m noema store index --name triage_lib \
+INDEX_LINE=$(python3 -m codifide store index --name triage_lib \
     "classify_sentiment=$SENTIMENT_ID" \
     "classify_length=$LENGTH_ID")
 echo "$INDEX_LINE"
@@ -35,7 +35,7 @@ INDEX_ID=$(echo "$INDEX_LINE" | awk '{print $1}')
 echo
 
 echo "=== 3. Write consumer importing through the index ==="
-CONSUMER="$NOEMA_STORE/consumer.nm"
+CONSUMER="$CODIFIDE_STORE/consumer.cod"
 cat > "$CONSUMER" <<EOF
 module consumer
 
@@ -72,4 +72,4 @@ cat "$CONSUMER"
 echo
 
 echo "=== 4. Run the consumer ==="
-python3 -m noema run "$CONSUMER"
+python3 -m codifide run "$CONSUMER"

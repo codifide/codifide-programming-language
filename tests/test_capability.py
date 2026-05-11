@@ -21,13 +21,13 @@ import json
 import unittest
 from pathlib import Path
 
-from noema import canonical_cbor_bytes, content_hash_cbor
-from noema.capability import (
+from codifide import canonical_cbor_bytes, content_hash_cbor
+from codifide.capability import (
     CAPABILITY_SCHEMA_VERSION,
-    NOEMA_SCHEMA_VERSION,
+    CODIFIDE_SCHEMA_VERSION,
     generate_capability,
 )
-from noema.projection.cbor import canonical_cbor
+from codifide.projection.cbor import canonical_cbor
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -51,8 +51,8 @@ class ManifestShapeTests(unittest.TestCase):
     def test_top_level_fields_are_present(self) -> None:
         m = generate_capability()
         for key in [
-            "noema_capability",
-            "noema_schema",
+            "codifide_capability",
+            "codifide_schema",
             "generator",
             "ast_kinds",
             "primitives",
@@ -65,19 +65,19 @@ class ManifestShapeTests(unittest.TestCase):
 
     def test_schema_versions_match(self) -> None:
         m = generate_capability()
-        self.assertEqual(m["noema_capability"], CAPABILITY_SCHEMA_VERSION)
-        self.assertEqual(m["noema_schema"], NOEMA_SCHEMA_VERSION)
+        self.assertEqual(m["codifide_capability"], CAPABILITY_SCHEMA_VERSION)
+        self.assertEqual(m["codifide_schema"], CODIFIDE_SCHEMA_VERSION)
 
     def test_generator_names_current_implementation(self) -> None:
         m = generate_capability()
-        self.assertTrue(m["generator"].startswith("noema-python-"))
+        self.assertTrue(m["generator"].startswith("codifide-python-"))
 
 
 class ManifestAgreesWithImplementationTests(unittest.TestCase):
     """The manifest is not allowed to lie about what the runtime exposes."""
 
     def test_every_registered_primitive_is_in_the_manifest(self) -> None:
-        from noema.runtime.primitives import EffectTrace, build_default_registry
+        from codifide.runtime.primitives import EffectTrace, build_default_registry
 
         trace = EffectTrace.fresh()
         reg = build_default_registry(trace)
@@ -98,7 +98,7 @@ class ManifestAgreesWithImplementationTests(unittest.TestCase):
         )
 
     def test_every_primitive_records_its_effect_and_return_type(self) -> None:
-        from noema.runtime.primitives import EffectTrace, build_default_registry
+        from codifide.runtime.primitives import EffectTrace, build_default_registry
 
         trace = EffectTrace.fresh()
         reg = build_default_registry(trace)
@@ -110,19 +110,19 @@ class ManifestAgreesWithImplementationTests(unittest.TestCase):
             self.assertEqual(entry["effect"], spec.effect)
             self.assertEqual(entry["returns"], spec.returns)
 
-    def test_every_noema_error_subclass_is_in_the_manifest(self) -> None:
-        # If someone adds a new NoemaError subclass, the manifest must
+    def test_every_codifide_error_subclass_is_in_the_manifest(self) -> None:
+        # If someone adds a new CodifideError subclass, the manifest must
         # grow to match. Catches the common drift mode where a new
         # typed error appears in code without being documented for
         # agent consumers.
-        import noema.runtime.errors as errmod
+        import codifide.runtime.errors as errmod
 
         actual_errors = set()
         for attr in dir(errmod):
             cls = getattr(errmod, attr)
             if (
                 isinstance(cls, type)
-                and issubclass(cls, errmod.NoemaError)
+                and issubclass(cls, errmod.CodifideError)
                 and cls.__module__ == errmod.__name__
             ):
                 actual_errors.add(cls.__name__)
@@ -137,7 +137,7 @@ class ManifestAgreesWithImplementationTests(unittest.TestCase):
         )
 
     def test_effects_list_matches_primitive_effect_labels(self) -> None:
-        from noema.runtime.primitives import EffectTrace, build_default_registry
+        from codifide.runtime.primitives import EffectTrace, build_default_registry
 
         trace = EffectTrace.fresh()
         reg = build_default_registry(trace)
@@ -152,7 +152,7 @@ class ManifestAgreesWithImplementationTests(unittest.TestCase):
         self.assertEqual(m["effects"], sorted(m["effects"]))
 
     def test_surface_keywords_match_the_parser_tables(self) -> None:
-        from noema.parser import tokens as _tokens
+        from codifide.parser import tokens as _tokens
 
         m = generate_capability()
         # Every canonical keyword appears exactly once.
@@ -172,7 +172,7 @@ class ManifestCheckedInFileTests(unittest.TestCase):
         if not CHECKED_IN.exists():
             self.skipTest(
                 f"checked-in manifest not present at {CHECKED_IN}. "
-                "Run `python3 -m noema capability > docs/capability-0.1.json` "
+                "Run `python3 -m codifide capability > docs/capability-0.1.json` "
                 "to regenerate."
             )
         checked_in = json.loads(CHECKED_IN.read_text(encoding="utf-8"))
@@ -181,7 +181,7 @@ class ManifestCheckedInFileTests(unittest.TestCase):
             _strip_generator(checked_in),
             _strip_generator(regenerated),
             "docs/capability-0.1.json is stale. Regenerate with "
-            "`python3 -m noema capability > docs/capability-0.1.json`.",
+            "`python3 -m codifide capability > docs/capability-0.1.json`.",
         )
 
 

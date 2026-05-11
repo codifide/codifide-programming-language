@@ -14,8 +14,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from noema import parse
-from noema.store import (
+from codifide import parse
+from codifide.store import (
     IntegrityError,
     NotFound,
     StoreError,
@@ -174,7 +174,7 @@ def b
 
 
 class StoreVerifyTests(unittest.TestCase):
-    """`noema store verify <hash>` closes Sable's P3-1 from the index audit.
+    """`codifide store verify <hash>` closes Sable's P3-1 from the index audit.
 
     The capability: given a stored module (especially an index), walk
     its imports and report any pointees missing from the store. The
@@ -194,7 +194,7 @@ class StoreVerifyTests(unittest.TestCase):
     def _run_cli(self, *args: str) -> subprocess.CompletedProcess:
         import sys
         return subprocess.run(
-            [sys.executable, "-m", "noema", "store", "--store", self._tmp.name, *args],
+            [sys.executable, "-m", "codifide", "store", "--store", self._tmp.name, *args],
             capture_output=True,
             text=True,
         )
@@ -218,8 +218,8 @@ class StoreVerifyTests(unittest.TestCase):
         # Build an index that points at a non-existent identity; `put`
         # the index directly so we can control exactly which pointees
         # are or are not present.
-        from noema.core.types import Module
-        from noema.projection.canonical import to_canonical
+        from codifide.core.types import Module
+        from codifide.projection.canonical import to_canonical
 
         ghost_id = "sha256:" + "0" * 64
         bad_index = Module(
@@ -255,7 +255,7 @@ class StoreRustConformance(unittest.TestCase):
     """
 
     REPO_ROOT = Path(__file__).resolve().parent.parent
-    RUST_BIN = REPO_ROOT / "target" / "release" / "noema-canonical"
+    RUST_BIN = REPO_ROOT / "target" / "release" / "codifide-canonical"
 
     @classmethod
     def setUpClass(cls) -> None:

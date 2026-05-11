@@ -74,7 +74,7 @@
       ]
     },
     "lit": {
-      "description": "A literal value carrying its type, confidence, and provenance \u2014 the small knowledge-graph shape of every Noema value.",
+      "description": "A literal value carrying its type, confidence, and provenance \u2014 the small knowledge-graph shape of every Codifide value.",
       "fields": [
         {
           "name": "value",
@@ -113,6 +113,8 @@
       ]
     }
   },
+  "codifide_capability": "0.1",
+  "codifide_schema": "0.1",
   "effects": [
     "clock.read",
     "io.stdout",
@@ -121,8 +123,8 @@
   "errors": [
     {
       "fatal": false,
-      "name": "NoemaError",
-      "when": "Base class for all Noema-level errors. Not raised directly."
+      "name": "CodifideError",
+      "when": "Base class for all Codifide-level errors. Not raised directly."
     },
     {
       "fatal": true,
@@ -165,7 +167,7 @@
       "when": "\u22a5 reached a primitive that cannot consume it."
     }
   ],
-  "generator": "noema-python-0.1.0",
+  "generator": "codifide-python-0.1.0",
   "literal_types": [
     "Any",
     "Bool",
@@ -179,8 +181,6 @@
     "String",
     "Unit"
   ],
-  "noema_capability": "0.1",
-  "noema_schema": "0.1",
   "primitives": [
     {
       "effect": null,

@@ -8,8 +8,8 @@ from __future__ import annotations
 import json
 import unittest
 
-from noema import parse
-from noema.projection.canonical import from_canonical, to_canonical
+from codifide import parse
+from codifide.projection.canonical import from_canonical, to_canonical
 
 
 class CanonicalRoundTripTests(unittest.TestCase):
@@ -78,7 +78,7 @@ def judge
         # The *surface parser* does not yet accept multi-line values in
         # believe arms, so we build this form directly and verify the
         # canonical JSON layer preserves the structure.
-        from noema.core.types import (
+        from codifide.core.types import (
             Believe, BottomExpr, Call, Candidate, Definition,
             Lit, Module, Ref, Signature,
         )

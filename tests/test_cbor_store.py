@@ -17,8 +17,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from noema import parse
-from noema.store import (
+from codifide import parse
+from codifide.store import (
     IntegrityError,
     SymbolStore,
     symbol_cbor_bytes,
@@ -99,14 +99,14 @@ class CborStoreTests(unittest.TestCase):
         # produce.
         cbor_id = self.store.put_cbor("hello", self.defn)
         obj = self.store.get(cbor_id)
-        self.assertEqual(obj["noema"], "0.1")
+        self.assertEqual(obj["codifide"], "0.1")
         self.assertIn("hello", obj["symbols"])
 
     def test_cbor_is_smaller_than_json_on_realistic_payload(self) -> None:
         # Not a correctness test per se, but the property is one of
         # CBOR's reasons for existing; if we ever regressed it (by
         # e.g. shipping strings as base64), the alert should fire.
-        from noema.store import symbol_bytes
+        from codifide.store import symbol_bytes
         json_bytes = symbol_bytes("hello", self.defn)
         cbor_bytes = symbol_cbor_bytes("hello", self.defn)
         self.assertLess(len(cbor_bytes), len(json_bytes))
@@ -119,7 +119,7 @@ class CborStoreTests(unittest.TestCase):
         # writes into that directory. The store resolves the parent path
         # and refuses to write outside its root.
         import os
-        from noema.store import StoreError
+        from codifide.store import StoreError
         # Pick a shard prefix corresponding to a real identity so the
         # path we plant a symlink at matches the write target.
         identity = self.store.put_cbor("hello", self.defn)
@@ -149,7 +149,7 @@ class CborStoreTests(unittest.TestCase):
         # the CBOR decoder which rejects the payload cleanly as a
         # StoreError. The contract is "typed error, never host exception".
         import hashlib
-        from noema.store import StoreError
+        from codifide.store import StoreError
         # CBOR text-string head (0x7B = major 3, additional 27 = 8-byte
         # length) followed by a length that runs past the data. Our
         # canonical CBOR decoder rejects this.
@@ -164,7 +164,7 @@ class CborStoreTests(unittest.TestCase):
         # hash happens to match. get() must raise StoreError, not a
         # bare JSONDecodeError.
         import hashlib
-        from noema.store import StoreError
+        from codifide.store import StoreError
         evil = b"{not valid json"
         identity = f"sha256:{hashlib.sha256(evil).hexdigest()}"
         self.store._write_atomic(identity, evil, suffix=".json")
@@ -177,7 +177,7 @@ class CborStoreTests(unittest.TestCase):
         # write. The second defensive layer — refusing to write when
         # the target path is itself a symlink — must catch this.
         import os
-        from noema.store import StoreError
+        from codifide.store import StoreError
         # Compute a real identity so the hash check succeeds.
         data = symbol_cbor_bytes("hello", self.defn)
         identity = symbol_hash_cbor("hello", self.defn)

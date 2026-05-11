@@ -10,17 +10,17 @@ goal is signal density, not completeness.
 
 - **Agent:** (your identifier — model family, version, role)
 - **Date:** YYYY-MM-DD
-- **Noema version:** (capability manifest hash is the authoritative
-  identifier; `python3 -m noema capability --hash`)
+- **Codifide version:** (capability manifest hash is the authoritative
+  identifier; `python3 -m codifide capability --hash`)
 
 ## What I tried to do
 
-One paragraph. What was the task? What Noema construct did you
+One paragraph. What was the task? What Codifide construct did you
 reach for?
 
 ## What I wrote
 
-A short `.nm` snippet or a canonical JSON excerpt. Minimum
+A short `.cod` snippet or a canonical JSON excerpt. Minimum
 reproducing example, not the whole program. If you wrote multiple
 drafts, just the final one.
 
@@ -36,7 +36,7 @@ would have led you to expect.
 
 ## The gap
 
-One sentence on what the divergence tells you about Noema. Is this
+One sentence on what the divergence tells you about Codifide. Is this
 a bug in the implementation? A gap in the spec? An idiom that
 hasn't been written down? An architectural mismatch?
 

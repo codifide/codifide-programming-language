@@ -1,4 +1,4 @@
-# Noema — Roadmap
+# Codifide — Roadmap
 
 ## v0 (this commit)
 - Canonical JSON schema

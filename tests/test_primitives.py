@@ -2,7 +2,7 @@
 
 Roadmap v0.1 extended the pure primitive set with math helpers,
 collection aggregates, and string operations. Each test below runs a
-small Noema program that exercises a group of primitives end-to-end, so
+small Codifide program that exercises a group of primitives end-to-end, so
 we cover the parser, the effect check (every new primitive is pure),
 and the `_call_primitive` wrapping path in one shot.
 
@@ -14,8 +14,8 @@ from __future__ import annotations
 
 import unittest
 
-from noema import parse, run
-from noema.runtime.errors import PrimitiveError
+from codifide import parse, run
+from codifide.runtime.errors import PrimitiveError
 
 
 class PrimitiveLibraryTests(unittest.TestCase):
@@ -95,14 +95,14 @@ def bake
   sig    () -> List
   effects {}
   cand
-    list(upper("cafe"), lower("NOEMA"), trim("  hi  "), starts_with("noema", "no"), ends_with("noema", "ma"), replace("a-b-c", "-", "/"), split("a,b,c", ","), join("/", split("a,b,c", ",")))
+    list(upper("cafe"), lower("CODIFIDE"), trim("  hi  "), starts_with("codifide", "codi"), ends_with("codifide", "fide"), replace("a-b-c", "-", "/"), split("a,b,c", ","), join("/", split("a,b,c", ",")))
 """
         result = run(parse(src), "bake")
         self.assertEqual(
             result,
             [
                 "CAFE",
-                "noema",
+                "codifide",
                 "hi",
                 True,
                 True,
@@ -116,7 +116,7 @@ def bake
 
     def test_min_of_empty_surfaces_as_primitive_error(self) -> None:
         # `min([])` raises ValueError in Python; `_call_primitive` must
-        # wrap that as a typed Noema error so hosts can classify it
+        # wrap that as a typed Codifide error so hosts can classify it
         # uniformly. Mirrors the div-by-zero regression in test_runtime.
         src = """
 def boom

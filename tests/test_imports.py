@@ -25,9 +25,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from noema import parse, run, to_canonical, from_canonical
-from noema.runtime.errors import EffectViolation, NoemaError, ParseError
-from noema.store import IntegrityError, SymbolStore
+from codifide import parse, run, to_canonical, from_canonical
+from codifide.runtime.errors import EffectViolation, CodifideError, ParseError
+from codifide.store import IntegrityError, SymbolStore
 
 
 LIB_SRC = """
@@ -87,14 +87,14 @@ class ImportResolutionTests(unittest.TestCase):
 
     def test_import_without_store_is_rejected(self) -> None:
         m = parse(_consumer_src(self.lib_id))
-        with self.assertRaises(NoemaError) as cm:
+        with self.assertRaises(CodifideError) as cm:
             run(m, "main")
         self.assertIn("no store", str(cm.exception).lower())
 
     def test_import_of_missing_identity_is_rejected(self) -> None:
         bogus = "sha256:" + "0" * 64
         m = parse(_consumer_src(bogus))
-        with self.assertRaises(NoemaError) as cm:
+        with self.assertRaises(CodifideError) as cm:
             run(m, "main", store=self.store)
         self.assertIn("cannot resolve import", str(cm.exception).lower())
 
@@ -106,9 +106,9 @@ class ImportResolutionTests(unittest.TestCase):
         path = Path(self._tmp.name) / "sha256" / digest[:2] / f"{digest[2:]}.json"
         path.write_bytes(path.read_bytes() + b" /* tampered */")
         m = parse(_consumer_src(self.lib_id))
-        with self.assertRaises(NoemaError) as cm:
+        with self.assertRaises(CodifideError) as cm:
             run(m, "main", store=self.store)
-        # The wrapped cause is an IntegrityError; the outer Noema error
+        # The wrapped cause is an IntegrityError; the outer Codifide error
         # carries the message.
         self.assertIsInstance(cm.exception.__cause__, IntegrityError)
 
@@ -217,7 +217,7 @@ def x
         # This is what makes import-by-identity safe: a module's
         # canonical bytes (and therefore its hash) depend on which
         # identities it imports. Swapping an import is a new module.
-        from noema import canonical_bytes
+        from codifide import canonical_bytes
 
         hash_a = "sha256:" + "a" * 64
         hash_b = "sha256:" + "b" * 64

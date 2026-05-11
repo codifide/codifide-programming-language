@@ -1,22 +1,22 @@
-# Noema — Capability Manifest
+# Codifide — Capability Manifest
 
 A capability manifest is a canonical document that describes the
-Noema language's interface to its consumers. Another agent reads the
+Codifide language's interface to its consumers. Another agent reads the
 manifest once, caches it, and plans code against it without reading
 any implementation source.
 
-The manifest is distinct from a Noema module: modules are programs,
+The manifest is distinct from a Codifide module: modules are programs,
 manifests are metadata about the language those programs can be
 written in. The two share the canonical form (JSON + CBOR, same byte
 rules, same content-hash scheme) but have different top-level schemas.
 
 ## Why this exists
 
-Noema is designed for agent consumers, not humans. A human-facing
+Codifide is designed for agent consumers, not humans. A human-facing
 language ships tutorials and reference docs; an agent-facing language
 ships structured metadata the agent can act on. Today, an agent that
 wants to know "which primitives exist and what effects do they
-produce" must read `noema/runtime/primitives.py`. That is a human
+produce" must read `codifide/runtime/primitives.py`. That is a human
 workflow wearing an agent costume.
 
 The manifest fixes that. One document, self-describing, content
@@ -27,9 +27,9 @@ it can call and what every call will mean.
 
 ```json
 {
-  "noema_capability": "0.1",
-  "noema_schema": "0.1",
-  "generator": "noema-python-0.1-dev",
+  "codifide_capability": "0.1",
+  "codifide_schema": "0.1",
+  "generator": "codifide-python-0.1-dev",
   "ast_kinds": { ... },
   "primitives": [ ... ],
   "effects": [ ... ],
@@ -39,8 +39,8 @@ it can call and what every call will mean.
 }
 ```
 
-- `noema_capability` — the manifest's own schema version.
-- `noema_schema` — the canonical-form schema version this manifest
+- `codifide_capability` — the manifest's own schema version.
+- `codifide_schema` — the canonical-form schema version this manifest
   describes.
 - `generator` — which implementation produced this manifest. Freeform
   string; used for provenance, not for dispatch. Implementations are
@@ -119,8 +119,8 @@ Each entry under `errors` describes one typed error class:
 `when` is human-readable but deliberately terse. `fatal` marks whether
 the error typically stops execution or is expected to be caught by
 the program (e.g., a `bottom` handler may surface `RefusalError` in
-a context that wants to recover). All Noema errors inherit from
-`NoemaError` in the Python reference; consumers that need to
+a context that wants to recover). All Codifide errors inherit from
+`CodifideError` in the Python reference; consumers that need to
 classify host exceptions should treat anything not in this list as a
 host bug.
 
@@ -135,7 +135,7 @@ the same language version MUST produce a document that, after
 normalization, agrees byte-for-byte with the canonical manifest
 shipped in the repository.
 
-Two capability versions that declare `noema_capability` = `0.1` and
+Two capability versions that declare `codifide_capability` = `0.1` and
 agree on every field described above produce identical byte forms
 and identical hashes, regardless of which implementation generated
 them — except for the `generator` field, which is expected to
@@ -147,8 +147,8 @@ equivalence class.
 
 ## Stability
 
-The manifest schema (`noema_capability`) evolves independently of
-the program schema (`noema_schema`). A new primitive or error
+The manifest schema (`codifide_capability`) evolves independently of
+the program schema (`codifide_schema`). A new primitive or error
 class is a change to the manifest but not to the program schema.
 Versioning both fields lets consumers decide whether a change
 affects them: a manifest schema bump might only affect agents that

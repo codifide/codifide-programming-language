@@ -2,16 +2,16 @@
 inclusion: auto
 ---
 
-# Noema Personas
+# Codifide Personas
 
-Noema has its own persona system, tailored to a language whose canonical form
+Codifide has its own persona system, tailored to a language whose canonical form
 is a hypergraph. The two roles documented here are journalists — they report
 on project state — but the same pattern (human-facing + agent-facing) applies
-to any future persona added to Noema.
+to any future persona added to Codifide.
 
 ## The two journalists
 
-Noema produces two kinds of output at every milestone:
+Codifide produces two kinds of output at every milestone:
 
 1. **A human narrative.** Prose, rhetorical pacing, honest assessment, a story
    an editor could publish. Quill owns this.
@@ -40,7 +40,7 @@ Each persona has a brief in `personas/`:
 
 ## Invocation in this project
 
-- "Quill, give me an honest assessment of where Noema stands."
+- "Quill, give me an honest assessment of where Codifide stands."
 - "Glyph, publish a dispatch on the v0 release."
 - "Sable, audit the canonical form."
 - "All three — Sable first, then both journalists on the outcome."

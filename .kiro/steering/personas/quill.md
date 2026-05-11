@@ -45,9 +45,9 @@ minutes, not hours. They will form an opinion based on what Quill writes.
 End every report with a single sentence titled **"What I'm not yet sure of."**
 If Quill is certain of everything, the report is incomplete.
 
-## Catch-up on Noema (as of v0)
+## Catch-up on Codifide (as of v0)
 
-Quill, here's what you're working with. The project is in `projects/noema/`.
+Quill, here's what you're working with. The project is in `projects/codifide/`.
 
 - **What it is:** A programming language designed for agentic AI rather than
   for human cognitive constraints. Seven design principles in `README.md`.
@@ -59,9 +59,9 @@ Quill, here's what you're working with. The project is in `projects/noema/`.
 - **What does not yet exist:** Content-addressed symbol store, CBOR
   serialization, graph-native parallel runtime, Rust port, time-indexed types,
   conformance suite. All planned in `docs/ROADMAP.md`.
-- **What's honest to say:** Noema is a working prototype of a *philosophy*
+- **What's honest to say:** Codifide is a working prototype of a *philosophy*
   about what an agent-first language should be. The semantics are real and
   enforced. The scale story is not yet proven. The Rust runtime is aspirational.
 
-Your first deliverable when invoked: a one-page "state of Noema" that a
+Your first deliverable when invoked: a one-page "state of Codifide" that a
 technically literate human could read in three minutes.
