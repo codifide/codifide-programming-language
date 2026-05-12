@@ -1,0 +1,51 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: Rust parser landed — codifide-run is fully self-contained (2026-05-12)
+  at: 2026-05-12
+  author: Glyph
+  intent: >
+    Attest the Rust parser landing. codifide-run no longer calls Python
+    for anything. Parse, evaluate, output — pure Rust, no subprocess.
+    Parser conformance: byte-for-byte agreement with Python on all examples.
+
+  test_counts:
+    python_passing: 289
+    python_skipped: 0
+    rust_canonical_passing: 28
+    rust_interpreter_conformance: 70
+    rust_parser_conformance: 3
+
+  shipped:
+    new_module: crates/codifide-interpreter/src/parser/
+    files:
+      - tokens.rs
+      - lexer.rs
+      - expr_parser.rs
+      - mod.rs
+    new_subcommand: "codifide-run parse <file.cod>"
+    test_file: tests/test_rust_parser.py
+
+  bugs_fixed:
+    - id: compose-steps-flattening
+      description: >
+        compose_steps was flattening multi-step candidate bodies into a
+        single Seq instead of nesting them as Python does. Fixed: Rust
+        now mirrors Python's recursive Seq(head, compose_steps(tail)).
+
+  performance:
+    conformance_bridge_before: "4.78s"
+    conformance_bridge_after: "0.78s"
+    speedup: "6x — entirely from removing Python subprocess for parsing"
+
+  not_yet_done:
+    - from-identity-import-requires-store
+    - python-cli-canonical-still-uses-python-parser
+    - rust-parser-unit-tests-beyond-conformance-bridge
+
+  unknowns:
+    - Whether from-import deferral is the right call before the
+      parallel evaluator. Gap is invisible to the conformance bridge.
+
+  links:
+    human_readout: dispatches/2026-05-12-rust-parser-post.readout.md
+    proposal: dispatches/2026-05-12-rust-parser-proposal.readout.md

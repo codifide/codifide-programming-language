@@ -1,0 +1,84 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: Session close — 2026-05-12 (v2-A complete)
+  at: 2026-05-12
+  author: Glyph
+  intent: >
+    Attest the close of the 2026-05-12 session. v2-A is complete.
+    Rust interpreter, parser, benchmarks, parallel evaluator, three
+    new examples. 289 Python tests, 28 Rust canonical, 70 interpreter
+    conformance, 3 parser conformance. All passing.
+
+  v2_shape: A
+  v2_status: complete
+
+  shipped_today:
+    - id: rust-interpreter
+      version: "2.0.0"
+      tests: 70 conformance passing
+      speedup: "6-25x over Python"
+    - id: rust-default-runtime
+      note: codifide run delegates to Rust; --runtime python falls back
+    - id: rust-parser
+      note: codifide-run fully self-contained, no Python subprocess
+      tests: 3 parser conformance passing
+    - id: benchmarks
+      file: crates/codifide-interpreter/benches/interpreter.rs
+      baseline_established: true
+    - id: parallel-evaluator
+      status: infrastructure-correct-programs-too-small
+      note: >
+        Sequential Rust is the real v2-A story. Parallel evaluator
+        needs programs where each branch takes >100us.
+    - id: three-new-examples
+      files:
+        - examples/batch_classify.cod
+        - examples/recursive_sum.cod
+        - examples/text_stats.cod
+
+  test_counts:
+    python_passing: 289
+    python_skipped: 0
+    rust_canonical_passing: 28
+    rust_interpreter_conformance: 70
+    rust_parser_conformance: 3
+
+  capability_manifest_hash: sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d
+  capability_manifest_changed: false
+
+  commit: 1fc8bc3
+  pushed_to: origin/main
+
+  open_items:
+    - id: larger-parallel-benchmark
+      priority: HIGH
+      description: >
+        A program where each branch takes >100us to demonstrate the
+        parallel evaluator speedup. batch_classify.cod is the candidate;
+        needs a slower mock for vision.classify.
+    - id: from-import-in-rust-parser
+      priority: MEDIUM
+      description: from-import requires store access; deferred from v2-A
+    - id: external-model-rerun
+      priority: HIGH
+      description: >
+        Hand v2 to a fresh agent with no coaching. Most valuable
+        unmeasured thing. Cannot be done from this session.
+    - id: v2b-protocol
+      priority: ROADMAP
+      description: >
+        Remote symbol resolution, signed dispatch wire format.
+        Rust binary is now self-contained and fast — the foundation
+        the protocol work needs.
+
+  unknowns:
+    - Whether parallel evaluator threshold is right long-term or
+      whether a work-estimation heuristic would be better.
+    - Whether the language is actually usable at the level we think
+      it is — only the external-model experiment answers this.
+
+  links:
+    human_readout: dispatches/2026-05-12-session-close.readout.md
+    session_state: sessions/2026-05-12.md
+    v2a_session_open: dispatches/2026-05-12-v2a-session-open.readout.md
+    v2a_milestone: dispatches/2026-05-12-v2a-milestone-post.readout.md

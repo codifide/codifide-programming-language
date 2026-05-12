@@ -1,0 +1,74 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: Graph-native parallel evaluator — proposal (2026-05-12)
+  at: 2026-05-12
+  author: Glyph
+  intent: >
+    Propose adding a graph-native parallel evaluator to the Rust
+    interpreter. Parallelizes independent sub-expressions at the node
+    level using Rayon. Effect algebra governs what is safe to parallelize.
+
+  proposal_type: new-capability
+  governance_required:
+    - proposal-dispatch: true
+    - sable-audit: true
+    - douglas-approval: standing-go
+
+  parallelism_sites:
+    - Call arguments (all args are direct user calls, disjoint effects)
+    - Concat parts (same rule)
+    - Believe arms (deferred — PE-5)
+
+  effect_constraint:
+    mechanism: static-over-approximation via expr_effects()
+    rule: all pairs of parallel expressions must have disjoint effect sets
+    note: conservative — may serialize expressions that could theoretically
+          run in parallel, but never runs two expressions in parallel unsafely
+
+  sable_findings:
+    PE-1:
+      severity: P1
+      status: blocking
+      description: EffectTrace merge order must be enforced via indexed collection
+      resolution: rayon::scope with indexed slots, sort by index before merge
+    PE-2:
+      severity: P2
+      status: non-blocking
+      description: Conservative effect analysis uses declared signature effects
+      resolution: documented
+    PE-3:
+      severity: P1
+      status: blocking
+      description: Recursion depth counter not thread-safe
+      resolution: each branch gets its own Interpreter with inherited depth
+    PE-4:
+      severity: P2
+      status: non-blocking
+      description: Threshold heuristic unspecified
+      resolution: all args must be direct user calls (not mixed arithmetic)
+    PE-5:
+      severity: P3
+      status: non-blocking
+      description: Believe arm parallelism lower priority
+      resolution: deferred
+
+  implementation:
+    crate: crates/codifide-interpreter
+    new_file: src/parallel.rs
+    rayon_api: rayon::scope (requires Send, not Sync)
+    pointer_transmission: usize cast (avoids raw pointer Send/Sync issues)
+
+  benchmark_targets:
+    fizzbuzz: "15 independent calls — primary target"
+    pipeline: "3 independent calls"
+    balanced_brackets: "sequential by nature — no parallelism"
+    classify: "single call chain — no parallelism"
+
+  unknowns:
+    - Whether Rayon thread-spawn overhead will eat gains for small programs
+    - Whether the threshold is calibrated correctly for current programs
+
+  links:
+    human_readout: dispatches/2026-05-12-parallel-evaluator-proposal.readout.md
+    audit: dispatches/2026-05-12-parallel-evaluator-audit.md
+    benchmarks: dispatches/2026-05-12-benchmarks.readout.md

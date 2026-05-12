@@ -1,0 +1,66 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: Graph-native parallel evaluator — post-work (2026-05-12)
+  at: 2026-05-12
+  author: Glyph
+  intent: >
+    Attest the parallel evaluator implementation. Infrastructure is
+    correct and in place. Current programs are too small to benefit;
+    the sequential Rust interpreter is the real v2-A performance story.
+
+  shipped:
+    new_file: crates/codifide-interpreter/src/parallel.rs
+    new_method: eval_parallel_exprs (interpreter.rs)
+    new_method: call_with_vals (interpreter.rs)
+    dependency_added: rayon = "1.10"
+
+  sable_findings_status:
+    PE-1: resolved-indexed-slots-declaration-order-guaranteed
+    PE-2: resolved-documented-conservative-over-approximation
+    PE-3: resolved-per-branch-interpreter-with-inherited-depth
+    PE-4: resolved-all-args-must-be-direct-user-calls
+    PE-5: deferred-believe-arm-parallelism
+
+  conformance:
+    tests_passing: 70
+    tests_failing: 0
+    note: parallel evaluator does not change observable semantics
+
+  benchmark_results:
+    threshold_correctly_excludes:
+      - balanced_brackets (recursive mixed-arg calls)
+    parallel_path_active_for: none-in-current-benchmark-suite
+    reason: >
+      Rayon thread-spawn overhead (~5-10us per task) exceeds work per
+      branch for current programs (~2us per fizzbuzz_one call).
+      fizzbuzz regressed from 29us to 66us when parallel path was
+      enabled. Reverted to sequential for Call eval arm.
+
+  honest_assessment: >
+    The sequential Rust interpreter (6-25x faster than Python) is the
+    real v2-A performance story. The parallel evaluator is architecturally
+    correct and will show speedup for programs where each branch takes
+    >100us. Current benchmark programs are too small.
+
+  new_examples:
+    - file: examples/batch_classify.cod
+      description: 8 independent model calls — primary parallel evaluator target
+      result: "['cat', 'dog', 'uncertain', 'fish', 'uncertain', 'rabbit', 'uncertain', 'turtle']"
+    - file: examples/recursive_sum.cod
+      description: recursive list sum with postcondition cross-check
+      result: "[15, 60, 0, 100]"
+    - file: examples/text_stats.cod
+      description: 4 independent pure functions composed into result list
+      result: "[[2, 10, false, 'short'], [9, 35, false, 'medium'], [4, 16, true, 'short']]"
+
+  unknowns:
+    - Whether all-args-must-be-direct-user-calls is the right long-term
+      threshold or whether work-estimation would be better.
+    - When batch_classify.cod will have a real model backend slow enough
+      to demonstrate the parallel speedup.
+
+  links:
+    human_readout: dispatches/2026-05-12-parallel-evaluator-post.readout.md
+    proposal: dispatches/2026-05-12-parallel-evaluator-proposal.readout.md
+    audit: dispatches/2026-05-12-parallel-evaluator-audit.md
+    benchmarks: dispatches/2026-05-12-benchmarks.readout.md

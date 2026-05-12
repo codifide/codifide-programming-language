@@ -15,12 +15,14 @@ Filename convention:
 |---|---|---|---|---|
 | `benchmarks` | Benchmarks — Rust interpreter baseline (2026-05-12) | [md](./2026-05-12-benchmarks.readout.md) | [yaml](./2026-05-12-benchmarks.yaml) |  |
 | `parallel-evaluator` |  |  |  | [md](./2026-05-12-parallel-evaluator-audit.md) |
-| `parallel-evaluator-proposal` |  | [md](./2026-05-12-parallel-evaluator-proposal.readout.md) |  |  |
+| `parallel-evaluator-post` | Graph-native parallel evaluator — post-work (2026-05-12) | [md](./2026-05-12-parallel-evaluator-post.readout.md) | [yaml](./2026-05-12-parallel-evaluator-post.yaml) |  |
+| `parallel-evaluator-proposal` | Graph-native parallel evaluator — proposal (2026-05-12) | [md](./2026-05-12-parallel-evaluator-proposal.readout.md) | [yaml](./2026-05-12-parallel-evaluator-proposal.yaml) |  |
 | `rust-interpreter` |  |  |  | [md](./2026-05-12-rust-interpreter-audit.md) |
 | `rust-interpreter-post` | Rust interpreter — first implementation landed (2026-05-12) | [md](./2026-05-12-rust-interpreter-post.readout.md) | [yaml](./2026-05-12-rust-interpreter-post.yaml) |  |
 | `rust-interpreter-proposal` | Rust interpreter port — proposal (2026-05-12) | [md](./2026-05-12-rust-interpreter-proposal.readout.md) | [yaml](./2026-05-12-rust-interpreter-proposal.yaml) |  |
-| `rust-parser-post` |  | [md](./2026-05-12-rust-parser-post.readout.md) |  |  |
-| `rust-parser-proposal` |  | [md](./2026-05-12-rust-parser-proposal.readout.md) |  |  |
+| `rust-parser-post` | Rust parser landed — codifide-run is fully self-contained (2026-05-12) | [md](./2026-05-12-rust-parser-post.readout.md) | [yaml](./2026-05-12-rust-parser-post.yaml) |  |
+| `rust-parser-proposal` | Rust parser — proposal (2026-05-12) | [md](./2026-05-12-rust-parser-proposal.readout.md) | [yaml](./2026-05-12-rust-parser-proposal.yaml) |  |
+| `session-close` | Session close — 2026-05-12 (v2-A complete) | [md](./2026-05-12-session-close.readout.md) | [yaml](./2026-05-12-session-close.yaml) |  |
 | `v2a-milestone-post` | v2-A milestone — Rust interpreter is the default runtime (2026-05-12) | [md](./2026-05-12-v2a-milestone-post.readout.md) | [yaml](./2026-05-12-v2a-milestone-post.yaml) |  |
 | `v2a-session-open` | v2-A session open — Rust interpreter port (2026-05-12) | [md](./2026-05-12-v2a-session-open.readout.md) | [yaml](./2026-05-12-v2a-session-open.yaml) |  |
 

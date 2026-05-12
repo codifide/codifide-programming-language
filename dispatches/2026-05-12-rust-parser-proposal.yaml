@@ -1,0 +1,53 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: Rust parser — proposal (2026-05-12)
+  at: 2026-05-12
+  author: Glyph
+  intent: >
+    Propose porting the Codifide surface-syntax parser from Python to
+    Rust. Removes the Python subprocess dependency from codifide-run.
+    After this lands the binary is fully self-contained.
+
+  proposal_type: new-capability
+  governance_required:
+    - proposal-dispatch: true
+    - sable-audit: false
+    - douglas-approval: standing-go
+
+  in_scope:
+    - line-oriented-outer-parser
+    - expression-lexer
+    - recursive-descent-expr-parser
+    - infix-desugaring
+    - multi-line-expression-continuation
+    - all-surface-keywords-ascii-and-unicode
+    - import-direct-identity-binding
+    - module-declaration
+    - comment-stripping
+
+  out_of_scope:
+    - from-identity-import-requires-store
+    - store-integration-in-rust-binary
+
+  conformance_surface:
+    mechanism: parse-both-compare-canonical-json-bytes
+    new_test_file: tests/test_rust_parser.py
+    rust_subcommand: "codifide-run parse <file.cod>"
+    authority: Python parser output via to_canonical()
+
+  crate_structure:
+    location: crates/codifide-interpreter/src/parser/
+    files:
+      - tokens.rs
+      - lexer.rs
+      - expr_parser.rs
+      - mod.rs
+
+  unknowns:
+    - Whether infix desugaring as a pre-pass (matching Python) is
+      better than integrating it into the recursive-descent parser.
+      Decision: pre-pass to match Python exactly.
+
+  links:
+    human_readout: dispatches/2026-05-12-rust-parser-proposal.readout.md
+    post: dispatches/2026-05-12-rust-parser-post.readout.md
