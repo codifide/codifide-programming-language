@@ -562,6 +562,79 @@ def cmd_dispatch_index(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_dispatch_check(args: argparse.Namespace) -> int:
+    """Check dispatch stream completeness — flag orphaned readouts and missing pairs.
+
+    Every Quill readout (.readout.md) should have a paired Glyph YAML (.yaml).
+    Every session date should have a session-close pair.
+    Proposals that have a readout but no YAML are flagged.
+
+    Exits 0 if complete, 1 if gaps found. Designed to run as an agentStop
+    hook so Quill and Glyph don't fall asleep on the job.
+    """
+    from pathlib import Path as _Path
+    from .dispatch_index import _collect_entries
+
+    repo_root = _Path(__file__).resolve().parent.parent
+    dispatch_dir = repo_root / "dispatches"
+    if not dispatch_dir.exists():
+        return 0
+
+    entries = _collect_entries(dispatch_dir)
+    gaps = []
+
+    for e in entries:
+        # A readout without a paired YAML is an orphan.
+        # Exception: standalone .md dispatches (audit notes, journals)
+        # that were never intended to have a YAML pair are fine — they
+        # show up with readout_path but no yaml_path AND their slug
+        # doesn't end in a pattern that implies a pair is expected.
+        # We flag it if the readout path ends in .readout.md (explicit
+        # Quill output) but no YAML exists.
+        if (
+            e.readout_path
+            and e.readout_path.endswith(".readout.md")
+            and not e.yaml_path
+        ):
+            gaps.append(
+                f"  ORPHAN  {e.date}-{e.slug}: "
+                f"readout exists but no paired Glyph YAML"
+            )
+
+        # A YAML without a readout is unusual but not always wrong
+        # (some Glyph dispatches are standalone). Don't flag these.
+
+    # Check for session-close pair on any date that has other dispatches.
+    dates_with_dispatches = {e.date for e in entries}
+    dates_with_close = {
+        e.date for e in entries
+        if e.slug == "session-close" and e.readout_path and e.yaml_path
+    }
+    # Only flag today's date if it has dispatches but no close pair —
+    # past sessions are already closed.
+    import datetime
+    today = datetime.date.today().isoformat()
+    if today in dates_with_dispatches and today not in dates_with_close:
+        gaps.append(
+            f"  MISSING {today}-session-close: "
+            f"dispatches filed today but no session-close pair"
+        )
+
+    if gaps:
+        print("codifide dispatch-check: gaps found:")
+        for g in gaps:
+            print(g)
+        print(
+            "\nFile the missing artifacts before ending the session. "
+            "Every Quill readout needs a paired Glyph YAML. "
+            "Every session needs a session-close pair."
+        )
+        return 1
+
+    print("codifide dispatch-check: all dispatch pairs complete.")
+    return 0
+
+
 def _default_entry(module) -> str:
     # If there's only one definition, use it; else prefer `main`.
     if len(module.symbols) == 1:
@@ -638,6 +711,12 @@ def main(argv=None) -> int:
         help="verify the checked-in INDEX.md matches what would be generated",
     )
     p_dispatch_index.set_defaults(func=cmd_dispatch_index)
+
+    p_dispatch_check = sub.add_parser(
+        "dispatch-check",
+        help="check dispatch stream completeness — flag orphaned readouts and missing pairs",
+    )
+    p_dispatch_check.set_defaults(func=cmd_dispatch_check)
 
     # Symbol store. A store root can be passed via --store or the
     # CODIFIDE_STORE environment variable; defaults to ~/.codifide/store.

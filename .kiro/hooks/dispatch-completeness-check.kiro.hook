@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Dispatch Completeness Check",
+  "description": "When the agent stops, check that every Quill readout has a paired Glyph YAML and that today's session has a session-close pair. If gaps are found, prompt the agent to file the missing artifacts before the session ends.",
+  "version": "1",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Run `python3 -m codifide dispatch-check` and report the result. If it exits non-zero, file all missing dispatch artifacts before this session is considered complete. Every Quill readout (.readout.md) needs a paired Glyph YAML (.yaml). Every session that filed dispatches needs a session-close.readout.md and session-close.yaml pair. Do not end the session with gaps outstanding."
+  }
+}
