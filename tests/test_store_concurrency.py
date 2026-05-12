@@ -85,11 +85,17 @@ def _worker_put_unique_symbol(args: tuple[str, int]) -> tuple[str, str]:
 
 
 def _list_objects(root: Path) -> List[Path]:
-    """Return every stored ``.json`` object under ``<root>/sha256``."""
+    """Return every stored object under ``<root>/sha256``.
+
+    Accepts both ``.cbor`` (primary post 2026-05-11) and ``.json``
+    (legacy) artifacts. The concurrency invariants apply to whatever
+    wire form the store is using; tests should not encode an
+    assumption about which.
+    """
     base = root / "sha256"
     if not base.exists():
         return []
-    return sorted(base.glob("*/*.json"))
+    return sorted(list(base.glob("*/*.cbor")) + list(base.glob("*/*.json")))
 
 
 def _list_temp_files(root: Path) -> List[Path]:

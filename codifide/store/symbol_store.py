@@ -4,15 +4,29 @@ A symbol is a single Codifide definition. Its *identity* is the SHA-256 of its
 canonical byte form, prefixed with ``sha256:`` (see
 ``docs/CANONICAL.md §Content addressing``).
 
+**Primary identity is CBOR as of 2026-05-11.** Before that migration the
+primary identity was over canonical JSON bytes; that path is still
+available under the ``_json`` suffix for callers that need it, but
+``symbol_hash`` / ``symbol_bytes`` / ``SymbolStore.put`` now hash and
+store in CBOR form by default. Reasons for the migration are in
+``dispatches/2026-05-11-primary-hash-migration-proposal.readout.md``;
+the triggering P1 is ``dispatches/2026-05-11-cbor-reaudit.md`` AUD-08.
+
 This module turns that identity into a working store:
 
-- :func:`symbol_bytes` serializes one definition to canonical JSON bytes.
-- :func:`symbol_cbor_bytes` serializes one definition to canonical CBOR bytes.
-- :func:`symbol_hash` hashes the JSON byte form to produce the JSON identity.
-- :func:`symbol_hash_cbor` hashes the CBOR byte form to produce the CBOR
-  identity. The two are distinct identities for the same abstract module —
-  JSON and CBOR are different wire forms, and content addressing makes no
-  pretense of collapsing them.
+- :func:`symbol_bytes` serializes one definition to canonical CBOR bytes
+  (the primary form).
+- :func:`symbol_bytes_json` serializes one definition to canonical JSON
+  bytes (legacy; still used by some tools for human inspection).
+- :func:`symbol_hash` hashes the CBOR byte form to produce the primary
+  content identity. Under the hood it is identical to
+  :func:`symbol_hash_cbor`, which is kept as an explicit alias for
+  callers that want the intent-naming of "CBOR identity" to be
+  obvious at the call site.
+- :func:`symbol_hash_json` hashes the JSON byte form to produce the
+  legacy JSON identity. Preserved so pre-migration stored objects are
+  still addressable and so second-implementation conformance tests can
+  still assert JSON-byte agreement on the safe value subset.
 - :class:`SymbolStore` is a filesystem-backed key-value store keyed by
   an identity. Writes verify the hash before accepting the bytes; reads
   verify the hash of what came back. Neither direction trusts the disk.
@@ -53,13 +67,20 @@ def _symbol_envelope(name: str, definition: Definition) -> dict:
     return to_canonical(Module(name="_", symbols=(definition,)))
 
 
-def symbol_bytes(name: str, definition: Definition) -> bytes:
+def symbol_bytes_json(name: str, definition: Definition) -> bytes:
     """Canonical JSON byte form of a single symbol.
 
-    The bytes are identical to what an independent implementation (e.g. the
-    Rust crate) would produce for the same symbol — that is the whole point
-    of the canonical form. If the two disagree, the conformance test
-    catches it.
+    Legacy — pre-2026-05-11 this was the primary byte form. The JSON
+    byte form is still useful for human inspection and for tools that
+    cannot consume CBOR. It is **not** used to mint primary content
+    identities any more; see :func:`symbol_bytes` for that.
+
+    The bytes are identical to what an independent implementation (e.g.
+    the Rust crate) would produce for the same symbol on values that
+    round-trip identically through both JSON parsers. For f16-class
+    floats the two implementations can disagree on the exact bytes
+    (see ``dispatches/2026-05-11-cbor-reaudit.md`` AUD-08); the
+    primary-hash migration to CBOR closed this structurally.
     """
     envelope = _symbol_envelope(name, definition)
     return json.dumps(
@@ -73,37 +94,47 @@ def symbol_bytes(name: str, definition: Definition) -> bytes:
 def symbol_cbor_bytes(name: str, definition: Definition) -> bytes:
     """Canonical CBOR byte form of a single symbol.
 
-    Parallel to :func:`symbol_bytes` but uses the CBOR (v0.2 binary)
-    canonical form. Typically 25-30% shorter than JSON; deterministic
-    by RFC 8949 §4.2.
+    Parallel to :func:`symbol_bytes_json` but uses the CBOR (v0.2
+    binary) canonical form. Typically 25-30% shorter than JSON;
+    deterministic by RFC 8949 §4.2.
+
+    This is the canonical wire form for primary identities. An alias
+    :func:`symbol_bytes` points here.
     """
     envelope = _symbol_envelope(name, definition)
     return canonical_cbor(envelope)
 
 
-def symbol_hash(name: str, definition: Definition) -> str:
+# The primary byte function is CBOR.
+symbol_bytes = symbol_cbor_bytes
+
+
+def symbol_hash_json(name: str, definition: Definition) -> str:
     """Content identity of a single symbol over its JSON byte form.
 
-    Stable across implementations. Two symbols with identical canonical
-    bytes produce the same hash; any change to name, intent, signature,
-    pre, post, or any candidate produces a new hash.
+    Legacy — pre-2026-05-11 this was the primary identity. Preserved
+    for callers that need to reproduce a historical hash or verify
+    agreement with an older Codifide client. The primary identity function
+    is :func:`symbol_hash`, which hashes over CBOR.
     """
-    digest = hashlib.sha256(symbol_bytes(name, definition)).hexdigest()
+    digest = hashlib.sha256(symbol_bytes_json(name, definition)).hexdigest()
     return f"sha256:{digest}"
 
 
 def symbol_hash_cbor(name: str, definition: Definition) -> str:
     """Content identity of a single symbol over its CBOR byte form.
 
-    A distinct identity from :func:`symbol_hash` — the same abstract
-    Definition has a JSON identity and a CBOR identity, and agents
-    exchanging one wire form need to agree on that wire form to share
-    identities. The two forms are interoperable at the Module level (a
-    consumer can materialize either from the in-memory form) but not at
-    the identity level.
+    Primary identity function as of 2026-05-11. :func:`symbol_hash` is
+    an alias; call either interchangeably. Naming this one explicitly
+    ``_cbor`` makes the wire form obvious at the call site for code
+    that also references :func:`symbol_hash_json`.
     """
     digest = hashlib.sha256(symbol_cbor_bytes(name, definition)).hexdigest()
     return f"sha256:{digest}"
+
+
+# The primary hash function is CBOR.
+symbol_hash = symbol_hash_cbor
 
 
 # ---------------------------------------------------------------------------
@@ -176,36 +207,36 @@ class SymbolStore:
     # -- Public API ------------------------------------------------------
 
     def put(self, name: str, definition: Definition) -> str:
-        """Store a symbol in JSON form and return its content identity.
+        """Store a symbol in CBOR form and return its content identity.
+
+        As of 2026-05-11, the primary put path writes CBOR bytes and
+        produces a CBOR-over-bytes identity. Callers who specifically
+        want the legacy JSON path should call :meth:`put_json`.
 
         Idempotent. If the symbol is already in the store, its existing
         bytes are verified and the identity is returned unchanged.
-        """
-        identity = symbol_hash(name, definition)
-        data = symbol_bytes(name, definition)
-        self._write_atomic(identity, data)
-        return identity
-
-    def put_cbor(self, name: str, definition: Definition) -> str:
-        """Store a symbol in CBOR form and return its CBOR content identity.
-
-        Distinct from :meth:`put`: the identity is computed over the CBOR
-        byte form, so the same abstract Definition produces a different
-        identity when stored as CBOR vs. JSON. Agents exchanging content
-        addresses must agree on the wire form. On-disk layout uses the
-        ``.cbor`` suffix in place of ``.json`` so iterating the store
-        surfaces each artifact separately.
-
-        Why it's a separate identity rather than a reformat of an
-        existing one: content addressing is a property of bytes. If we
-        collapsed the two into one identity, a consumer could no longer
-        be certain which bytes were hashed. Better to have two honest
-        identities than one misleading one.
         """
         identity = symbol_hash_cbor(name, definition)
         data = symbol_cbor_bytes(name, definition)
         self._write_atomic(identity, data, suffix=".cbor")
         return identity
+
+    def put_json(self, name: str, definition: Definition) -> str:
+        """Store a symbol in JSON form and return its JSON content identity.
+
+        Legacy path. Distinct identity from :meth:`put`. Useful when
+        interoperating with a pre-migration store or when producing
+        output a consumer can inspect by eye.
+        """
+        identity = symbol_hash_json(name, definition)
+        data = symbol_bytes_json(name, definition)
+        self._write_atomic(identity, data, suffix=".json")
+        return identity
+
+    # Alias preserved so callers that pre-date the migration keep working.
+    # ``put_cbor`` is exactly what ``put`` does now; keeping the alias means
+    # downstream code that explicitly spelled out ``put_cbor`` is not broken.
+    put_cbor = put
 
     def has(self, identity: str) -> bool:
         """Return True iff the store has an entry for this identity.
@@ -290,7 +321,7 @@ class SymbolStore:
                     continue
                 yield f"sha256:{shard.name}{obj.stem}"
 
-    def put_module(self, module: Module, *, cbor: bool = False) -> List[tuple[str, str]]:
+    def put_module(self, module: Module, *, cbor: bool = True) -> List[tuple[str, str]]:
         """Store every definition in a module.
 
         Returns a list of (symbol_name, identity) pairs, in declaration
@@ -298,16 +329,63 @@ class SymbolStore:
         reconstructable from the set of symbol identities plus a name
         lookup table (the return value is that table).
 
-        When ``cbor=True`` each symbol is stored in its CBOR canonical
-        form, which produces a different identity than the JSON form.
+        ``cbor`` defaults to ``True`` (the primary path as of the
+        2026-05-11 hash migration). Pass ``cbor=False`` to store in
+        legacy JSON form; the returned identities will then be
+        JSON-hashed, not CBOR-hashed.
         """
         out: List[tuple[str, str]] = []
         for defn in module.symbols:
             if cbor:
-                out.append((defn.name, self.put_cbor(defn.name, defn)))
-            else:
                 out.append((defn.name, self.put(defn.name, defn)))
+            else:
+                out.append((defn.name, self.put_json(defn.name, defn)))
         return out
+
+    # -- Garbage collection ---------------------------------------------
+
+    def gc(self, *, execute: bool = False) -> "GCReport":
+        """Run garbage collection against this store.
+
+        See :mod:`codifide.store.gc` for the design. Dry-run by default;
+        pass ``execute=True`` to actually delete unreachable objects.
+        Requires a non-empty ``ROOTS`` file at the store root when
+        executing (see :class:`GCError`).
+        """
+        from .gc import gc as _gc
+        return _gc(self, execute=execute)
+
+    def add_root(self, identity: str) -> None:
+        """Add an identity to the store's ROOTS file.
+
+        Idempotent: adding a root that is already present is a no-op.
+        Validates identity shape — the ROOTS file is not the place to
+        discover your hash format was wrong.
+        """
+        self._parse_identity(identity)  # raises StoreError on shape issues
+        from .gc import read_roots, write_roots
+        current = read_roots(self.root)
+        if identity in current:
+            return
+        write_roots(self.root, current + [identity])
+
+    def remove_root(self, identity: str) -> bool:
+        """Remove an identity from the store's ROOTS file.
+
+        Returns ``True`` if the identity was present and removed,
+        ``False`` if it wasn't in the roots to begin with.
+        """
+        from .gc import read_roots, write_roots
+        current = read_roots(self.root)
+        if identity not in current:
+            return False
+        write_roots(self.root, [r for r in current if r != identity])
+        return True
+
+    def roots(self) -> List[str]:
+        """Return the current list of declared root identities."""
+        from .gc import read_roots
+        return read_roots(self.root)
 
     # -- Internals -------------------------------------------------------
 

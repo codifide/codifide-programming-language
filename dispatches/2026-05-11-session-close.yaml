@@ -1,0 +1,217 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: session close (2026-05-11)
+  at: 2026-05-11
+  author: Glyph
+  intent: >
+    Structured account of what shipped, what was refused with reasoning,
+    what remains open, and what a next session should consider. Paired
+    with the Quill readout.
+
+  session_bounds:
+    opened_with:
+      python_tests: 122
+      rust_tests: 10
+      capability_manifest_hash: sha256:522c48d0dfd60c8c6d7528711c5624560fcabead76d9e80a4a782954e01a92f1
+    closed_with:
+      python_tests_passing: 166
+      python_tests_skipped: 1
+      rust_tests_passing: 14
+      capability_manifest_hash: sha256:56fa68ae1794a99f2c52c1e5dda0fc7fa2f51241fbfca32c79296e184e6b43b5
+
+  passes:
+    - id: ergonomics
+      trigger: four-external-model-reviews-on-2026-05-11
+      shipped:
+        - multi-line-expression-parser-fix
+        - polymorphic-reverse
+        - hint-messages-for-known-guess-misses
+        - agent-quickref-doc
+        - regression-tests-for-gemini-crashes
+      refused:
+        - infix-percent-for-mod
+        - inline-if-or-when-as-statement
+        - separate-str-reverse-primitive
+      findings_resolved:
+        - AUD-01 (P1) parser leaks AttributeError
+        - AUD-02 (P2) unknown-callable errors uninformative
+        - AUD-03 (P3) spec silent on primitive polymorphism
+      tests_added: 7
+      dispatches:
+        - dispatches/2026-05-11-ergonomics-decisions.readout.md
+        - dispatches/2026-05-11-ergonomics-decisions.yaml
+        - dispatches/2026-05-11-ergonomics-audit.md
+        - dispatches/2026-05-11-ergonomics-post.readout.md
+        - dispatches/2026-05-11-ergonomics-post.yaml
+
+    - id: carryover-triage
+      trigger: user-challenge-seven-items-still-open
+      shipped:
+        - numeric-boundary-cbor-conformance
+        - rust-canonical-fuzz-harness
+        - cli-filesystem-safety-audit-with-p1-fix
+      findings_resolved:
+        - AUD-05 (P1) unbounded source read in Python CLI
+      findings_filed:
+        - AUD-04 (P2) cbor-decimal-parser-divergence (later upgraded to P1 as AUD-08)
+        - AUD-06 (P3) codifide-run-follows-symlinks-accepted-as-documented
+        - AUD-07 (P3) store-accepts-arbitrary-paths-accepted-as-documented
+      tests_added: 11
+      dispatches:
+        - dispatches/2026-05-11-carryover-decisions.readout.md
+        - dispatches/2026-05-11-carryover-decisions.yaml
+        - dispatches/2026-05-11-carryover-post.readout.md
+        - dispatches/2026-05-11-carryover-post.yaml
+        - dispatches/2026-05-11-cbor-numeric-boundaries.md
+        - dispatches/2026-05-11-cli-audit.md
+
+    - id: deferred-first-steps
+      trigger: user-direction-take-first-step-on-each-deferral
+      shipped_as_proposals_not_code:
+        - primary-hash-migration-proposal-R1
+        - store-gc-design
+        - cost-based-dispatch-spec-amendment-proposal-R1
+      shipped_as_code:
+        - cbor-reaudit-executed-under-sable-remit
+      findings_filed:
+        - AUD-08 (P1) json-canonical-bytes-diverge-for-f16-class-floats
+        - AUD-09 (P3) spec-silent-on-float-text-contract
+        - AUD-10 (P3) integer-boundary-conformance-narrow
+      dispatches:
+        - dispatches/2026-05-11-deferred-next-steps.readout.md
+        - dispatches/2026-05-11-deferred-next-steps.yaml
+        - dispatches/2026-05-11-primary-hash-migration-proposal.readout.md
+        - dispatches/2026-05-11-primary-hash-migration-proposal.yaml
+        - dispatches/2026-05-11-primary-hash-migration-audit.md
+        - dispatches/2026-05-11-store-gc-design.readout.md
+        - dispatches/2026-05-11-store-gc-design.yaml
+        - dispatches/2026-05-11-cost-based-dispatch-proposal.readout.md
+        - dispatches/2026-05-11-cost-based-dispatch-proposal.yaml
+        - dispatches/2026-05-11-cost-based-dispatch-audit.md
+        - dispatches/2026-05-11-cbor-reaudit.md
+
+    - id: migrations-implementation
+      trigger: user-direction-execute-all-approved-proposals-now
+      shipped:
+        - primary-hash-migration-json-to-cbor
+        - cost-based-candidate-dispatch
+        - symbol-store-garbage-collection
+      findings_resolved_structurally:
+        - AUD-04 (P2) on python-primary-path
+        - AUD-08 (P1) on python-primary-path
+      findings_residual:
+        - AUD-08 rust-cli-still-reads-json-text-so-f16-diagnostic-remains-skipped
+      tests_added_this_pass: 25   # 14 cost-dispatch + 11 store-gc
+      tests_adjusted: 6            # store tests updated for new path suffixes
+      dispatches:
+        - dispatches/2026-05-11-migrations-post.readout.md
+        - dispatches/2026-05-11-migrations-post.yaml
+
+  cumulative_totals_for_day:
+    dispatches_filed: 22
+    tests_added_net: 44
+    capability_manifest_hash_moves: 1
+    findings_filed: 10
+    findings_resolved: 5
+    findings_residual: 1
+    governance_proposals_approved_and_shipped: 3
+
+  refused_with_reasoning_recorded:
+    - infix-percent-for-mod
+    - inline-if-or-when-as-statement
+    - separate-str-reverse-primitive
+    - time-based-gc
+    - implicit-gc-on-every-put
+    - float-cost-annotations
+    - dynamic-cost-expressions-in-v1
+    - cost-annotations-on-primitives
+
+  open_followups:
+    - id: rust-cbor-input-subcommand
+      priority: HIGH
+      reason: "closes residual AUD-08 surface; un-skips HalfPrecisionAllPatternsDiagnostic"
+      scope: "Add bytes-cbor-in and hash-cbor-in subcommands to codifide-canonical that accept canonical CBOR bytes as input. Small, bounded."
+      estimated_size: "~60 lines Rust + 2 test updates"
+
+    - id: sable-reaudit-new-surfaces
+      priority: HIGH
+      reason: "Cost annotations and GC are new attack surfaces not yet adversarially probed."
+      scope: "Sable audit of the cost-dispatch spec amendment and the store-GC implementation together."
+      estimated_size: "one audit dispatch; any P1 fixes in-session"
+
+    - id: docs-store-md
+      priority: MEDIUM
+      reason: "GC design promised a new docs/STORE.md; CANONICAL.md was updated in-place instead."
+      scope: "Write docs/STORE.md covering the three-property contract, the sound-deletion contract, ROOTS file format, and concurrency model."
+      estimated_size: "~200 lines of prose"
+
+    - id: external-model-rerun
+      priority: MEDIUM
+      reason: "Measure whether today's changes actually improved fresh-agent authoring rates."
+      scope: "Hand the repo to a fresh external model with only the README and AGENT_QUICKREF pointers. Re-run the 3-program battery. Compare to 2026-05-11 morning results."
+      estimated_size: "one session with the external-model + two feedback dispatches"
+
+    - id: conformance-cost-roundtrip-fixture
+      priority: MEDIUM
+      reason: "Current conformance tests don't exercise cost-bearing modules end-to-end."
+      scope: "Add a cost-bearing .cod example and extend test_conformance.py to byte-compare Python/Rust on it."
+      estimated_size: "~40 lines test + 1 example"
+
+    - id: capability-manifest-migration-flag
+      priority: LOW
+      reason: "The manifest's `candidate` AST kind description doesn't currently surface the `cost` field because `candidate` isn't in ast_kinds. Consider whether manifest should describe it."
+      scope: "Either add `candidate` to the manifest's ast_kinds section, or document that dispatch-level constructs are out of scope for ast_kinds."
+
+    - id: time-indexed-types
+      priority: LOW
+      reason: "ROADMAP item from earlier; not touched today."
+      scope: "T@timestamp syntax and canonical form; runtime semantics; design dispatch."
+
+    - id: rust-interpreter
+      priority: LOW
+      reason: "Scheduled for v0.3; semantics have been stabilizing faster now."
+      scope: "Port interpreter hot path; graph-native parallel evaluator."
+
+    - id: dispatch-stream-infrastructure
+      priority: LOW
+      reason: "dispatches/ are accumulating; a browseable index or RSS-like stream would help future agents traverse the journal."
+      scope: "Spec for a dispatch stream; generator that produces an index from dispatches/*.yaml."
+
+  unknowns:
+    - question: Does the combination of quickref + hints + migration improve fresh-agent success rates?
+      why_unknown: Unmeasured; no external experiment since the morning reviews.
+      how_to_resolve: The external-model-rerun follow-up.
+
+    - question: Does the cost-based dispatcher interact cleanly with belief dispatch under nested calls?
+      why_unknown: Believe dispatch was deliberately untouched; the proposal asserted non-interaction without probing it.
+      how_to_resolve: Add a test where a costed candidate's body contains a believe block, and vice versa.
+
+    - question: Will the GC's in-memory transitive closure scale to stores with 10k+ symbols?
+      why_unknown: No stress test at that scale; design is O(n) over store size but constant factors are real.
+      how_to_resolve: Add a stress fixture; accept up to some memory bound before switching to disk-backed BFS.
+
+    - question: Does the primary-hash migration break anything in the README tutorial or GETTING_STARTED?
+      why_unknown: Both docs reference hash-example values; did not re-check every citation.
+      how_to_resolve: Skim both docs; update any example hashes that users would be confused by.
+
+  next_session_recommendations:
+    triage_suggestion: >
+      Two HIGH items are small and closed findings: rust-cbor-input-subcommand and
+      sable-reaudit-new-surfaces. Doing both in one session is feasible
+      and leaves the language in a state where every known
+      P1 finding is closed and every shipped surface has been
+      adversarially probed. The external-model-rerun should follow
+      once that is in.
+
+    proposed_next_session_agenda:
+      - step-1: rust-cbor-input-subcommand (60-90 min)
+      - step-2: sable-reaudit-new-surfaces (30-60 min audit + fixes if any)
+      - step-3: docs/STORE.md (30-45 min)
+      - step-4: external-model-rerun — only if time permits
+
+    alternative_agenda:
+      - just-do-the-external-model-rerun: "the most valuable single data point right now is whether all of today's work measurably moved the needle"
+
+  links:
+    human_readout: dispatches/2026-05-11-session-close.readout.md
+    session_state: sessions/2026-05-11.md

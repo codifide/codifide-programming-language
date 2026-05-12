@@ -101,10 +101,11 @@ class ImportResolutionTests(unittest.TestCase):
     def test_tampered_imported_symbol_raises_integrity_error(self) -> None:
         # Corrupt the library symbol on disk and verify the interpreter
         # surfaces an integrity error rather than silently loading
-        # tampered code.
+        # tampered code. Post-migration the stored form is CBOR with
+        # a .cbor suffix.
         digest = self.lib_id.removeprefix("sha256:")
-        path = Path(self._tmp.name) / "sha256" / digest[:2] / f"{digest[2:]}.json"
-        path.write_bytes(path.read_bytes() + b" /* tampered */")
+        path = Path(self._tmp.name) / "sha256" / digest[:2] / f"{digest[2:]}.cbor"
+        path.write_bytes(path.read_bytes() + b"\x00")
         m = parse(_consumer_src(self.lib_id))
         with self.assertRaises(CodifideError) as cm:
             run(m, "main", store=self.store)

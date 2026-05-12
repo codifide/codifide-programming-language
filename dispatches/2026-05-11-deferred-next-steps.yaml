@@ -1,0 +1,148 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: deferred items — first-step artifacts (2026-05-11)
+  at: 2026-05-11
+  author: Glyph
+  intent: >
+    Take the first step on each of the four items deferred earlier.
+    Governance boundary preserved: three produce proposals awaiting
+    Douglas's approval; one (the CBOR re-audit) runs immediately
+    under Sable's remit. The re-audit uncovered a real P1 that
+    reshapes the primary-hash migration proposal.
+
+  state:
+    shipped:
+      - cbor-reaudit-executed-p1-finding-filed
+      - primary-hash-migration-proposal-drafted-r1
+      - store-gc-design-drafted
+      - cost-based-dispatch-spec-amendment-proposal-drafted
+      - sable-audit-on-each-proposal
+    in_flight: []
+    blocked:
+      - primary-hash-migration-awaits-user-approval
+      - store-gc-awaits-user-approval
+      - cost-based-dispatch-awaits-user-approval
+    refused: []
+
+  evidence:
+    - claim: CBOR re-audit found a real P1 on the JSON primary hash path
+      kind: run
+      source: "manual probe comparing Python canonical_bytes and Rust bytes output"
+      result: "decimal text diverges for f16-subnormal value; content hashes disagree"
+      confidence: 1.0
+
+    - claim: manifest hash cited in prior dispatches is CBOR not JSON
+      kind: run
+      source: "python3 -c 'from codifide.capability import generate_capability; ...'"
+      result: "sha256:845dbbbf... matches CBOR-hash; JSON-hash is sha256:6ad49cc2..."
+      confidence: 1.0
+
+    - claim: zero in-repo content depends on specific v0 JSON hashes
+      kind: run
+      source: "grep -rE 'import.*= sha256:' . --include='*.cod' --include='*.py'"
+      result: "only illustrative docs, journal prose, and dynamic test fixtures"
+      confidence: 1.0
+
+    - claim: store get/get_bytes is already polyform
+      kind: read
+      source: "codifide/store/symbol_store.py SymbolStore.get and get_bytes"
+      result: "tries .json then .cbor suffix; both paths hash-verify"
+      confidence: 1.0
+
+    - claim: every example has conf=1.0 but 1.0's decimal representation agrees across implementations
+      kind: run
+      source: "manual probe hashing an int-only module with conf=1.0"
+      result: "Python and Rust produce identical JSON content hash for current examples"
+      confidence: 1.0
+
+    - claim: Sable audits each proposal and flags edits
+      kind: read
+      source: "dispatches/2026-05-11-{primary-hash-migration-audit,cbor-reaudit,cost-based-dispatch-audit}.md"
+      result: "PA-1/2/3/6 and CBD-1/2 resolved in proposal revisions; PA-4/5 and CBD-3-6 deferred as minor edits"
+      confidence: 1.0
+
+    - claim: test suite passing after session
+      kind: test
+      source: "python3 -m codifide test"
+      result: "141 passing + 1 skipped; no changes to code surface"
+      confidence: 1.0
+
+  artifacts:
+    primary_hash_migration:
+      proposal_readout: dispatches/2026-05-11-primary-hash-migration-proposal.readout.md
+      proposal_yaml: dispatches/2026-05-11-primary-hash-migration-proposal.yaml
+      sable_audit: dispatches/2026-05-11-primary-hash-migration-audit.md
+      revision: R1 (post-audit, probes resolved)
+      decision_required_from: Douglas
+      specific_calls:
+        - approve-single-commit-flip-or-two-stage
+        - approve-v0.3-or-v1.0-target
+        - approve-that-zero-external-consumers-rely-on-v0-json-hashes
+
+    store_gc:
+      design_readout: dispatches/2026-05-11-store-gc-design.readout.md
+      design_yaml: dispatches/2026-05-11-store-gc-design.yaml
+      decision_required_from: Douglas
+      specific_calls:
+        - approve-user-declared-roots-via-ROOTS-file
+        - approve-dry-run-default-with-explicit-execute
+        - approve-file-lock-concurrency-safety
+        - single-ROOTS-file-or-directory
+
+    cost_based_dispatch:
+      proposal_readout: dispatches/2026-05-11-cost-based-dispatch-proposal.readout.md
+      proposal_yaml: dispatches/2026-05-11-cost-based-dispatch-proposal.yaml
+      sable_audit: dispatches/2026-05-11-cost-based-dispatch-audit.md
+      revision: R1 (post-audit, CBD-1/2 resolved)
+      decision_required_from: Douglas
+      specific_calls:
+        - approve-or-modify-spec-amendment
+        - decide-v0.3-or-defer
+        - decide-whether-cost-as-expression-is-urgent
+
+    cbor_reaudit:
+      audit: dispatches/2026-05-11-cbor-reaudit.md
+      findings_filed:
+        - AUD-2026-05-11-08 (P1) JSON canonical bytes diverge for f16-class floats
+        - AUD-2026-05-11-09 (P3) spec silent on float-text contract
+        - AUD-2026-05-11-10 (P3) integer boundary conformance narrow
+      decision_required_from: Sable-discipline (no user approval needed)
+      recommended_fix: accelerate primary-hash migration to CBOR (see proposal #1)
+
+  unknowns:
+    - question: Will the primary-hash migration proposal survive first-contact review?
+      why_unknown: Depends on Douglas's read of external-consumer risk.
+      how_to_resolve: Douglas reads the proposal; either approves or names blocker.
+    - question: Is the store-GC user-declared-roots model the right shape?
+      why_unknown: Alternatives (time-based, reachability-from-working-directory) exist.
+      how_to_resolve: Douglas reads the design; either approves or names the alternative he prefers.
+    - question: Is cost-based dispatch the right next extension?
+      why_unknown: Cost annotations require agents to estimate cost honestly; v0 agents are not known to do this well.
+      how_to_resolve: Douglas decides. Deferring is equivalent to "not the right next extension yet."
+    - question: Does AUD-08's severity make CBOR migration urgent enough to force a v0.3 schedule?
+      why_unknown: Trade-off between "it's P1" and "no external consumers currently broken."
+      how_to_resolve: Douglas decides after reading the re-audit.
+
+  governance_notes:
+    - rule: "spec changes require a dispatch + Sable audit + Douglas's approval"
+      source: GOVERNANCE.md
+      applied_to: primary-hash-migration, cost-based-dispatch
+    - rule: "audits run always under Sable's remit without needing user approval"
+      source: GOVERNANCE.md
+      applied_to: cbor-reaudit
+    - rule: "designs that extend the capability-manifest surface require proposal + audit + approval"
+      source: GOVERNANCE.md
+      applied_to: cost-based-dispatch (adds cost field to candidate AST)
+
+  next:
+    - action: user reads the four artifact sets
+    - action: user issues go/modify/defer/reject on each proposal
+    - action: future session executes whatever Douglas approves
+    - action: (no action needed) cbor-reaudit findings resolved structurally by primary-hash-migration approval
+
+  links:
+    human_readout: dispatches/2026-05-11-deferred-next-steps.readout.md
+    primary_hash_migration: dispatches/2026-05-11-primary-hash-migration-proposal.readout.md
+    store_gc: dispatches/2026-05-11-store-gc-design.readout.md
+    cost_based_dispatch: dispatches/2026-05-11-cost-based-dispatch-proposal.readout.md
+    cbor_reaudit: dispatches/2026-05-11-cbor-reaudit.md

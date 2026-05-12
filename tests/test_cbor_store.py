@@ -21,9 +21,10 @@ from codifide import parse
 from codifide.store import (
     IntegrityError,
     SymbolStore,
+    symbol_bytes_json,
     symbol_cbor_bytes,
-    symbol_hash,
     symbol_hash_cbor,
+    symbol_hash_json,
 )
 
 
@@ -58,7 +59,7 @@ class CborStoreTests(unittest.TestCase):
         # different identities even for the same abstract Module. This
         # is the correct behavior — collapsing them would make the
         # ``hash → bytes`` mapping non-injective.
-        json_id = self.store.put("hello", self.defn)
+        json_id = self.store.put_json("hello", self.defn)
         cbor_id = self.store.put_cbor("hello", self.defn)
         self.assertNotEqual(json_id, cbor_id)
         # And both are fetchable.
@@ -75,9 +76,12 @@ class CborStoreTests(unittest.TestCase):
         self.assertEqual(h_direct, h_store)
 
     def test_symbol_hash_and_cbor_variant_differ(self) -> None:
-        # Same sanity check for the pair of free functions.
+        # Same sanity check for the pair of free functions. Post the
+        # 2026-05-11 migration ``symbol_hash`` IS the CBOR hash, so
+        # this test uses the explicit ``_json`` / ``_cbor`` names to
+        # assert the two wire forms produce different identities.
         self.assertNotEqual(
-            symbol_hash("hello", self.defn),
+            symbol_hash_json("hello", self.defn),
             symbol_hash_cbor("hello", self.defn),
         )
 
@@ -106,8 +110,7 @@ class CborStoreTests(unittest.TestCase):
         # Not a correctness test per se, but the property is one of
         # CBOR's reasons for existing; if we ever regressed it (by
         # e.g. shipping strings as base64), the alert should fire.
-        from codifide.store import symbol_bytes
-        json_bytes = symbol_bytes("hello", self.defn)
+        json_bytes = symbol_bytes_json("hello", self.defn)
         cbor_bytes = symbol_cbor_bytes("hello", self.defn)
         self.assertLess(len(cbor_bytes), len(json_bytes))
 

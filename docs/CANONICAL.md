@@ -4,11 +4,17 @@ The canonical form is the source of truth. Surface text is a projection. Two
 programs are the same program iff their canonical forms are equal under the
 normalization rules below.
 
-In v0.1 the canonical form serializes to both JSON (primary,
-human-inspectable) and CBOR (binary, RFC 8949 §4.2 deterministic
-subset, about 25-30% smaller than JSON). Content addressing over
-either byte form is operational through the symbol store described
-in §Symbol store below.
+In v0.1 the canonical form serializes to both CBOR (primary, RFC 8949
+§4.2 deterministic subset, wire and identity form) and JSON (secondary,
+human-inspectable). The primary content identity is the SHA-256 over
+canonical CBOR bytes; this was migrated from JSON on 2026-05-11 because
+shortest-decimal float writers in Python and Rust disagree on some
+values, making JSON byte-agreement impossible for f16-class floats. CBOR
+hashes over IEEE-754 bits and sidesteps the issue entirely. See
+``dispatches/2026-05-11-primary-hash-migration-proposal.readout.md``
+for the full rationale and
+``dispatches/2026-05-11-cbor-reaudit.md`` AUD-08 for the
+triggering finding.
 
 This document is the specification an independent implementer should be able
 to follow without reading the reference Python source. Where the reference
@@ -124,9 +130,25 @@ definition whose intent is empty or whitespace.
   "kind": "candidate",
   "intent": "default",
   "guard": <Expr or null>,
-  "body":  <Expr>
+  "body":  <Expr>,
+  "cost":  <non-negative integer, optional, ≤ 2^64 - 1>
 }
 ```
+
+The optional `cost` field was added 2026-05-11. When present it MUST
+be a non-negative integer in the range `[0, 2^64 - 1]` (no decimal
+point, no exponent; in CBOR major type 0). The range bound matches
+what a 64-bit-integer second implementation can represent without
+loss; in practice agents annotate costs in the range of ones to
+millions, so the bound is generous. The field is emitted only when
+the candidate declares a cost; absence of the field is the canonical
+representation of "effective cost +∞" for dispatch purposes (see
+§Dispatch). Non-conforming values — floats, negatives, strings,
+nulls, integers above 2^64 - 1 — MUST be rejected by the
+implementation with a typed parse error. Implementations that
+predate the amendment MUST ignore a `cost` field they do not
+recognize rather than reject the whole candidate: unknown-field
+tolerance is the forward-compatibility rule.
 
 ## Expression AST
 
@@ -140,10 +162,18 @@ kinds MUST cause a parse error.
 | `call`    | `{"fn": <str>, "args": [<Expr>, ...]}`                                  |
 | `bind`    | `{"name": <str>, "expr": <Expr>, "in": <Expr>}`                         |
 | `seq`     | `{"steps": [<Expr>, ...]}`                                              |
+| `if`      | `{"cond": <Expr>, "then": <Expr>, "else": <Expr>}`                      |
 | `believe` | `{"subject": <Expr>, "arms": [[<Expr>, <Expr>], ...], "else": <Expr>}`  |
 | `bottom`  | `{}`                                                                    |
 | `concat`  | `{"parts": [<Expr>, ...]}`                                              |
 | `attr`    | `{"target": <Expr>, "name": <str>}`                                     |
+
+The `if` node added 2026-05-11: short-circuit inline conditional.
+Exactly one of `then` / `else` evaluates per call, chosen by the
+truthiness of `cond`. Unlike candidate-dispatch guards (which all
+evaluate before selection), `if` does not evaluate the un-taken
+branch; this is the tool for expressions that would otherwise
+raise if both branches ran.
 
 For `lit`: `conf` is a float in `[0.0, 1.0]`; `provenance` is a free-form
 string tag (default `"literal"` for source-literal values).
@@ -220,23 +250,33 @@ and therefore identical content hashes.
 
 ## Content addressing
 
-A symbol's identity is the SHA-256 of its canonical byte form, hex-encoded
-and prefixed with `sha256:`. The identity of a definition is the hash of its
-canonical JSON object (including its name as a key under a single-entry
-`symbols` map, so that a standalone definition has a stable hash).
+A symbol's **primary identity** is the SHA-256 of its canonical CBOR
+byte form, hex-encoded and prefixed with `sha256:`. The identity of a
+definition is the hash of the canonical CBOR encoding of its containing
+single-entry `Module` envelope, so that a standalone definition has a
+stable hash.
 
-A symbol has two distinct identities — one computed over its JSON
-canonical bytes, one over its CBOR canonical bytes. Agents exchanging
-content-addressed references MUST agree on the wire form they use. The
-two identities cannot be computed from one another without
+A symbol also has a **legacy JSON identity** — the SHA-256 of its
+canonical JSON byte form. This exists so pre-2026-05-11 stored objects
+remain addressable; new writes use the primary (CBOR) identity. The two
+identities are distinct and cannot be computed from one another without
 materializing the symbol's abstract form and re-encoding; this is the
 correct behavior, because content addressing is a property of the bytes
 themselves, not of the abstract meaning. Collapsing the two identities
 would break the one-to-one correspondence between a hash and the bytes
 it names.
 
-Implementations are not required to compute hashes unless they participate
-in a content-addressed store. When they do, agreement is mandatory.
+Agents exchanging content-addressed references MUST agree on which form
+they use. The default and the convention is CBOR. A reference that does
+not declare its wire form is CBOR.
+
+Implementations are not required to compute hashes unless they
+participate in a content-addressed store. When they do, agreement on the
+CBOR byte form is mandatory; agreement on the JSON byte form holds only
+for values that round-trip identically through every implementation's
+JSON decimal writer, which in practice excludes floats near the
+half-precision or single-precision boundaries (see
+``dispatches/2026-05-11-cbor-reaudit.md`` AUD-08).
 
 ### Symbol store
 
@@ -296,13 +336,27 @@ A call to a definition `d` evaluates by:
 1. Binding arguments to parameters.
 2. Checking every clause in `d.pre` against a truthy predicate. If any
    clause is not truthy, raise a `ContractViolation` of kind `"pre"`.
-3. Iterating `d.candidates` in array order. For each candidate `c`:
-   - If `c.guard` is `null`, select `c`.
-   - Otherwise, if evaluating `c.guard` yields a truthy value, select `c`.
-4. If no candidate is selected, raise a `DispatchError`.
-5. Evaluate the selected candidate's `body`. If it yields ⊥ (bottom),
-   postconditions are skipped.
-6. Otherwise, check every clause in `d.post` against a truthy predicate.
+3. Iterating `d.candidates` in array order, evaluating each candidate's
+   guard (with an empty effect budget). Collect the **satisfied set**:
+   every candidate whose `guard` is `null` or evaluates truthy.
+4. If the satisfied set is empty, raise a `DispatchError`.
+5. **Select** the candidate that minimizes the key
+   `(cost_or_infinity, declaration_index)`. A candidate without a
+   `cost` field has effective cost `+∞` for this comparison, so a
+   module with zero cost annotations selects the first-declared
+   satisfied candidate — identical to pre-amendment behavior. Among
+   equal-cost candidates, declaration order is the tiebreaker. This
+   rule was introduced by the 2026-05-11 spec amendment; see
+   `dispatches/2026-05-11-cost-based-dispatch-proposal.readout.md`.
+6. Evaluate the selected candidate's `body`. If it yields ⊥ (bottom),
+   postconditions are skipped. **The dispatcher does not fall through
+   on ⊥** — a refused cheap candidate does not cause the next-cheapest
+   to be tried. ⊥ is a first-class return value, not a soft failure;
+   if a caller wants a multi-tier fallback chain, they compose it
+   explicitly with `believe` or by splitting into multiple `def`s
+   that delegate. Resolved by Sable finding CDP-1; see
+   `dispatches/2026-05-11-new-surfaces-audit.md`.
+7. Otherwise, check every clause in `d.post` against a truthy predicate.
    If any clause is not truthy, raise `ContractViolation` of kind `"post"`
    attributed to `d`.
 

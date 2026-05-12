@@ -1,0 +1,94 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: proposal — primary content hash migration JSON → CBOR
+  at: 2026-05-11
+  author: Glyph
+  intent: >
+    Propose migrating the primary content-hash path from canonical JSON
+    bytes to canonical CBOR bytes. Motivated by AUD-08 (P1): JSON byte
+    form diverges across Python and Rust for f16-class floats due to
+    shortest-decimal algorithm differences. CBOR is byte-exact because
+    it hashes over IEEE-754 bits.
+  status: PROPOSAL — requires Douglas's approval before implementation.
+
+  state:
+    shipped: []
+    in_flight: []
+    blocked:
+      - this-proposal-awaits-approval
+    refused: []
+
+  motivation:
+    finding: AUD-2026-05-11-08
+    severity: P1
+    document: dispatches/2026-05-11-cbor-reaudit.md
+    summary: >
+      Python json and serde_json write different shortest-decimal
+      forms for the same f64. Content hashes consequently split
+      between Python and Rust for modules containing f16-class
+      floats. Scope is broader than the earlier AUD-04 (which filed
+      the same mechanism at P2 for CBOR only): the JSON primary
+      hash is affected identically.
+
+  what_changes:
+    - primary-identity: sha256-over-canonical-cbor-bytes
+    - default-cli-hash: cbor
+    - store-put-default: cbor
+    - json-canonical-form: preserved-for-inspection-only
+    - capability-manifest-identity: unchanged-already-cbor-hashed
+    - docs/CANONICAL.md-§canonical-serialization: rewritten
+    - docs/CANONICAL.md-§content-addressing: rewritten
+
+  what_breaks:
+    - every-symbol-identity-changes: "repo has zero in-content dependencies on specific hashes"
+    - user-owned-store-entries: "readable via compatibility read path; new writes use new hashes"
+    - historical-dispatch-hash-citations: "not rewritten; journal-accurate"
+
+  what_does_not_break:
+    - parser: unchanged
+    - interpreter: unchanged
+    - effect-system: unchanged
+    - contract-system: unchanged
+    - candidate-dispatch: unchanged
+    - typed-error-surface: unchanged
+    - rust-crate-api: unchanged
+    - example-programs: unchanged
+
+  commit_plan:
+    - step-1: "SymbolStore.put_module default flips to cbor=True"
+    - step-2: "codifide store put default flips to CBOR"
+    - step-3: "codifide store hash output format flips to CBOR hash column"
+    - step-4: "symbol_hash becomes CBOR; old path renamed symbol_hash_json"
+    - step-5: "docs/CANONICAL.md updates §content addressing and §canonical serialization"
+    - step-6: "CHANGELOG.md breaking-change entry"
+    - step-7: "regenerate docs/capability-0.1.json if drift; expected no change"
+    - step-8: "tests/test_conformance.py updates"
+    - step-9: "unskip HalfPrecisionAllPatternsDiagnostic fixture in follow-on session"
+    - step-10: "paired attestation dispatch on post-migration hashes"
+
+  rollback_story: >
+    symbol_hash_json remains present; store read path remains
+    compatible with JSON-formed objects. Reverting is a
+    one-commit flip of the four default switches.
+
+  open_questions:
+    - question: "Single-commit flip or two-stage opt-in?"
+      recommendation: "Single-commit. No external consumers."
+      requires_user_input: true
+    - question: "Ship at v0.3 or v1.0?"
+      recommendation: "v0.3 given AUD-08 P1 severity."
+      requires_user_input: true
+    - question: "Are there external consumers relying on v0 JSON hashes?"
+      recommendation: "None that I can see in the repo."
+      requires_user_input: true
+
+  sable_audit: dispatches/2026-05-11-primary-hash-migration-audit.md
+
+  next:
+    - action: user reads the proposal
+    - action: user approves, modifies, or defers
+    - action: future session executes the approved plan
+
+  links:
+    human_readout: dispatches/2026-05-11-primary-hash-migration-proposal.readout.md
+    triggering_finding: dispatches/2026-05-11-cbor-reaudit.md

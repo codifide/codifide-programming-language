@@ -31,6 +31,7 @@ from ..core.types import (
     Call,
     Concat,
     Expr,
+    If,
     Lit,
     Ref,
 )
@@ -92,11 +93,36 @@ def _desugar_infix(src: str) -> str:
             if src.startswith(op, i):
                 # Word operators require boundaries; symbolic ones do not.
                 if op.isalpha():
-                    left_ok = i == 0 or not src[i - 1].isalnum()
+                    # ``_`` is part of an identifier as far as Codifide
+                    # names are concerned. Without treating it as
+                    # alphanumeric, the substring ``or`` inside
+                    # ``greet_or_refuse`` passes the boundary check
+                    # (``_`` is not alphanumeric in Python's sense)
+                    # and the desugarer splits the identifier. Same
+                    # class of bug as the ``and(...)`` case below;
+                    # both caught while writing the 2026-05-11
+                    # assessment battery.
+                    def _is_ident_char(ch: str) -> bool:
+                        return ch.isalnum() or ch == "_"
+                    left_ok = i == 0 or not _is_ident_char(src[i - 1])
                     right_ok = (
-                        i + len(op) >= n or not src[i + len(op)].isalnum()
+                        i + len(op) >= n
+                        or not _is_ident_char(src[i + len(op)])
                     )
                     if not (left_ok and right_ok):
+                        continue
+                    # If the word operator is followed (after optional
+                    # whitespace) by '(', it's a function call, not
+                    # infix. Example: `and(p, q)` is a call to the
+                    # ``and`` primitive with two arguments, NOT an
+                    # infix expression. Without this guard the
+                    # desugarer tried to extract left/right operands
+                    # from `and(...)` and choked — found while writing
+                    # the 2026-05-11 assessment programs.
+                    k = i + len(op)
+                    while k < n and src[k].isspace():
+                        k += 1
+                    if k < n and src[k] == "(":
                         continue
                 # Rewrite `a OP b` as `name(a, b)`. We find the left operand by
                 # walking back through whitespace and a balanced parenthesis
@@ -237,18 +263,58 @@ class _Parser:
             if tok.text == "false":
                 self.take()
                 return Lit(False, type="Bool")
+            if tok.text == "if":
+                # Inline conditional: ``if cond then a else b``.
+                # Short-circuit, unlike candidate-dispatch guards.
+                # Added 2026-05-11 (spec amendment).
+                self.take()
+                cond = self.parse_expr()
+                nxt = self.peek()
+                if nxt is None or nxt.kind != "ident" or nxt.text != "then":
+                    raise ExprParseError(
+                        "expected 'then' after `if <cond>`"
+                    )
+                self.take()
+                then_branch = self.parse_expr()
+                nxt = self.peek()
+                if nxt is None or nxt.kind != "ident" or nxt.text != "else":
+                    raise ExprParseError(
+                        "expected 'else' after `if <cond> then <expr>`"
+                    )
+                self.take()
+                else_branch = self.parse_expr()
+                return If(cond=cond, then_=then_branch, else_=else_branch)
             self.take()
             # Function call?
-            if not self.eof() and self.peek().kind == "punct" and self.peek().text == "(":
+            nxt = self.peek()
+            if nxt is not None and nxt.kind == "punct" and nxt.text == "(":
                 self.take()  # (
                 args: List[Expr] = []
-                if not (self.peek().kind == "punct" and self.peek().text == ")"):
+                p = self.peek()
+                if p is None:
+                    raise ExprParseError(
+                        f"unexpected end of expression after '{tok.text}('"
+                    )
+                if not (p.kind == "punct" and p.text == ")"):
                     args.append(self.parse_expr())
-                    while self.peek().kind == "punct" and self.peek().text == ",":
+                    while True:
+                        p = self.peek()
+                        if p is None:
+                            raise ExprParseError(
+                                f"unexpected end of expression inside "
+                                f"arguments of '{tok.text}'"
+                            )
+                        if not (p.kind == "punct" and p.text == ","):
+                            break
                         self.take()
                         args.append(self.parse_expr())
-                if not (self.peek() and self.peek().kind == "punct" and self.peek().text == ")"):
-                    raise ExprParseError("expected ')' in call")
+                closer = self.peek()
+                if closer is None or not (
+                    closer.kind == "punct" and closer.text == ")"
+                ):
+                    raise ExprParseError(
+                        f"expected ')' to close call to '{tok.text}'"
+                    )
                 self.take()  # )
                 return self._call_or_attr(tok.text, tuple(args))
             # Reference or dotted reference (treated as an Attr chain rooted
@@ -266,7 +332,10 @@ class _Parser:
                 inner = self.parse_expr()
             finally:
                 self._paren_depth -= 1
-            if not (self.peek() and self.peek().kind == "punct" and self.peek().text == ")"):
+            closer = self.peek()
+            if closer is None or not (
+                closer.kind == "punct" and closer.text == ")"
+            ):
                 raise ExprParseError("expected ')'")
             self.take()
             return inner

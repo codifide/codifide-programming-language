@@ -61,6 +61,13 @@ class RustPythonConformance(unittest.TestCase):
     v0). Both sides consume canonical JSON and must produce identical
     canonical bytes; that is the tightest surface we can conform on without
     duplicating the parser.
+
+    Naming note: post the 2026-05-11 primary-hash migration,
+    :func:`canonical_bytes` returns CBOR bytes. The legacy JSON byte form
+    is ``canonical_bytes_json``. This suite exercises both — CBOR
+    agreement is the primary conformance claim, JSON agreement is the
+    legacy claim (which holds only on values in the mutually-safe
+    subset; see AUD-08 for the carve-out).
     """
 
     @classmethod
@@ -78,11 +85,16 @@ class RustPythonConformance(unittest.TestCase):
         module = parse(src_path.read_text(encoding="utf-8"))
         return to_canonical(module)
 
-    def test_rust_and_python_agree_on_canonical_bytes(self) -> None:
+    def test_rust_and_python_agree_on_legacy_json_canonical_bytes(self) -> None:
+        # Legacy (pre-migration) JSON byte-form agreement. Still holds
+        # for every value in the .cod example corpus; would fail on a
+        # float whose shortest decimal differs across Python and Rust
+        # (AUD-08). The test documents the legacy surface.
+        from codifide.projection.canonical import canonical_bytes_json
         for example in sorted(EXAMPLES_DIR.glob("*.cod")):
             with self.subTest(example=example.name):
                 module = parse(example.read_text(encoding="utf-8"))
-                python_bytes = canonical_bytes(module)
+                python_bytes = canonical_bytes_json(module)
 
                 canonical_json = to_canonical(module)
                 with tempfile.NamedTemporaryFile(

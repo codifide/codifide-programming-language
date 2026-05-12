@@ -1,0 +1,83 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: spec-amendment proposal — cost-based candidate dispatch
+  at: 2026-05-11
+  author: Glyph
+  intent: >
+    Propose a spec amendment adding an optional integer cost
+    annotation to candidates, with dispatcher semantics that prefer
+    lower cost among guard-satisfied candidates (declaration index as
+    tiebreaker). Additive and backwards compatible.
+  status: SPEC-AMENDMENT PROPOSAL — requires Douglas approval per GOVERNANCE.md §Decision-making.
+
+  state:
+    shipped: []
+    in_flight: []
+    blocked:
+      - this-amendment-awaits-approval
+    refused:
+      - float-cost-values
+      - dynamic-cost-expressions-in-v1
+      - cost-on-primitives
+
+  canonical_form_change:
+    field_added: "candidate.cost"
+    type: "int? (optional non-negative integer)"
+    semantics_when_absent: "effective cost = +∞ for dispatch purposes"
+    backwards_compatible: true
+    existing_hashes_invalidated: false
+
+  surface_syntax_change:
+    keyword_added: "cost"
+    placement: inside-cand-block
+    accepted_order: "any order among intent/cost/when inside a cand"
+    accepts: "non-negative integer literal"
+    rejects: "negative integers, floats, non-numeric, expressions"
+
+  dispatcher_change:
+    today: "first satisfied candidate by declaration order"
+    proposed: "min(satisfied, key=(cost_or_infinity, declaration_index))"
+    v0_semantics_preserved_when: "no candidate has a cost field"
+
+  conformance_requirements:
+    - parse-cost-field-from-json-and-cbor
+    - reject-negative-integers
+    - implement-min-by-cost-then-index-dispatch
+    - legacy-runtimes-must-ignore-unknown-cost-field-gracefully
+
+  migration_story:
+    existing_programs: "continue to parse, canonicalize, and execute identically"
+    existing_canonical_bytes: "unchanged (field is absent)"
+    existing_hashes: "unchanged"
+    new_cost_programs: "rejected by pre-amendment runtime; accepted by post-amendment runtime"
+    capability_manifest_hash: "moves by exactly one field description"
+
+  risks:
+    - id: agents-can-lie-about-cost
+      severity: low
+      mitigation: "same as intent — informational only; no validation"
+    - id: integer-cost-loses-precision
+      severity: low
+      mitigation: "deliberate; scale ratios"
+    - id: second-implementation-conformance-gap
+      severity: medium
+      mitigation: "cost-based-dispatch test added to conformance suite"
+
+  sable_audit: dispatches/2026-05-11-cost-based-dispatch-audit.md
+
+  unknowns:
+    - question: Should cost be an expression rather than a literal?
+      recommendation: literal; revisit if limiting
+    - question: Should CLI have a --cost-bias flag?
+      recommendation: no; if needed, add later
+    - question: Should cost annotations appear on primitives?
+      recommendation: no; out of scope
+
+  next:
+    - action: user reads the proposal
+    - action: user approves, modifies, defers, or rejects
+    - action: future session implements approved spec amendment
+
+  links:
+    human_readout: dispatches/2026-05-11-cost-based-dispatch-proposal.readout.md
+    audit: dispatches/2026-05-11-cost-based-dispatch-audit.md

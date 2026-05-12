@@ -13,12 +13,14 @@
 pub mod ast;
 pub mod canonical;
 pub mod cbor;
+pub mod cbor_decoder;
 pub mod error;
 pub mod json;
 
 pub use ast::{Candidate, Definition, Expr, Module, Param, Signature};
 pub use canonical::{canonical_bytes, content_hash};
 pub use cbor::{canonical_cbor, content_hash_cbor};
+pub use cbor_decoder::{decode_canonical_cbor, decode_canonical_cbor_with_limit};
 pub use error::Error;
 pub use json::{from_canonical_json, to_canonical_json};
 

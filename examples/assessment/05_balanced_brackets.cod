@@ -1,0 +1,84 @@
+module balanced_brackets_example
+
+# Are this string's parens balanced? Real check this time.
+#
+# Codifide dispatch evaluates every candidate's guard (all of them,
+# in one pass) and then picks the cheapest satisfied one. Guards
+# do NOT short-circuit across candidates — so a guard that would
+# raise (`char_at` past the end of the string) cannot be gated by
+# a later candidate's "at end of string" guard.
+#
+# The idiom: split the end-of-string decision into its own
+# function whose candidates have non-overlapping guards that all
+# succeed (never raise). Each inner function has two candidates:
+# one for the base case, one for the recursive case. Guards that
+# might raise are pushed inside the recursive-case body where
+# they've been gated by the current candidate's own guard.
+#
+# Difficulty: medium-hard. Exercises the new indexed primitives,
+# recursion, and surfaces a real Codifide idiom rule:
+# **guards do not short-circuit across candidates**.
+
+def step
+  intent "advance one character; return new depth or -1 if under-closed"
+  sig    (s: String, i: Int, d: Int) -> Int
+  effects {}
+
+  cand
+    intent "open bracket"
+    cost   1
+    when   eq(char_at(s, i), "(")
+    add(d, 1)
+
+  cand
+    intent "close bracket"
+    cost   1
+    when   eq(char_at(s, i), ")")
+    sub(d, 1)
+
+  cand
+    intent "any other character — depth unchanged"
+    cost   10
+    d
+
+def walk
+  intent "recursive depth tracker; returns final depth, or -1 on under-close"
+  sig    (s: String, i: Int, d: Int) -> Int
+  effects {}
+
+  cand
+    intent "under-closed somewhere in the run — propagate"
+    cost   1
+    when   lt(d, 0)
+    neg(1)
+
+  cand
+    intent "end of string — return accumulated depth"
+    cost   10
+    when   ge(i, len(s))
+    d
+
+  cand
+    intent "otherwise: step one character and recurse"
+    cost   100
+    walk(s, add(i, 1), step(s, i, d))
+
+def balanced
+  intent "public entry: balanced iff final depth is zero"
+  sig    (s: String) -> Bool
+  effects {}
+  cand
+    eq(walk(s, 0, 0), 0)
+
+def main
+  intent "test a few bracketed strings"
+  sig    () -> List
+  effects {}
+  cand
+    list(
+      balanced("()"),
+      balanced("(())"),
+      balanced("((("),
+      balanced(")("),
+      balanced("(a + b) * (c + d)")
+    )

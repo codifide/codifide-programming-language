@@ -1,0 +1,94 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: design — store garbage collection
+  at: 2026-05-11
+  author: Glyph
+  intent: >
+    Answer the three open design questions that blocked store GC
+    implementation. Proposes specific semantics (user-declared
+    roots via ROOTS file, dry-run default, file-lock concurrency
+    safety) and lists follow-on implementation tasks.
+  status: DESIGN — requires Douglas's approval before implementation.
+
+  state:
+    shipped: []
+    in_flight: []
+    blocked:
+      - this-design-awaits-approval
+    refused:
+      - time-based-gc
+      - implicit-gc-on-every-put
+
+  design_answers:
+    - question: What is the root set?
+      answer: User-declared via a ROOTS file at the store root.
+      rationale: >
+        Inference requires time-based heuristics, which conflate "old"
+        with "unwanted" — exactly the primitive content addressing is
+        designed to avoid. Explicit roots give every deletion a
+        defensible answer.
+      refused_alternative: time-based-gc
+
+    - question: How does GC treat dry runs and safety?
+      answer: Dry-run default; explicit --execute required for deletion.
+      rationale: >
+        Content-addressed deletion is irreversible without the
+        pre-image. Preview-before-delete is a low-cost safety.
+
+    - question: How does GC participate in the three-property contract?
+      answer: Adds "sound deletion" as a fourth property; uses a file lock for race safety.
+      rationale: >
+        The original three properties are preserved. Sound deletion
+        requires roots at deletion time, non-reachability, and explicit
+        authorization. Concurrent puts serialize via LOCK file.
+
+  proposed_cli:
+    - "codifide store gc"                    # dry run
+    - "codifide store gc --execute"          # actual deletion
+    - "codifide store roots add <identity>"
+    - "codifide store roots list"
+    - "codifide store roots remove <identity>"
+
+  on_disk_additions:
+    - ROOTS: "plain text file; user-editable; identities one per line; comments allowed"
+    - GC.LOG: "append-only audit log of (timestamp, deleted-identity) pairs"
+    - LOCK: "file lock for race safety; created/removed per GC run"
+
+  sound_deletion_contract: >
+    For every identity I the store deletes, before deletion:
+    (a) I was present in the store,
+    (b) I was not reachable from any root's transitive import closure
+        at the time deletion was attempted,
+    (c) the user explicitly authorized deletion via --execute
+        while ROOTS was non-empty.
+
+  implementation_tasks:
+    - ROOTS file reading + validation
+    - file_lock utility
+    - transitive_closure helper
+    - SymbolStore.gc method
+    - codifide store gc subcommand
+    - codifide store roots subcommand family
+    - tests: dry-run, refuse-without-roots, preservation, transitive closure, concurrency, log durability
+    - docs: STORE.md new, CANONICAL.md §Symbol store gains GC subsection
+
+  estimated_size:
+    python: "~250 lines"
+    tests: "~200 lines"
+    docs: "~100 lines"
+
+  unknowns:
+    - question: Single ROOTS file or ROOTS/ directory?
+      recommendation: single file for v0.x
+    - question: Implicit GC on put, or always explicit?
+      recommendation: always explicit
+    - question: GC.LOG records pre-deletion bytes or just identities?
+      recommendation: just identities
+
+  next:
+    - action: user reads the design
+    - action: user approves, modifies, or rejects
+    - action: future session implements approved design
+
+  links:
+    human_readout: dispatches/2026-05-11-store-gc-design.readout.md

@@ -151,10 +151,18 @@ def build_default_registry(trace: EffectTrace) -> PrimitiveRegistry:
     reg.register("max_of", lambda xs: max(_unwrap(xs)), returns="Any")
     reg.register("sum",    lambda xs: sum(_unwrap(xs)) if _unwrap(xs) else 0, returns="Number")
 
-    # Non-mutating list ops. `reverse` and `append` always return fresh
-    # Python lists so Codifide's value semantics are preserved — a caller who
-    # still holds the input sees the input, not the result.
-    reg.register("reverse", lambda xs: list(reversed(_unwrap(xs))), returns="List")
+    # Non-mutating reverse. Polymorphic over string and list because the
+    # semantics transfer cleanly and the return shape is unambiguous:
+    # reverse a string, get a string; reverse a list, get a list.
+    # This establishes the rule for primitive design going forward
+    # (see docs/CAPABILITY.md §Primitive polymorphism).
+    def _reverse(xs: Any) -> Any:
+        v = _unwrap(xs)
+        if isinstance(v, str):
+            return v[::-1]
+        return list(reversed(v))
+
+    reg.register("reverse", _reverse, returns="Any")
     reg.register(
         "append",
         lambda xs, item: [*_unwrap(xs), _unwrap(item)],
@@ -222,6 +230,89 @@ def build_default_registry(trace: EffectTrace) -> PrimitiveRegistry:
         lambda sep, xs: str(_unwrap(sep)).join(str(item) for item in _unwrap(xs)),
         returns="String",
     )
+
+    # -- Indexed access (pure, polymorphic over string and list) ------------
+    #
+    # These four primitives close a gap surfaced by the 2026-05-11
+    # six-program assessment: Codifide could test string properties
+    # (starts_with, ends_with, contains) but could not access characters
+    # or substrings by position. The balanced-brackets example
+    # degenerated to a count-only check because there was no way to
+    # walk characters.
+    #
+    # Polymorphism: `slice` and `at` work on both strings and lists
+    # (following the same rule reverse established — pure primitives
+    # are polymorphic when semantics transfer cleanly and return
+    # shape is unambiguous). `char_at` and `indexof` are string-only
+    # because character indexing on a list would need a separate
+    # name (`head`/`tail` are the list-indexing family).
+
+    def _slice(seq: Any, start: Any, end: Any) -> Any:
+        """Half-open slice [start, end) over a string or list.
+
+        Out-of-range indices are clamped Python-style rather than
+        raising: ``slice("abc", -10, 100) == "abc"``. This matches
+        agent expectations and avoids ``PrimitiveError`` on what
+        readers treat as a total function.
+        """
+        v = _unwrap(seq)
+        s = int(_num(start))
+        e = int(_num(end))
+        if isinstance(v, str):
+            return v[s:e]
+        # Materialize list slice so downstream mutation of the source
+        # (unlikely in Codifide but possible at the host level) does
+        # not leak.
+        return list(v)[s:e]
+
+    reg.register("slice", _slice, returns="Any")
+
+    def _at(seq: Any, i: Any) -> Any:
+        """Return the element at index ``i`` of a string or list.
+
+        For strings, returns a single-character string. Negative
+        indices count from the end (Python semantics). Out-of-range
+        indices raise; the interpreter wraps the IndexError as a
+        PrimitiveError so the typed-error discipline holds.
+        """
+        v = _unwrap(seq)
+        idx = int(_num(i))
+        return v[idx]
+
+    reg.register("at", _at, returns="Any")
+
+    def _char_at(s: Any, i: Any) -> str:
+        """Explicit string-only accessor. Equivalent to ``at(s, i)`` when
+        the input is a string; rejects non-strings up front so a typo
+        like passing a list is caught before the IndexError path.
+        """
+        v = _unwrap(s)
+        if not isinstance(v, str):
+            raise TypeError(
+                f"char_at expects a string, got {type(v).__name__}"
+            )
+        return v[int(_num(i))]
+
+    reg.register("char_at", _char_at, returns="String")
+
+    def _indexof(haystack: Any, needle: Any) -> int:
+        """Return the first index of ``needle`` in ``haystack``, or -1.
+
+        Polymorphic: works on strings (substring search) and lists
+        (element search). Python's ``str.find`` returns -1 for
+        "not found"; we mirror that rather than raising, because
+        "-1" is the idiomatic sentinel agents will reach for.
+        """
+        h = _unwrap(haystack)
+        n = _unwrap(needle)
+        if isinstance(h, str):
+            return h.find(str(n))
+        try:
+            return list(h).index(n)
+        except ValueError:
+            return -1
+
+    reg.register("indexof", _indexof, returns="Int")
 
     # -- Confidence (pure) ---------------------------------------------------
     reg.register("conf", _conf, returns="Float")

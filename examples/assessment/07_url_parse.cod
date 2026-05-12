@@ -1,0 +1,27 @@
+module url_parse_example
+
+# Extract the scheme from a URL-like string, defaulting to "http".
+# Exercises the 2026-05-11 amendments together: inline conditional,
+# indexed primitives (slice, indexof), multi-line if-then-else.
+# Difficulty: medium. Shows how the new primitives compose.
+
+def scheme_of
+  intent "return the scheme prefix of a URL-like string, or 'http' if absent"
+  sig    (s: String) -> String
+  effects {}
+  cand
+    # Short-circuit: if there's no '://', don't try to slice past it.
+    if ge(indexof(s, "://"), 0)
+      then slice(s, 0, indexof(s, "://"))
+      else "http"
+
+def main
+  intent "parse the scheme from three inputs"
+  sig    () -> List
+  effects {}
+  cand
+    list(
+      scheme_of("https://codifide.dev"),
+      scheme_of("ftp://files"),
+      scheme_of("plain-no-scheme")
+    )

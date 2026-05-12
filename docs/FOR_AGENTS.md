@@ -19,6 +19,11 @@ python3 -m codifide capability --cbor  # 5.5 KB binary form
 python3 -m codifide capability --hash  # sha256:... identity
 ```
 
+For a one-page distilled cross-reference of the primitive surface
+and the common-guess pitfalls, read `docs/AGENT_QUICKREF.md`. It is
+derived from the manifest and kept in sync; if they disagree, the
+manifest wins.
+
 ## Five minutes
 
 Read `docs/CANONICAL.md` — the specification. It defines the

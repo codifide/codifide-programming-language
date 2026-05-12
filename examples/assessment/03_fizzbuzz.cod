@@ -1,0 +1,58 @@
+module fizzbuzz_example
+
+# The classic. For a single number: "Fizz" if divisible by 3,
+# "Buzz" if by 5, "FizzBuzz" if by both, stringified number
+# otherwise. Exercises cost-based candidate dispatch with
+# guard conditions — the cheapest satisfied path wins.
+# Difficulty: medium (tests dispatch ordering intuition).
+
+def fizzbuzz_one
+  intent "classify one n via fizzbuzz rules"
+  sig    (n: Int) -> String
+  effects {}
+
+  cand
+    intent "divisible by both 3 and 5 — cheapest because most specific"
+    cost   1
+    when   and(eq(mod(n, 3), 0), eq(mod(n, 5), 0))
+    "FizzBuzz"
+
+  cand
+    intent "divisible by 3"
+    cost   10
+    when   eq(mod(n, 3), 0)
+    "Fizz"
+
+  cand
+    intent "divisible by 5"
+    cost   10
+    when   eq(mod(n, 5), 0)
+    "Buzz"
+
+  cand
+    intent "fallback — stringify the number"
+    cost   100
+    str(n)
+
+def main
+  intent "classify n=1 through n=15"
+  sig    () -> List
+  effects {}
+  cand
+    list(
+      fizzbuzz_one(1),
+      fizzbuzz_one(2),
+      fizzbuzz_one(3),
+      fizzbuzz_one(4),
+      fizzbuzz_one(5),
+      fizzbuzz_one(6),
+      fizzbuzz_one(7),
+      fizzbuzz_one(8),
+      fizzbuzz_one(9),
+      fizzbuzz_one(10),
+      fizzbuzz_one(11),
+      fizzbuzz_one(12),
+      fizzbuzz_one(13),
+      fizzbuzz_one(14),
+      fizzbuzz_one(15)
+    )

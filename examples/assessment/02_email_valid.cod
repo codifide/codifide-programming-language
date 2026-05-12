@@ -1,0 +1,25 @@
+module email_valid_example
+
+# Crude email validation — has an @, has a . after the @.
+# Exercises string primitives, boolean composition, contracts.
+# Difficulty: easy.
+
+def is_email
+  intent "is this string plausibly an email address"
+  sig    (s: String) -> Bool
+  effects {}
+  pre    ne(s, "")
+  post   eq(result, and(contains(s, "@"), contains(s, ".")))
+  cand
+    and(contains(s, "@"), contains(s, "."))
+
+def main
+  intent "check three candidate addresses"
+  sig    () -> List
+  effects {}
+  cand
+    list(
+      is_email("a@b.com"),
+      is_email("no-at-sign"),
+      is_email("has@at-but-no-dot")
+    )

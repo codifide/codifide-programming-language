@@ -1,0 +1,150 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: primary hash + cost dispatch + store GC — landed together (2026-05-11)
+  at: 2026-05-11
+  author: Glyph
+  intent: >
+    Attest that all three approved proposals landed in this session,
+    tests are green on both implementations, and the new capability
+    manifest hash is recorded for external consumers.
+
+  state:
+    shipped:
+      - primary-hash-migration-json-to-cbor
+      - cost-based-candidate-dispatch
+      - symbol-store-garbage-collection
+      - capability-manifest-regenerated
+      - spec-docs-updated
+      - paired-post-migration-attestation
+    in_flight: []
+    blocked: []
+    refused:
+      - time-based-gc
+      - implicit-gc-on-put
+      - infix-percent-for-mod
+      - inline-if-or-when-statement
+      - separate-str-reverse-primitive
+
+  evidence:
+    - claim: primary symbol hash is now CBOR-over-bytes
+      kind: read
+      source: codifide/store/symbol_store.py
+      result: "symbol_hash = symbol_hash_cbor; symbol_bytes = symbol_cbor_bytes"
+      confidence: 1.0
+
+    - claim: legacy JSON paths preserved under _json suffix
+      kind: read
+      source: codifide/store/__init__.py, codifide/projection/canonical.py
+      result: "symbol_hash_json, symbol_bytes_json, content_hash_json, canonical_bytes_json all exported"
+      confidence: 1.0
+
+    - claim: cost field accepted in canonical form, additive
+      kind: test
+      source: tests.test_cost_dispatch.UnannotatedDispatchIsUnchanged.test_canonical_bytes_unchanged_without_annotations
+      result: passes
+      confidence: 1.0
+
+    - claim: dispatcher picks cheapest satisfied candidate
+      kind: test
+      source: tests.test_cost_dispatch.CostBasedDispatchSemantics
+      result: "5 tests pass covering lower-cost-wins, equal-cost tie-break, annotated-beats-unannotated, unsatisfied-skipped, zero-cost-wins"
+      confidence: 1.0
+
+    - claim: parser rejects negative/float/non-numeric cost
+      kind: test
+      source: tests.test_cost_dispatch.CostSurfaceSyntaxValidation
+      result: "4 tests pass with typed ParseError"
+      confidence: 1.0
+
+    - claim: GC refuses --execute with empty ROOTS
+      kind: test
+      source: tests.test_store_gc.SoundDeletionContract.test_execute_without_roots_is_refused
+      result: passes; GCError raised; store untouched
+      confidence: 1.0
+
+    - claim: GC transitive closure reaches through indices
+      kind: test
+      source: tests.test_store_gc.TransitiveClosureThroughImports
+      result: passes; imported symbol survives, unrooted deleted
+      confidence: 1.0
+
+    - claim: GC.LOG records deletions with timestamp
+      kind: test
+      source: tests.test_store_gc.GCLogRecordsDeletions
+      result: 2 tests pass; log appended, format "ISO identity"
+      confidence: 1.0
+
+    - claim: Python suite 166 passing + 1 skipped
+      kind: test
+      source: "python3 -m codifide test"
+      result: "Ran 166 tests in 1.2s; OK (skipped=1)"
+      confidence: 1.0
+
+    - claim: Rust canonical 14 passing
+      kind: test
+      source: "cargo test --release -p codifide-canonical"
+      result: "10 + 4 + 0 + 0; all OK"
+      confidence: 1.0
+
+    - claim: capability manifest hash is sha256:56fa68ae...
+      kind: run
+      source: "python3 -m codifide capability --hash"
+      result: "sha256:56fa68ae1794a99f2c52c1e5dda0fc7fa2f51241fbfca32c79296e184e6b43b5"
+      confidence: 1.0
+
+  compatibility:
+    canonical_bytes_of_unannotated_modules:
+      unchanged: true
+      verified_by: tests.test_cost_dispatch.UnannotatedDispatchIsUnchanged.test_canonical_bytes_unchanged_without_annotations
+    pre_migration_stored_objects:
+      still_fetchable: true
+      verified_by: polyform-read-path-in-SymbolStore.get
+      caveat: "Fetchable by their old (JSON) identity; new writes use new (CBOR) identity"
+
+  audit_findings_disposition:
+    - id: AUD-2026-05-11-04
+      severity: P2
+      disposition: structurally-closed-by-primary-hash-migration
+    - id: AUD-2026-05-11-08
+      severity: P1
+      disposition: structurally-closed-on-python-primary-path
+      residual: "Rust CLI still reads JSON text; f16-exhaustive diagnostic remains skipped"
+
+  open_followups:
+    - id: rust-cbor-input-subcommand
+      priority: medium
+      reason: "closes residual AUD-08 surface"
+      scope: "add `bytes-cbor-in` / `hash-cbor-in` subcommands that accept canonical CBOR bytes directly"
+    - id: sable-reaudit-new-surfaces
+      priority: medium
+      reason: "cost annotations and GC not yet probed adversarially"
+    - id: docs-store-md
+      priority: low
+      reason: "GC design dispatch promised a new docs/STORE.md; deferred"
+    - id: external-model-rerun
+      priority: low
+      reason: "measure effect of this pass on fresh-agent authoring"
+
+  unknowns:
+    - question: does any .cod example now hash-disagree with a pre-session snapshot?
+      why_unknown: obvious yes (primary path changed), but worth documenting in the CHANGELOG as a migration cost
+      how_to_resolve: regenerate a test manifest of example-hash pairs if a user asks
+
+    - question: does the new Candidate.cost field survive conformance round-trip in unusual positions?
+      why_unknown: tests cover straight round-trip but not e.g. inside indices
+      how_to_resolve: extend conformance fixture with cost-bearing module and Python<->Rust byte-compare
+
+  next:
+    - action: user-verifies-the-new-manifest-hash
+    - action: optionally-run-`codifide store put examples/greet.cod`-to-see-a-concrete-new-identity
+    - action: (future-session) rust-cbor-input-subcommand
+    - action: (future-session) sable-reaudit-on-cost-and-gc-surfaces
+
+  links:
+    human_readout: dispatches/2026-05-11-migrations-post.readout.md
+    primary_hash_migration: dispatches/2026-05-11-primary-hash-migration-proposal.readout.md
+    primary_hash_audit: dispatches/2026-05-11-primary-hash-migration-audit.md
+    cost_dispatch_proposal: dispatches/2026-05-11-cost-based-dispatch-proposal.readout.md
+    cost_dispatch_audit: dispatches/2026-05-11-cost-based-dispatch-audit.md
+    store_gc_design: dispatches/2026-05-11-store-gc-design.readout.md
+    cbor_reaudit: dispatches/2026-05-11-cbor-reaudit.md

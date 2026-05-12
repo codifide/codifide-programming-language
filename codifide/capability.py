@@ -157,6 +157,22 @@ def _ast_kinds() -> Dict[str, Any]:
                 {"name": "name",   "type": "string"},
             ],
         },
+        "if": {
+            "description": (
+                "Inline conditional expression. Evaluates ``cond``; "
+                "then evaluates EXACTLY ONE of ``then`` or ``else`` "
+                "based on truthiness. Short-circuit — unlike "
+                "candidate-dispatch guards, which all evaluate before "
+                "selection, this expression does not evaluate the "
+                "un-taken branch. Added in the 2026-05-11 spec "
+                "amendment."
+            ),
+            "fields": [
+                {"name": "cond", "type": "Expr"},
+                {"name": "then", "type": "Expr"},
+                {"name": "else", "type": "Expr"},
+            ],
+        },
     }
 
 

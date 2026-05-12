@@ -1,0 +1,18 @@
+module fahrenheit_to_celsius_example
+
+# Simple arithmetic formula. Exercises div, sub, mul.
+# Difficulty: trivial.
+
+def f_to_c
+  intent "Fahrenheit to Celsius; classic (F - 32) × 5/9"
+  sig    (f: Number) -> Number
+  effects {}
+  cand
+    div(mul(sub(f, 32), 5), 9)
+
+def main
+  intent "convert 212 °F (boiling) to Celsius"
+  sig    () -> Number
+  effects {}
+  cand
+    f_to_c(212)

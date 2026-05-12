@@ -72,6 +72,224 @@ class _Line:
 _MODULE_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_.\-]*$")
 _IDENTITY_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
+# Keyword heads that terminate an expression's continuation scan. If a
+# physical line leaves brackets unbalanced, we assemble subsequent lines
+# into the same expression until brackets balance — unless we hit a
+# keyword head, at which point something is genuinely wrong and we
+# raise instead of silently eating the next clause or definition.
+# Keyword heads that terminate an expression's continuation scan. If a
+# physical line leaves brackets unbalanced, we assemble subsequent lines
+# into the same expression until brackets balance — unless we hit a
+# keyword head, at which point something is genuinely wrong and we
+# raise instead of silently eating the next clause or definition.
+#
+# Notable exclusion: ``else`` is NOT in this set, because it can legitimately
+# begin a continuation line of a multi-line inline ``if`` expression.
+# ``believe``'s own ``else =>`` arm is handled structurally by the
+# believe-block parser without traversing ``_gather_expr``, so nothing
+# relies on ``else`` being treated as a stop-head.
+_EXPR_STOP_HEADS = frozenset(
+    {
+        "intent", "sig", "effects", "pre", "post",
+        "cand", "when", "cost", "believe",
+        "module", "def", "from", "import",
+    }
+)
+
+
+def _bracket_balance(text: str) -> int:
+    """Net change in bracket depth over `text`, respecting string literals.
+
+    Used to decide whether an expression fragment has closed all of its
+    open parentheses/brackets/braces. Strings are scanned for ``\\"``
+    escapes so a close bracket inside a string literal does not reduce
+    the depth. This is a surface-level utility; the canonical form is
+    indifferent to how brackets were distributed across physical lines.
+    """
+    depth = 0
+    i = 0
+    n = len(text)
+    in_str = False
+    while i < n:
+        c = text[i]
+        if in_str:
+            if c == "\\" and i + 1 < n:
+                i += 2
+                continue
+            if c == '"':
+                in_str = False
+            i += 1
+            continue
+        if c == '"':
+            in_str = True
+            i += 1
+            continue
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+        i += 1
+    return depth
+
+
+def _count_keyword_outside_strings(text: str, keyword: str) -> int:
+    """Count occurrences of ``keyword`` as a whole word outside strings.
+
+    Used by the multi-line continuation logic to detect unfinished
+    ``if``/``then``/``else`` chains. A whole-word match requires
+    non-identifier characters (or bounds) on both sides so that
+    ``self`` doesn't count as an ``elf`` hit.
+    """
+    count = 0
+    i = 0
+    n = len(text)
+    in_str = False
+    kwlen = len(keyword)
+    while i < n:
+        c = text[i]
+        if in_str:
+            if c == "\\" and i + 1 < n:
+                i += 2
+                continue
+            if c == '"':
+                in_str = False
+            i += 1
+            continue
+        if c == '"':
+            in_str = True
+            i += 1
+            continue
+        if text.startswith(keyword, i):
+            left_ok = i == 0 or not (
+                text[i - 1].isalnum() or text[i - 1] == "_"
+            )
+            j = i + kwlen
+            right_ok = j >= n or not (text[j].isalnum() or text[j] == "_")
+            if left_ok and right_ok:
+                count += 1
+                i = j
+                continue
+        i += 1
+    return count
+
+
+def _ends_with_dangling_keyword(text: str) -> bool:
+    """Does ``text`` end with ``if``, ``then``, or ``else`` as its
+    last token? These keywords demand an expression follow them;
+    their bare appearance at end-of-line signals continuation.
+    """
+    tail = text.rstrip()
+    for kw in ("if", "then", "else"):
+        if tail.endswith(kw):
+            prefix = tail[: -len(kw)]
+            if not prefix or not (prefix[-1].isalnum() or prefix[-1] == "_"):
+                return True
+    return False
+
+
+def _has_unclosed_if(text: str) -> bool:
+    """Is there an ``if`` in ``text`` whose ``then`` hasn't appeared yet?
+
+    Counts ``if`` and ``then`` tokens outside strings. If there
+    are more ``if``s than ``then``s, we are mid-conditional and
+    need more input. Same for ``then`` vs ``else`` — each ``if``
+    demands a ``then`` and then an ``else``.
+    """
+    if_count = _count_keyword_outside_strings(text, "if")
+    then_count = _count_keyword_outside_strings(text, "then")
+    else_count = _count_keyword_outside_strings(text, "else")
+    return if_count > then_count or then_count > else_count
+
+
+def _gather_expr(
+    lines: List["_Line"],
+    i: int,
+    first_text: str,
+) -> Tuple[str, int]:
+    """Assemble an expression that may span multiple physical lines.
+
+    Starting at ``lines[i]`` with its keyword (if any) already stripped
+    into ``first_text``, absorb subsequent physical lines while the
+    expression is "obviously not finished." Triggers for continuation:
+
+    - Bracket depth is unbalanced.
+    - The line ends with a dangling expression keyword — ``if``,
+      ``then``, or ``else`` — that requires more tokens to close.
+
+    Returns the assembled text and the new index (one past the last
+    consumed line). Reasons we stop:
+
+    1. Brackets balance AND the tail doesn't end with a dangling
+       keyword. This is the normal case.
+    2. The next physical line starts with a keyword head (``intent``,
+       ``sig``, ``cand``, ``pre``, ``post``, ``when``, etc). A multi-line
+       expression cannot plausibly contain one of these at the start
+       of a physical line; treating it as continuation would eat the
+       next clause or definition silently, which would be far worse
+       than a clean ``ParseError``.
+    3. End of file.
+
+    If brackets do not balance at stop time, raise ``ParseError``. That
+    is a surface bug the author needs to fix, not something the parser
+    should paper over.
+    """
+    depth = _bracket_balance(first_text)
+    if depth < 0:
+        raise ParseError(
+            "unbalanced brackets: too many closers",
+            line=lines[i].lineno,
+        )
+    if (
+        depth == 0
+        and not _ends_with_dangling_keyword(first_text)
+        and not _has_unclosed_if(first_text)
+    ):
+        return first_text, i + 1
+
+    start_lineno = lines[i].lineno
+    parts: List[str] = [first_text]
+    j = i + 1
+    while j < len(lines) and (
+        depth > 0
+        or _ends_with_dangling_keyword(parts[-1])
+        or _has_unclosed_if(" ".join(parts))
+    ):
+        nxt = lines[j]
+        head, _ = _head(nxt.text)
+        if head in _EXPR_STOP_HEADS:
+            # A continuation line with a keyword head is almost
+            # certainly not a continuation at all. Stop and let the
+            # balance check below report the real problem.
+            break
+        parts.append(nxt.text)
+        depth += _bracket_balance(nxt.text)
+        if depth < 0:
+            raise ParseError(
+                "unbalanced brackets: too many closers in continuation",
+                line=nxt.lineno,
+            )
+        j += 1
+    if depth != 0:
+        raise ParseError(
+            f"unbalanced brackets in expression starting at line "
+            f"{start_lineno}: {depth} unclosed",
+            line=start_lineno,
+        )
+    joined = " ".join(parts)
+    if _ends_with_dangling_keyword(parts[-1]):
+        raise ParseError(
+            f"expression ending with `if`/`then`/`else` needs more — "
+            f"the keyword must be followed by an expression.",
+            line=start_lineno,
+        )
+    if _has_unclosed_if(joined):
+        raise ParseError(
+            f"`if` expression started at line {start_lineno} is "
+            f"missing a matching `then` or `else`.",
+            line=start_lineno,
+        )
+    return joined, j
+
 
 def parse(
     source: str,
@@ -298,11 +516,11 @@ def _parse_definition(lines: List[_Line], i: int) -> Tuple[Definition, int]:
             sig = Signature(params=sig.params, returns=sig.returns, effects=effs)
             i += 1
         elif head == "pre":
-            pre.append(_safe_parse_expr(rest, line.lineno))
-            i += 1
+            text, i = _gather_expr(lines, i, rest)
+            pre.append(_safe_parse_expr(text, line.lineno))
         elif head == "post":
-            post.append(_safe_parse_expr(rest, line.lineno))
-            i += 1
+            text, i = _gather_expr(lines, i, rest)
+            post.append(_safe_parse_expr(text, line.lineno))
         elif head == "cand":
             cand, i = _parse_candidate(lines, i)
             candidates.append(cand)
@@ -343,6 +561,7 @@ def _parse_candidate(lines: List[_Line], i: int) -> Tuple[Candidate, int]:
 
     cand_intent = "default"
     guard: Optional[Expr] = None
+    cost: Optional[int] = None
     steps: List[Expr] = []
 
     while i < len(lines) and lines[i].indent > base_indent:
@@ -352,9 +571,36 @@ def _parse_candidate(lines: List[_Line], i: int) -> Tuple[Candidate, int]:
             cand_intent = _parse_string_literal(rest, line.lineno)
             i += 1
             continue
-        if head == "when":
-            guard = _safe_parse_expr(rest, line.lineno)
+        if head == "cost":
+            # ``cost <non-negative-integer>``. Rejects floats,
+            # negatives, and non-numeric text with a typed ParseError
+            # — the canonical form contract (see
+            # docs/CANONICAL.md §Candidate dispatch) requires a
+            # non-negative integer.
+            cost_text = rest.strip()
+            if not cost_text:
+                raise ParseError(
+                    "cost requires a non-negative integer argument",
+                    line=line.lineno,
+                )
+            try:
+                cost_value = int(cost_text)
+            except ValueError as exc:
+                raise ParseError(
+                    f"cost must be a non-negative integer, got {cost_text!r}",
+                    line=line.lineno,
+                ) from exc
+            if cost_value < 0:
+                raise ParseError(
+                    f"cost must be non-negative, got {cost_value}",
+                    line=line.lineno,
+                )
+            cost = cost_value
             i += 1
+            continue
+        if head == "when":
+            text, i = _gather_expr(lines, i, rest)
+            guard = _safe_parse_expr(text, line.lineno)
             continue
         if head == "believe":
             block, i = _parse_believe(lines, i)
@@ -362,12 +608,13 @@ def _parse_candidate(lines: List[_Line], i: int) -> Tuple[Candidate, int]:
             continue
         # Bind line: `name <- expr`
         if _is_bind(line.text):
-            steps.append(_parse_bind(line))
-            i += 1
+            bind_node, i = _parse_bind_multiline(lines, i)
+            steps.append(bind_node)
             continue
-        # Plain expression line.
-        steps.append(_safe_parse_expr(line.text, line.lineno))
-        i += 1
+        # Plain expression line, possibly spanning multiple physical lines
+        # while brackets are unbalanced.
+        text, i = _gather_expr(lines, i, line.text)
+        steps.append(_safe_parse_expr(text, line.lineno))
 
     if not steps:
         raise ParseError(
@@ -376,7 +623,7 @@ def _parse_candidate(lines: List[_Line], i: int) -> Tuple[Candidate, int]:
         )
 
     body = _compose_steps(steps)
-    return Candidate(body=body, intent=cand_intent, guard=guard), i
+    return Candidate(body=body, intent=cand_intent, guard=guard, cost=cost), i
 
 
 def _parse_believe(lines: List[_Line], i: int) -> Tuple[Expr, int]:
@@ -438,6 +685,8 @@ def _is_bind(text: str) -> bool:
 
 
 def _parse_bind(line: _Line) -> Expr:
+    # Retained for callers that already have a single-line bind text.
+    # Multi-line bind assembly goes through ``_parse_bind_multiline``.
     text = line.text
     op = "<-" if "<-" in text else "←"
     left, right = text.split(op, 1)
@@ -445,6 +694,35 @@ def _parse_bind(line: _Line) -> Expr:
     if not name.isidentifier():
         raise ParseError(f"invalid bind name: {name!r}", line=line.lineno)
     return Bind(name=name, expr=_safe_parse_expr(right.strip(), line.lineno), body=Lit(None, type="Unit"))
+
+
+def _parse_bind_multiline(
+    lines: List[_Line], i: int
+) -> Tuple[Expr, int]:
+    """Parse a bind line whose right-hand side may span multiple physical lines.
+
+    The bind operator (``<-`` or ``←``) is always on the first physical
+    line; only the expression on the right may continue. We hand the
+    right-hand side to ``_gather_expr`` and build the ``Bind`` node
+    with a placeholder body — the composition pass in
+    ``_compose_steps`` replaces the body with the remaining steps.
+    """
+    line = lines[i]
+    text = line.text
+    op = "<-" if "<-" in text else "←"
+    left, right = text.split(op, 1)
+    name = left.strip()
+    if not name.isidentifier():
+        raise ParseError(f"invalid bind name: {name!r}", line=line.lineno)
+    rhs_text, new_i = _gather_expr(lines, i, right.strip())
+    return (
+        Bind(
+            name=name,
+            expr=_safe_parse_expr(rhs_text, line.lineno),
+            body=Lit(None, type="Unit"),
+        ),
+        new_i,
+    )
 
 
 def _compose_steps(steps: List[Expr]) -> Expr:

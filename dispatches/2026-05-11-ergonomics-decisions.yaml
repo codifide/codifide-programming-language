@@ -1,0 +1,218 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: ergonomics pass — decisions in response to four-model review
+  at: 2026-05-11
+  author: Glyph
+  intent: >
+    Record yes/no decisions made in response to the four-model language
+    and program-feedback reviews. Every decision paired with evidence and
+    the rule it establishes or preserves. Sable audit filed alongside.
+
+  state:
+    shipped: []
+    in_flight:
+      - parser-accepts-multi-line-expressions-in-cand
+      - reverse-polymorphic-over-string-and-list
+      - hint-messages-for-known-guess-misses
+      - docs-agent-quickref
+      - tests-regression-for-gemini-crashes
+    blocked: []
+    refused:
+      - infix-percent-as-sugar-for-mod
+      - inline-if-or-when-as-statement
+      - separate-str-reverse-primitive
+
+  evidence:
+    - claim: parser crash reproduces on benign multi-line list literal
+      kind: run
+      source: "python3 -m codifide run examples/ai_generated/classify_numeric.cod"
+      result: "AttributeError: 'NoneType' object has no attribute 'kind'"
+      confidence: 1.0
+
+    - claim: parser crash reproduces on palindrome.cod by same mechanism
+      kind: run
+      source: "python3 -m codifide run examples/ai_generated/palindrome.cod"
+      result: "AttributeError at expr_parser.py:245"
+      confidence: 1.0
+
+    - claim: reverse primitive is list-only today
+      kind: read
+      source: codifide/runtime/primitives.py
+      result: "reverse = lambda xs: list(reversed(_unwrap(xs)))"
+      confidence: 1.0
+
+    - claim: capability manifest correctly enumerates primitives including mod
+      kind: run
+      source: "python3 -m codifide capability --hash"
+      result: "sha256:522c48d0... (stable)"
+      confidence: 1.0
+
+    - claim: two of four external agents failed because they did not read manifest first
+      kind: read
+      source: "dispatches/2026-05-11-ai-generated-programs-feedback.md, dispatches/2026-05-11-gemini-2-5-pro-programs-feedback.md"
+      result: "gpt-5.4 guessed '%', 'str.reverse', 'clock.hour'; gemini hit parser bug"
+      confidence: 1.0
+
+    - claim: two of four external agents succeeded by reading primitives first
+      kind: read
+      source: "dispatches/2026-05-11-claude-opus-4-7-programs-feedback.md, dispatches/2026-05-11-grok-code-fast-1-programs-feedback.md"
+      result: "3/3 pass each, zero guessing at primitives"
+      confidence: 1.0
+
+  decisions:
+    - id: parser-multiline
+      title: "Accept multi-line expressions inside candidate and contract bodies"
+      call: YES
+      because:
+        - Uncaught host exception violates the typed-error invariant.
+        - Spec does not prohibit multi-line; this is an implementation gap.
+        - Agent-intuitive formatting should not produce diagnostic failure.
+      rule_established: >
+        Surface expressions may span multiple physical lines when brackets
+        are unbalanced. Canonical form is unchanged; surface is projection.
+      scope:
+        - codifide/parser/parser.py (line assembly)
+        - codifide/parser/expr_parser.py (EOF-safe peek)
+      confidence: 1.0
+
+    - id: reverse-polymorphic
+      title: "Make reverse polymorphic over string and list"
+      call: YES
+      because:
+        - Semantics transfer directly; return shape is unambiguous.
+        - Expanding primitive count with 'str.reverse' contradicts the "named, not methods" thesis.
+        - Establishes a forward rule for primitive design.
+      rule_established: >
+        Pure primitives are polymorphic when semantics transfer cleanly
+        and the return shape is unambiguous. Otherwise, distinct names.
+      scope:
+        - codifide/runtime/primitives.py
+      confidence: 1.0
+
+    - id: refuse-percent-infix
+      title: "Do not accept % as sugar for mod"
+      call: NO
+      because:
+        - Opens the door to +, -, *, / as infix without semantic justification.
+        - Drifts the language toward "Python with intent annotations."
+        - Right fix is discoverability (quickref + manifest prompt).
+      rule_preserved: >
+        Arithmetic primitives are named. Comparison infix (<, <=, ==) is a
+        calculated exception for contract legibility and does not generalize.
+      scope:
+        - codifide/parser/lexer.py (friendlier error for %)
+      confidence: 0.95
+
+    - id: refuse-inline-when
+      title: "Do not accept inline when/if as statement-level conditional"
+      call: NO
+      because:
+        - Candidate dispatch already handles this at the function level.
+        - Two paths to the same destination is exactly the drift to resist.
+        - Pattern is expressible today by splitting into multiple candidates.
+      rule_preserved: >
+        Conditional dispatch is a candidate-level construct. Statement-level
+        branching is not added.
+      scope:
+        - error text only
+      confidence: 0.9
+
+    - id: refuse-str-reverse
+      title: "Do not add a separate str_reverse primitive"
+      call: NO
+      because:
+        - Subsumed by decision reverse-polymorphic.
+      confidence: 1.0
+
+    - id: agent-quickref
+      title: "Ship docs/AGENT_QUICKREF.md"
+      call: YES
+      because:
+        - All four reviews asked for it.
+        - Manifest is authoritative but machine-shaped; humans and agents both benefit from a one-page distillation.
+      rule_established: >
+        The quickref is a cross-reference, not a source of truth. Drift is
+        mitigated by keeping the manifest as the authoritative enumeration.
+      scope:
+        - docs/AGENT_QUICKREF.md (new)
+        - docs/FOR_AGENTS.md (link added)
+        - README.md (pointer)
+      confidence: 0.8
+
+    - id: hint-messages
+      title: "Hint on common-guess misses (%, str.reverse, clock.hour, ...)"
+      call: YES
+      because:
+        - Evidence from two independent agents; not speculative.
+        - Annotate the error, do not hide it.
+      rule_established: >
+        When a known-wrong form reliably shows up in agent-authored code,
+        the error that rejects it should name the correct form in one line.
+      scope:
+        - codifide/runtime/interpreter.py (unknown-callable hint table)
+        - codifide/parser/lexer.py (% hint)
+      confidence: 0.95
+
+    - id: regression-tests
+      title: "Commit gemini's failing programs as regression tests"
+      call: YES
+      because:
+        - Fix without pinning regresses silently on the next refactor.
+      scope:
+        - tests/test_parser.py (or new tests/test_parser_multiline.py)
+      confidence: 1.0
+
+  unknowns:
+    - question: Does the quickref alone change agent-authoring success rates?
+      why_unknown: Unmeasured; the experiment is a future external-model run.
+      how_to_resolve: Hand the next external model only the repo (no coaching) and re-run the same task battery.
+
+    - question: Should docs/LANGUAGE.md explicitly describe multi-line expression rules?
+      why_unknown: Current spec is silent; parser fix could be documented or left implicit.
+      how_to_resolve: Add a one-paragraph "line continuation" note to LANGUAGE.md during this pass.
+
+    - question: Will polymorphic reverse change the capability manifest hash?
+      why_unknown: The manifest records a 'returns' string per primitive; changing semantics without changing the string does not change the hash, but the test for manifest-impl agreement may catch the behavior change.
+      how_to_resolve: Run `python3 -m codifide capability --hash` before and after and compare; update docs/capability-0.1.json if the hash changes.
+
+  next:
+    - action: implement parser multi-line support; add regression tests from gemini's fixtures
+      depends_on: []
+      effect: "{fs.write}"
+
+    - action: implement polymorphic reverse; add test over string input
+      depends_on: []
+      effect: "{fs.write}"
+
+    - action: add unknown-callable hint table and lexer % hint
+      depends_on: []
+      effect: "{fs.write}"
+
+    - action: write docs/AGENT_QUICKREF.md and link from FOR_AGENTS.md and README
+      depends_on: []
+      effect: "{fs.write}"
+
+    - action: run full suite; regenerate docs/capability-0.1.json if hash moved
+      depends_on:
+        - parser-multiline
+        - reverse-polymorphic
+        - hint-messages
+      effect: "{shell.exec}"
+
+    - action: file paired Quill/Glyph dispatches summarizing what shipped
+      depends_on:
+        - all-scope-changes-above
+      effect: "{fs.write}"
+
+  links:
+    human_readout: dispatches/2026-05-11-ergonomics-decisions.readout.md
+    audit: dispatches/2026-05-11-ergonomics-audit.md
+    external_reviews:
+      - dispatches/2026-05-11-ai-agent-language-review.md
+      - dispatches/2026-05-11-ai-generated-programs-feedback.md
+      - dispatches/2026-05-11-claude-opus-4-7-language-review.md
+      - dispatches/2026-05-11-claude-opus-4-7-programs-feedback.md
+      - dispatches/2026-05-11-gemini-2-5-pro-language-review.md
+      - dispatches/2026-05-11-gemini-2-5-pro-programs-feedback.md
+      - dispatches/2026-05-11-grok-code-fast-1-language-review.md
+      - dispatches/2026-05-11-grok-code-fast-1-programs-feedback.md

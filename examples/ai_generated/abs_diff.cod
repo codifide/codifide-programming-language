@@ -1,0 +1,17 @@
+module abs_diff_example
+
+# Absolute difference between two numbers, using `abs` + `sub`.
+
+def abs_diff
+  intent "absolute difference of two numbers"
+  sig    (a: Number, b: Number) -> Number
+  effects {}
+  cand
+    abs(sub(a, b))
+
+def main
+  intent "compute |5 - 12|"
+  sig    () -> Number
+  effects {}
+  cand
+    abs_diff(5, 12)

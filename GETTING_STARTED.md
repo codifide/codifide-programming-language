@@ -86,6 +86,7 @@ each step, is in `docs/TUTORIAL.md`.
 | Walk through the language               | `docs/TUTORIAL.md`                      |
 | See the surface-syntax reference        | `docs/LANGUAGE.md`                      |
 | Understand the canonical-form spec      | `docs/CANONICAL.md`                     |
+| Understand the symbol store and GC      | `docs/STORE.md`                         |
 | Read how the code is organized          | `docs/ARCHITECTURE.md`                  |
 | Read about the Rust crate               | `docs/RUST.md`                          |
 | See what's coming next                  | `docs/ROADMAP.md`                       |

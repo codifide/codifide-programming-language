@@ -1,0 +1,101 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: carryover queue — per-item yes/no decisions (2026-05-11)
+  at: 2026-05-11
+  author: Glyph
+  intent: >
+    User asked why seven carryover items are still open. Record the
+    per-item call with reasoning so the queue is not mysterious and
+    so future sessions can resume against the same analysis.
+
+  state:
+    shipped: []
+    in_flight:
+      - numeric-boundary-cbor-conformance
+      - rust-canonical-fuzz
+      - cli-filesystem-safety-audit
+    blocked:
+      - primary-hash-migration-json-to-cbor
+      - store-gc
+      - cost-based-candidate-dispatch
+    refused:
+      - cbor-aware-sable-reaudit-with-no-cbor-changes
+
+  decisions:
+    - id: numeric-boundary-cbor-conformance
+      call: YES
+      because:
+        - Pure test addition; no impl change expected.
+        - Closes a coverage claim that rests only on example programs today.
+        - Same shape as RFC 8949 Appendix A vectors already in test suite.
+      risk: low
+
+    - id: rust-canonical-fuzz
+      call: YES
+      because:
+        - Python fuzz harness exists; Rust has no equivalent.
+        - Adversarial input should produce typed errors on both sides.
+        - cargo test loop is enough; cargo-fuzz is out of scope.
+      risk: low
+
+    - id: cli-filesystem-safety-audit
+      call: YES
+      because:
+        - Store was hardened on 2026-05-10; CLI was not.
+        - Probes fit Sable's established audit pattern.
+        - P1 findings fixed in-session; P0 surfaced with stop.
+      risk: medium
+      stop_condition: "Any P0 finding. Surface to user before fixing."
+
+    - id: primary-hash-migration-json-to-cbor
+      call: NO
+      because:
+        - Breaking change invalidates every existing identity.
+        - Roadmap schedules with v1.0-approach release.
+        - Decision is timing, not technical.
+      unblocks_on: "Explicit user go-ahead with commit plan."
+
+    - id: store-gc
+      call: NO
+      because:
+        - Root-set semantics undecided.
+        - Dry-run discipline unspecified.
+        - Needs design dispatch before implementation.
+      unblocks_on: "Design dispatch answering the three open questions."
+
+    - id: cost-based-candidate-dispatch
+      call: NO
+      because:
+        - Extends canonical form; governance requires spec amendment.
+        - Dispatch-proposal + Sable audit + Douglas approval before impl.
+      unblocks_on: "Spec amendment proposal filed and approved."
+
+    - id: cbor-aware-sable-reaudit
+      call: NO
+      because:
+        - Prior audit on 2026-05-10 closed with all P1s fixed.
+        - No CBOR surface has changed since.
+        - Re-audit of unchanged code produces duplicate findings.
+      unblocks_on: "A CBOR-surface change creating new surface to audit."
+
+  unknowns:
+    - question: Will the CLI audit surface any P1 findings?
+      why_unknown: Not yet probed.
+      how_to_resolve: Run the audit; if P1 found, fix in session.
+
+    - question: Do Python and Rust agree on all f16 bit patterns in CBOR?
+      why_unknown: Conformance today tests only example programs.
+      how_to_resolve: Write the boundary fixture and run.
+
+  next:
+    - action: write and run numeric-boundary CBOR conformance tests
+      effect: "{fs.write, shell.exec}"
+    - action: write Rust canonical-crate fuzz harness inside cargo test
+      effect: "{fs.write, shell.exec}"
+    - action: run CLI filesystem-safety audit; file dispatches; fix P1s
+      effect: "{fs.write, shell.exec}"
+    - action: paired post-session dispatches attesting completion
+      effect: "{fs.write}"
+
+  links:
+    human_readout: dispatches/2026-05-11-carryover-decisions.readout.md

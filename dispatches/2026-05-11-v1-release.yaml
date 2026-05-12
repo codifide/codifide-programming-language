@@ -1,0 +1,129 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: Codifide v1.0.0 release (2026-05-11)
+  at: 2026-05-11
+  author: Glyph
+  intent: >
+    Attest the v1.0.0 release. Every known P0/P1 closed, every
+    test passing, zero skipped. The canonical form is stable
+    enough to hash and ship; the runtime's typed-error discipline
+    holds; the authoring surface has been adversarially probed.
+
+  version:
+    previous: "0.1.0"
+    current: "1.0.0"
+    python_package: codifide==1.0.0
+    rust_crate: codifide-canonical==1.0.0
+    capability_manifest_hash: sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d
+
+  test_counts:
+    python_passing: 216
+    python_skipped: 0
+    rust_canonical_passing: 28
+    total_delta_vs_day_start:
+      python: "+94 (started at 122)"
+      rust: "+18 (started at 10)"
+
+  shipped_in_v1_but_not_v0:
+    canonical_form:
+      - primary-hash-migrated-json-to-cbor
+      - candidate-cost-annotation
+      - if-expression-ast-kind
+      - indexed-primitives-slice-at-char_at-indexof
+      - polymorphic-reverse-over-string-and-list
+    runtime:
+      - cost-based-candidate-dispatcher
+      - short-circuit-if-evaluation
+      - symbol-store-garbage-collection
+      - rust-cli-cbor-input-subcommands
+    authoring_surface:
+      - multi-line-expression-parser
+      - multi-line-if-then-else-chains
+      - hint-messages-for-known-guess-misses
+      - and-or-as-function-call-not-infix-fix
+      - identifier-with-reserved-substring-fix
+    documentation:
+      - docs-STORE.md
+      - docs-AGENT_QUICKREF.md
+      - docs-CANONICAL.md-updates-for-cost-if-indexed
+      - docs-LANGUAGE.md-updates-for-cost-if
+      - dispatches-INDEX.md-auto-generated
+    discipline:
+      - expression-parser-fuzz-harness
+      - rust-canonical-fuzz-harness
+      - store-concurrency-tests
+      - dispatch-index-drift-guard
+
+  open_findings:
+    p0: []
+    p1: []
+    p2: []
+    p3_documented_design: []
+
+  known_limitations_v1:
+    - no-graph-native-parallel-runtime
+    - no-time-indexed-types
+    - no-rust-interpreter
+    - no-real-external-model-rerun-conducted-from-my-session
+
+  capability_surface_at_v1:
+    ast_kinds:
+      - lit
+      - ref
+      - call
+      - bind
+      - seq
+      - if
+      - believe
+      - bottom
+      - concat
+      - attr
+    primitives_total: 49
+    effect_labels:
+      - clock.read
+      - io.stdout
+      - model.vision
+    typed_errors:
+      - CodifideError
+      - ParseError
+      - EffectViolation
+      - ContractViolation
+      - DispatchError
+      - RefusalError
+      - RecursionLimitError
+      - PrimitiveError
+      - BottomPropagationError
+    wire_forms:
+      primary: canonical-cbor-rfc-8949-deterministic
+      legacy: canonical-json
+
+  assessment_battery:
+    programs: 7
+    passing_on_final_run: 7
+    complexity_range: "trivial (arithmetic) through hardest (multi-stage pipeline)"
+    location: examples/assessment/
+
+  post_v1_followups:
+    - id: real-external-model-rerun
+      priority: HIGH
+      reason: "the single most valuable measurement; cannot be done from my session"
+    - id: cookbook-style-idiom-doc
+      priority: MEDIUM
+      reason: "the six-program assessment surfaced patterns worth naming"
+    - id: gc-stress-test-10k-symbols
+      priority: MEDIUM
+      reason: "design is O(n); constants unmeasured"
+    - id: rust-fuzz-cost-bearing-inputs
+      priority: LOW
+      reason: "bounded extension; not gating anything"
+    - id: time-indexed-types
+      priority: ROADMAP
+      reason: "v2+ topic; needs proposal"
+    - id: rust-interpreter-port
+      priority: ROADMAP
+      reason: "scheduled for v0.3; semantics stable enough now to reconsider"
+
+  links:
+    human_readout: dispatches/2026-05-11-v1-release.readout.md
+    session_state: sessions/2026-05-11.md
+    dispatch_index: dispatches/INDEX.md

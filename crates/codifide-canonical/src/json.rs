@@ -198,12 +198,19 @@ fn cand_to_json(c: &Candidate) -> JsonValue {
         Some(g) => expr_to_json(g),
         None => JsonValue::Null,
     };
-    json!({
-        "kind": "candidate",
-        "intent": c.intent,
-        "guard": guard,
-        "body": expr_to_json(&c.body),
-    })
+    // Build the base object; only emit `cost` when present so the
+    // canonical bytes of un-annotated candidates stay identical to
+    // the pre-amendment form (no existing hash invalidated). Cost,
+    // when present, is a non-negative integer.
+    let mut obj = serde_json::Map::new();
+    obj.insert("body".to_string(), expr_to_json(&c.body));
+    if let Some(cost) = c.cost {
+        obj.insert("cost".to_string(), JsonValue::from(cost));
+    }
+    obj.insert("guard".to_string(), guard);
+    obj.insert("intent".to_string(), JsonValue::String(c.intent.clone()));
+    obj.insert("kind".to_string(), JsonValue::String("candidate".to_string()));
+    JsonValue::Object(obj)
 }
 
 fn cand_from_json(v: &JsonValue) -> Result<Candidate, Error> {
@@ -220,10 +227,23 @@ fn cand_from_json(v: &JsonValue) -> Result<Candidate, Error> {
     let body = expr_from_json(
         obj.get("body").ok_or_else(|| shape("candidate.body missing"))?,
     )?;
+    // `cost` is optional. When present it MUST be a non-negative
+    // integer representable as u64. Anything else is a typed shape
+    // error — the canonical-form typing contract mandates this.
+    let cost = match obj.get("cost") {
+        None | Some(JsonValue::Null) => None,
+        Some(v) => {
+            let n = v
+                .as_u64()
+                .ok_or_else(|| shape("candidate.cost must be a non-negative integer"))?;
+            Some(n)
+        }
+    };
     Ok(Candidate {
         intent,
         guard,
         body,
+        cost,
     })
 }
 
@@ -283,6 +303,12 @@ fn expr_to_json(e: &Expr) -> JsonValue {
             "kind": "attr",
             "target": expr_to_json(target),
             "name": name,
+        }),
+        Expr::If { cond, then_, else_ } => json!({
+            "kind": "if",
+            "cond": expr_to_json(cond),
+            "then": expr_to_json(then_),
+            "else": expr_to_json(else_),
         }),
     }
 }
@@ -384,6 +410,17 @@ fn expr_from_json(v: &JsonValue) -> Result<Expr, Error> {
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| shape("attr.name missing"))?
                 .to_string(),
+        }),
+        "if" => Ok(Expr::If {
+            cond: Box::new(expr_from_json(
+                obj.get("cond").ok_or_else(|| shape("if.cond missing"))?,
+            )?),
+            then_: Box::new(expr_from_json(
+                obj.get("then").ok_or_else(|| shape("if.then missing"))?,
+            )?),
+            else_: Box::new(expr_from_json(
+                obj.get("else").ok_or_else(|| shape("if.else missing"))?,
+            )?),
         }),
         other => Err(shape(format!("unknown expression kind: {other:?}"))),
     }

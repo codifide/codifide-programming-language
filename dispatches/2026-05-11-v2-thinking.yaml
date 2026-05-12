@@ -1,0 +1,112 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: v2 shape options — three internally-coherent paths
+  at: 2026-05-11
+  author: Glyph
+  intent: >
+    Document Claude's v2 thinking so the next session can pick it
+    up without re-deriving the options. User is deliberating; this
+    dispatch is not a decision, it is the decision's preamble.
+
+  status: THINKING — user deliberating
+
+  state:
+    shipped: []
+    in_flight: []
+    blocked:
+      - v2-scope-awaits-user-direction
+    refused: []
+
+  v1_baseline:
+    what_it_is: "language with stable canonical form, typed runtime, smoothed authoring surface"
+    what_it_is_not:
+      - runtime-agents-use-at-scale
+      - protocol-for-cross-network-symbol-exchange
+      - socially-adopted-beyond-original-stewards
+
+  shapes:
+    A:
+      name: runtime-agents-can-actually-use
+      thesis: "correctness verified; performance and concurrency claims need proving"
+      scope:
+        - rust-interpreter-port
+        - graph-native-parallel-evaluator
+        - effect-scoped-concurrency-model
+        - benchmarks-as-first-class-citizens
+      estimate_sessions: 2-3
+      biggest_risk: porting-a-moving-target
+      mitigation: spec-is-now-stable-and-audited
+      proves: "codifide is fast enough to actually use; delivers on parallelism=default principle"
+
+    B:
+      name: protocol-for-symbol-exchange
+      thesis: "content addressing is useful only if it works over a network"
+      scope:
+        - remote-symbol-resolution-http-content-addressed
+        - signed-dispatch-wire-format
+        - capability-mediated-imports
+        - reference-network-stub
+      estimate_sessions: 3-4
+      biggest_risk: network-scope-is-big
+      mitigation: start-with-http-over-filesystem-stub
+      proves: "codifide is usable BETWEEN agents, not just within one"
+
+    C:
+      name: language-agents-genuinely-prefer
+      thesis: "v1 is capable but only marginally more expressive than Python-with-decorators"
+      scope:
+        - time-indexed-types-T-at-timestamp
+        - cost-as-expression-not-literal
+        - structural-diff-and-merge
+        - lightweight-type-system-with-inference
+        - refusal-reasons-structured-bottom
+      estimate_sessions: 4-5
+      biggest_risk: feature-creep-disguised-as-expressiveness
+      mitigation: every-feature-needs-observed-gap-to-justify
+      proves: "codifide is the right tool for agentic coding, not just a technically-correct experiment"
+
+  recommended_sequence:
+    first_choice: A-then-B-then-C
+    reasoning:
+      - "A before B: protocol over a slow runtime makes a slow network"
+      - "B before C: expressiveness without distribution is a solo-agent feature; codifide's value proposition is multi-agent"
+      - "C as finish: by then we will have real users telling us which expressiveness gaps actually hurt"
+    alternative: C-first
+    alternative_reasoning:
+      - "batch canonical-form changes together rather than across three versions"
+
+  pre_v2_recommendation:
+    action: real-external-model-rerun
+    reason: "determines which of A/B/C is the right v2; targets v2 rather than guessing at it"
+    specifics:
+      - "hand repo to fresh Copilot GPT-5.4 session"
+      - "hand repo to fresh Gemini 2.5 Pro session"
+      - "re-run the 3-program battery they did on 2026-05-11 morning"
+      - "they pick the v2 shape by what they report reaching for or struggling with"
+    cost: one-session-of-external-coordination
+    cannot_be_done_by_claude_from_this_session: true
+
+  what_v2_will_need_regardless:
+    - paired-quill-glyph-proposal-dispatch-per-amendment
+    - sable-audit-at-each-gate
+    - spec-updates-to-canonical-md-and-language-md
+    - conformance-tests-between-python-and-rust
+    - capability-manifest-hash-bump-per-surface-change
+
+  session_state:
+    v1_tag: "1.0.0 shipped 2026-05-11"
+    python_tests: "216 passing, 0 skipped"
+    rust_tests: "28 passing"
+    capability_manifest_hash: sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d
+    v2_decision: pending-user-thinking
+
+  next_session_resumption:
+    - step-1: "ask user which v2 shape they chose"
+    - step-2a: "if they chose external-model-first, help coordinate the run"
+    - step-2b: "if they chose a shape directly, file the first proposal for that shape"
+    - step-3: "nothing else happens until user directs"
+
+  links:
+    human_readout: dispatches/2026-05-11-v2-thinking.readout.md
+    v1_release: dispatches/2026-05-11-v1-release.readout.md
+    session_state_file: sessions/2026-05-11.md

@@ -3,6 +3,436 @@
 All notable changes to Codifide are recorded here. Releases follow semver once we
 reach v1.0; until then, the canonical form may change between minor versions.
 
+# Codifide Changelog
+
+All notable changes to Codifide are recorded here. Releases follow semver once we
+reach v1.0; until then, the canonical form may change between minor versions.
+
+## [1.0.0] — 2026-05-11
+
+The v1 cut. A full day's work — four external-model reviews in the
+morning, three breaking-change migrations at midday, two post-migration
+polish passes in the afternoon, and the final v1 push adding the
+observable gaps surfaced by real programs. Every known P0 and P1
+finding is closed. Every previously-skipped test is passing. The
+canonical form has one new expression kind and five new primitives;
+nothing else broke.
+
+### Added — expression parser fuzz harness
+- **`tests/test_expr_parser_fuzz.py`** — exhaustive probes of the
+  infix-desugarer, which was the source of the two 2026-05-11
+  parser bugs that slipped past the existing corpus. Covers every
+  reserved-word substring in every identifier position, every
+  keyword in every call shape, precedence corner cases, and 200
+  random torture inputs. No new bugs surfaced; the fuzz stands as
+  a regression guard.
+
+### Added — indexed primitives (slice / at / char_at / indexof)
+- **`slice(seq, start, end)`** — half-open slice over a string or
+  list. Out-of-range indices clamp Python-style. Polymorphic.
+- **`at(seq, i)`** — single-element access by index (negative
+  indices count from the end). Polymorphic over strings and lists.
+- **`char_at(s, i)`** — string-only accessor; rejects non-string
+  inputs with a typed error.
+- **`indexof(haystack, needle)`** — first index of a substring or
+  list element, or `-1` if not found. Polymorphic.
+- 14 new tests in `tests/test_indexed_primitives.py` covering
+  semantics, polymorphism, and manifest-presence.
+- `examples/assessment/05_balanced_brackets.cod` rewritten as a
+  real balanced-brackets check using the new primitives (was a
+  count-only approximation before).
+- `docs/AGENT_QUICKREF.md` Strings section updated.
+
+### Added — inline conditional expression (`if ... then ... else`)
+- New AST kind: `if`. Canonical form:
+  `{"kind": "if", "cond": <Expr>, "then": <Expr>, "else": <Expr>}`.
+- **Short-circuit** — exactly one branch evaluates per call,
+  unlike candidate-dispatch guards which all evaluate before
+  selection. This is the tool for expressions that would raise
+  if both branches ran.
+- Surface syntax: `if cond then a else b`, single-line or
+  multi-line. Multi-line continuation tracks unmatched
+  `if`/`then`/`else` counts to decide when the expression is
+  complete.
+- Rust AST, JSON to/from, and capability manifest all updated.
+- Spec additions in `docs/CANONICAL.md §Expression AST`,
+  `docs/LANGUAGE.md §Inline conditional`, and
+  `docs/AGENT_QUICKREF.md`.
+- 15 new tests in `tests/test_inline_conditional.py` covering
+  basic semantics, short-circuit behavior, parser surface,
+  canonical round-trip, pure-context interactions, and multi-line
+  continuation.
+- `examples/assessment/07_url_parse.cod` added — demonstrates
+  multi-line `if`, `slice`, and `indexof` composing.
+
+### Fixed — two infix-desugarer bugs (pre-existing)
+- **`and(...)` / `or(...)` as function calls misparsed.** Fixed
+  by skipping the infix rewrite when a word operator is
+  immediately followed by `(`. 5 regression tests.
+- **Identifiers containing `or` / `and` silently split.** Fixed
+  by treating `_` as an identifier character for word-boundary
+  checks.
+
+### Changed — version bump to 1.0.0
+- Python package version: 0.1.0 → 1.0.0.
+- Rust crate version: 0.1.0 → 1.0.0.
+- pyproject classifier: "2 - Pre-Alpha" → "4 - Beta".
+
+### Capability manifest hash at v1.0.0
+`sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d`
+
+(Moved over the day: from `sha256:522c48d0…` at start → `sha256:845dbbbf…`
+after the rename-pass → `sha256:56fa68ae…` after cost dispatch →
+`sha256:e7bb51cf…` after indexed primitives →
+`sha256:c6a17227…` after inline conditional → the final v1
+hash includes the generator version bump.)
+
+### Test count at v1.0.0
+- Python: **216 passing, 0 skipped** (was 122 + 0 at day start).
+- Rust canonical: **28 passing** (was 10 at day start).
+
+### What shipped across the day that made it to v1
+From oldest to newest in the day's work:
+1. Morning ergonomics pass — parser multi-line, hint messages, quickref.
+2. Carryover triage — CBOR boundary tests, Rust fuzz, CLI safety audit.
+3. Deferred-first-steps — proposals and audits for three migrations.
+4. Three migrations — JSON→CBOR primary hash, cost dispatch, store GC.
+5. Post-migrations polish — Rust CBOR-input, new-surfaces audit,
+   `docs/STORE.md`, fresh-agent simulation, dispatch index.
+6. Six-program assessment + two parser bug fixes uncovered by it.
+7. v1 cut — fuzz harness, indexed primitives, inline conditional.
+
+Every item documented in paired dispatches under `dispatches/`.
+Browse `dispatches/INDEX.md` for the indexed journal.
+
+## [Unreleased — post-migrations polish: Rust CBOR-input + audits + store docs + dispatch index]
+
+Five tasks in one session, closing the loop after the three migrations.
+All dispatched in 2026-05-11 artifacts.
+
+### Fixed — two pre-existing parser bugs surfaced by the assessment battery
+
+While writing six random assessment programs to stress-test the
+language, two parser bugs surfaced that the existing test corpus
+never caught. Both live in the expression parser's infix
+desugaring pass. See
+`dispatches/2026-05-11-assessment-six-programs.md`.
+
+- **`and(...)` and `or(...)` as function calls misparsed.** The
+  desugarer treats `and`/`or` as infix word operators and tried
+  to rewrite `and(a, b)` as if it were `a and b` — failing at
+  the first comma. Fix: if a word operator is immediately
+  followed by `(` (optional whitespace), it is a function call,
+  not infix.
+- **Identifiers containing `or` or `and` were silently split.**
+  The word-boundary check used `str.isalnum()`, which doesn't
+  consider `_` part of an identifier. `greet_or_refuse` became
+  `or(greet_, _refuse)`. Fix: treat `_` as part of an
+  identifier for the boundary check.
+
+Five regression tests added in `tests/test_parser.py`.
+
+### Added — Rust CBOR-input subcommand
+- **`crates/codifide-canonical/src/cbor_decoder.rs`** — strict
+  canonical-CBOR decoder, direct port of the Python implementation.
+  Rejects non-shortest heads, unsorted map keys, duplicate keys,
+  indefinite-length strings, NaN/infinity, unsupported tags, trailing
+  bytes, truncated input.
+- **`codifide-canonical bytes-cbor-in <file.cbor>`** — round-trip
+  canonical CBOR bytes through the decoder + encoder.
+- **`codifide-canonical hash-cbor-in <file.cbor>`** — `sha256:<hex>`
+  of the canonical-CBOR re-encoding.
+- **14 new in-crate unit tests** for the decoder (Rust went from 14
+  to 28 tests total).
+
+### Changed
+- **`tests/test_cbor_boundaries.HalfPrecisionAllPatternsDiagnostic`**
+  un-skipped and re-pointed at the new `bytes-cbor-in` path. All 63,488
+  finite f16 bit patterns agree byte-for-byte between Python and Rust
+  when data travels as canonical CBOR. **AUD-08 (P1) structurally closed
+  end-to-end.**
+
+### Added — Sable re-audit of new surfaces
+- **`dispatches/2026-05-11-new-surfaces-audit.md`** — adversarial probes
+  of cost-based dispatch and store GC. Five findings:
+  - CDP-1 (P2) — dispatcher does not fall through on `bottom`. Resolved
+    by documenting interpretation in `docs/CANONICAL.md §Dispatch`.
+  - CDP-2 (P3) — cost upper bound was unstated. Documented as
+    `[0, 2^64 - 1]` in `docs/CANONICAL.md §Candidate`.
+  - GC-1 (P2) — GC.LOG followed symlinks. Fixed: `O_NOFOLLOW` open.
+  - GC-2 (P3) — LOCK truncated on open. Fixed: append-create mode.
+  - GC-3 (P3) — malformed ROOTS had no line-numbered error. Fixed:
+    validation in `read_roots` with line number reporting.
+- **4 new regression tests** in `tests/test_store_gc.py` for the three
+  GC fixes.
+- **`dispatches/2026-05-11-new-surfaces-post.md`** attests the
+  resolution of every finding.
+
+### Added — Store documentation
+- **`docs/STORE.md`** — dedicated store specification covering the
+  four properties (hash-verified reads, hash-verified writes,
+  idempotent writes, sound deletion), on-disk layout, symlink
+  defenses, the ROOTS/GC.LOG/LOCK files, dry-run discipline,
+  concurrency model, CLI reference, pre-migration compatibility,
+  and the full API surface.
+- Linked from `GETTING_STARTED.md`.
+
+### Added — Dispatch stream index
+- **`codifide/dispatch_index.py`** — zero-dependency index generator
+  that scans `dispatches/` and produces a Markdown table grouped by
+  date. Identifies Quill readouts, Glyph YAMLs, and Sable audits by
+  filename convention and pulls `subject` from Glyph YAMLs
+  opportunistically.
+- **`codifide dispatch-index`** CLI subcommand. Writes
+  `dispatches/INDEX.md`. `--check` flag verifies the checked-in
+  index matches what would be generated (drift guard).
+- **`dispatches/INDEX.md`** — the generated index. Grouped by
+  date, ordered reverse-chronologically.
+- **`tests/test_dispatch_index.py`** — drift guard. If a new
+  dispatch is added without regenerating INDEX.md, the test
+  surfaces it.
+
+### Added — Fresh-agent simulation
+- **`dispatches/2026-05-11-fresh-agent-simulation.md`** — a
+  self-simulated run of the external-model experiment. Played as
+  a fresh agent using only `docs/FOR_AGENTS.md`,
+  `docs/AGENT_QUICKREF.md`, and the capability manifest. Wrote
+  three programs (`abs_diff.cod`, `word_count.cod`,
+  `classify_cost.cod`) in `examples/ai_generated/`. All three
+  passed on first try. Limitation clearly noted: a real external
+  run with GPT-5.4 and Gemini 2.5 Pro remains a future follow-on.
+- **Follow-up action taken:** the quickref gained a new section on
+  cost annotations, because the simulation revealed the cost
+  amendment was discoverable only via `docs/LANGUAGE.md` and not
+  the quickref.
+
+### Test count
+172 Python passing + 0 skipped (was 166 + 1). **Every previously
+skipped test now passes.** 28 Rust canonical passing (was 14).
+
+### Capability manifest hash
+Unchanged: `sha256:56fa68ae1794a99f2c52c1e5dda0fc7fa2f51241fbfca32c79296e184e6b43b5`.
+Today's session added Rust code, tests, docs, and hardening fixes
+to existing Python code — none of which alters the language
+capability surface.
+
+### Open items deliberately not done this session
+- Real external-model re-run (requires handing the repo to GPT-5.4
+  and Gemini 2.5 Pro sessions — cannot be done from this session).
+- Rust fuzz harness extension to generate cost-bearing inputs.
+- GC stress test over a 10k-symbol store.
+- Time-indexed types (`T@timestamp`) — roadmap item.
+- Rust interpreter port — roadmap item.
+
+## [Unreleased — primary hash migration + cost dispatch + store GC]
+
+Three approved proposals landed in one pass per user direction
+("change cost is low now as we have not published yet"). Paired
+dispatches in `dispatches/2026-05-11-*`.
+
+### Changed — primary content hash migration JSON → CBOR
+
+- **`symbol_hash`** now returns the SHA-256 over canonical CBOR
+  bytes. `symbol_hash_json` preserves the legacy JSON-hash path.
+- **`symbol_bytes`** now returns canonical CBOR bytes.
+  `symbol_bytes_json` preserves the legacy JSON byte form.
+- **`content_hash` / `canonical_bytes`** in the projection layer
+  likewise moved to CBOR; `content_hash_json` / `canonical_bytes_json`
+  are the legacy aliases.
+- **`SymbolStore.put`** defaults to CBOR. `SymbolStore.put_json`
+  opts into the legacy JSON path; `SymbolStore.put_cbor` is an
+  explicit alias of `put`.
+- **`SymbolStore.put_module(module)`** defaults to `cbor=True`.
+- **`codifide store put` CLI** defaults to CBOR; `--json` opts into
+  legacy; `--cbor` is accepted but redundant.
+- **`codifide store hash` CLI** prints CBOR hashes by default;
+  `--json` prints legacy JSON hashes.
+- **Rust `codifide-canonical hash` CLI** now hashes over canonical
+  CBOR bytes. `hash-cbor` is an explicit alias; `hash-json` is
+  the legacy JSON-hash subcommand.
+- **`docs/CANONICAL.md §Content addressing`** rewritten: CBOR is
+  primary, JSON is the legacy inspection form.
+
+### Added — cost-based candidate dispatch
+
+- **`Candidate.cost`** — optional non-negative integer. Additive
+  canonical-form extension: un-annotated candidates produce
+  byte-identical canonical form as before, so existing content
+  hashes are unchanged.
+- **Surface syntax `cost <integer>`** accepted inside a `cand`
+  block. Rejects negatives, floats, and non-numeric values with a
+  typed `ParseError`.
+- **Dispatcher rule**: among satisfied candidates, pick
+  `min((cost_or_infinity, declaration_index))`. Un-annotated
+  candidates have effective cost `+∞`, preserving v0 first-wins
+  semantics for un-annotated modules.
+- **Spec update in `docs/CANONICAL.md`** — new optional `cost`
+  field on the canonical Candidate shape; §Dispatch rewritten for
+  the new selection rule.
+- **Language docs in `docs/LANGUAGE.md`** — new Cost annotations
+  subsection with worked example and behavioral-drift notice.
+- **Rust canonical crate** — `Candidate.cost` added as `Option<u64>`;
+  JSON to/from updated; rejects non-integer or negative cost with
+  a typed shape error.
+- **14 new tests** in `tests/test_cost_dispatch.py`.
+
+### Added — symbol-store garbage collection
+
+- **`ROOTS` file** at the store root declares live identities
+  one per line. Comments start with `#`.
+- **`SymbolStore.gc(execute=False)`** performs transitive-closure
+  reachability analysis over the `imports` map of every module
+  reachable from a root. Returns a `GCReport` describing what
+  was (or would be) deleted. `execute=True` refuses to run with
+  empty or missing ROOTS.
+- **`SymbolStore.add_root` / `remove_root` / `roots`** manage
+  the ROOTS file programmatically.
+- **`GC.LOG`** records every deletion with ISO-8601 timestamp
+  and identity; append-only, never rotated.
+- **`LOCK` file** serializes concurrent GC against concurrent
+  writes via `fcntl.flock`.
+- **CLI subcommands**: `codifide store gc` (dry-run),
+  `codifide store gc --execute` (actual delete),
+  `codifide store roots {list,add,remove} ...`.
+- **11 new tests** in `tests/test_store_gc.py` covering the
+  sound-deletion contract, transitive closure through indices,
+  GC.LOG durability, and ROOTS file semantics.
+
+### Refused / deferred
+- Inline `if`/`when` as statement-level conditional (ergonomics pass).
+- Infix `%` for `mod` (ergonomics pass).
+- Separate `str_reverse` primitive (ergonomics pass — polymorphic `reverse` serves).
+- Time-based GC (design dispatch refused in favor of user-declared roots).
+- Implicit GC on every `put` (explicit-only is the contract).
+
+### Capability manifest hash
+Moved from `sha256:845dbbbff6b8ba8957dc40383e9a54b386b172f8fa70ccc16a18be10e498afd4`
+to `sha256:56fa68ae1794a99f2c52c1e5dda0fc7fa2f51241fbfca32c79296e184e6b43b5`.
+Delta: the new `cost` surface keyword. The primary-hash migration
+did **not** move the manifest hash — the manifest was already
+CBOR-hashed before the migration (the migration flipped the
+per-symbol primary path, not the manifest's own path).
+
+### Test count
+166 Python passing + 1 skipped diagnostic (was 155).
+14 Rust canonical passing (unchanged).
+
+### Known limitations post-migration
+- The Rust CLI still accepts canonical JSON *text* as its input format.
+  When that text is an f16-class float, `serde_json`'s decimal parser
+  diverges from Python's, so running the exhaustive f16 diagnostic
+  (`tests/test_cbor_boundaries.py::HalfPrecisionAllPatternsDiagnostic`)
+  still fails. The test stays skipped until a Rust CLI subcommand
+  accepts canonical CBOR *bytes* directly, removing the JSON-text
+  intermediate. That is tracked as AUD-08's residual surface.
+
+## [Unreleased — carryover pass, numeric boundaries + fuzz + CLI audit]
+
+### Added
+- **Numeric-boundary CBOR conformance** (`tests/test_cbor_boundaries.py`).
+  Integer head transitions, signed zeros, exact-f16 values, and
+  NaN/Inf rejection are now pinned by a dedicated test suite. The
+  fixture's broader f16-exhaustive sweep is retained as a skipped
+  diagnostic; running it uncovered an actual cross-implementation
+  finding (see Filed below).
+- **Rust canonical fuzz harness**
+  (`crates/codifide-canonical/tests/fuzz_canonical.rs`). 22 hand-curated
+  adversarial inputs, 500 random ones, round-trip stability check,
+  and a typed-error display check. No new Rust dependencies; a
+  small xorshift64 RNG keeps determinism without pulling in
+  `rand` or `quickcheck`. Rust canonical at 14 tests total.
+- **CLI filesystem-safety regression tests**
+  (`tests/test_cli_filesystem.py`). Pin the bound on source-file
+  reads and confirm `/dev/zero` and 50 MiB junk files fail cleanly.
+
+### Fixed
+- **AUD-2026-05-11-05 — P1, unbounded source read.** The Python
+  CLI's `_read()` used `Path.read_text()` with no size bound;
+  `codifide canonical /dev/zero` hung indefinitely. Same shape as
+  the Rust CLI's P1-7 on 2026-05-10. Now bounded at 16 MiB with
+  typed `ParseError` on overage and non-UTF-8 input. See
+  `dispatches/2026-05-11-cli-audit.md`.
+
+### Filed (not fixed, by decision)
+- **AUD-2026-05-11-04 — P2, JSON decimal-parser divergence.**
+  `serde_json` and Python's `json` can produce different `f64` bits
+  for the same decimal text (14% of f16 patterns in sampling).
+  Documented in `dispatches/2026-05-11-cbor-numeric-boundaries.md`.
+  Structurally closed by the pending primary-hash migration to
+  CBOR, which removes JSON-text as an intermediate.
+- **AUD-2026-05-11-06 — P3, symlinks followed by `codifide run`.**
+  Accepted as documented behavior.
+- **AUD-2026-05-11-07 — P3, `--store` accepts arbitrary paths.**
+  Accepted as documented behavior. Same shape as `git --git-dir`.
+
+### Deferred
+Per decisions in `dispatches/2026-05-11-carryover-decisions.{readout.md,yaml}`:
+- Primary-hash migration JSON→CBOR — breaking; needs user go-ahead and plan.
+- Store GC — needs design dispatch.
+- Cost-based candidate dispatch — governance-level spec amendment.
+- CBOR-aware Sable re-audit — no CBOR surface has changed since last audit.
+
+### Test count
+141 Python passing + 1 skipped (was 129). 14 Rust canonical passing (was 10).
+
+## [Unreleased — ergonomics pass, post four-model review]
+
+### Changed
+- **Parser accepts multi-line expressions.** Inside `cand`, `pre`,
+  `post`, `when`, and bind right-hand sides, an expression may span
+  multiple physical lines while brackets are unbalanced.
+  Continuation stops at the next keyword head (`intent`, `sig`,
+  `cand`, etc.) or when brackets balance; an unclosed bracket at
+  stop time raises `ParseError`. Closes P1 finding AUD-2026-05-11-01
+  — the previous `AttributeError` leaking out of the expression
+  parser is now a clean typed error.
+- **`reverse` is polymorphic over strings and lists.** Same
+  primitive, same name. `reverse("abc")` → `"cba"`,
+  `reverse([1,2,3])` → `[3,2,1]`. Establishes the rule for
+  primitive design: polymorphism is allowed when semantics transfer
+  cleanly and return shape is unambiguous. Capability manifest now
+  reports `returns: "Any"` for `reverse`.
+- **Capability manifest hash refreshed** to
+  `sha256:845dbbbff6b8ba8957dc40383e9a54b386b172f8fa70ccc16a18be10e498afd4`
+  (was `sha256:522c48d0dfd60c8c6d7528711c5624560fcabead76d9e80a4a782954e01a92f1`).
+  Only delta is `reverse.returns` moving from `"List"` to `"Any"`.
+
+### Added
+- **`docs/AGENT_QUICKREF.md`** — one-page cross-reference distilling
+  the common-guess pitfalls and the primitive surface from the
+  capability manifest. Linked from README and `docs/FOR_AGENTS.md`.
+- **Hint messages for known-guess misses.** The `%` lexer error
+  points at `mod(a, b)`. `unknown callable: 'str.reverse'`,
+  `'clock.hour'`, `'str.upper'`, and siblings now include a
+  one-line hint naming the correct form. Closes P2 finding
+  AUD-2026-05-11-02.
+- **Spec sections in `docs/LANGUAGE.md`** on line continuation and
+  on primitive polymorphism. Closes P3 finding AUD-2026-05-11-03.
+- **Regression tests.** Gemini 2.5 Pro's failing fixtures
+  (`palindrome.cod` and `classify_numeric.cod`) are committed as
+  tests along with multi-line bind, unbalanced-brackets
+  `ParseError`, `%`-hint, and `str.reverse`/`clock.hour`-hint
+  tests. Seven new tests.
+- **Paired dispatches** recording the decisions with justifications
+  and the post-fix evidence:
+  - `dispatches/2026-05-11-ergonomics-decisions.{readout.md,yaml}`
+  - `dispatches/2026-05-11-ergonomics-audit.md` (Sable)
+  - `dispatches/2026-05-11-ergonomics-post.{readout.md,yaml}`
+
+### Refused
+Not every suggestion from the four-model review landed; each refusal
+is justified in the decisions dispatch:
+- Infix `%` as sugar for `mod` — opens a door the language does
+  not want open.
+- Inline `if`/`when` as statement-level conditional — candidate
+  dispatch is already the answer.
+- Separate `str_reverse` primitive — subsumed by polymorphic
+  `reverse`.
+
+### Test count
+129 passing (122 previous + 5 multi-line parser regressions + 2 hint
+regressions). Rust canonical still at 10/10.
+
 ## [Unreleased — rename Noema → Codifide]
 
 ### Changed

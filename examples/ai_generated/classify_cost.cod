@@ -1,0 +1,37 @@
+module classify_cost_example
+
+# Classify a number using cost-based dispatch — the cheapest guarded
+# candidate wins. Exercises the 2026-05-11 spec amendment.
+
+def classify
+  intent "label a number using the cheapest satisfying path"
+  sig    (n: Int) -> String
+  effects {}
+
+  cand
+    intent "fast path for zero"
+    cost   1
+    when   eq(n, 0)
+    "zero"
+
+  cand
+    intent "small numbers"
+    cost   10
+    when   lt(n, 10)
+    "small"
+
+  cand
+    intent "fallback"
+    cost   100
+    "large"
+
+def main
+  intent "classify three known inputs"
+  sig    () -> List
+  effects {}
+  cand
+    list(
+      classify(0),
+      classify(3),
+      classify(42)
+    )

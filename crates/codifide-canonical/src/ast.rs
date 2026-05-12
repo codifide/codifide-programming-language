@@ -59,11 +59,17 @@ pub struct Signature {
 }
 
 /// One implementation of a definition's contract.
+///
+/// `cost` is the optional dispatcher cost annotation added in the
+/// 2026-05-11 spec amendment. Absent → effective cost +∞; present
+/// → non-negative integer. Among satisfied candidates, the dispatcher
+/// picks the smallest cost with declaration order as tiebreaker.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Candidate {
     pub intent: String,
     pub guard: Option<Expr>,
     pub body: Expr,
+    pub cost: Option<u64>,
 }
 
 /// Expression AST.
@@ -106,5 +112,18 @@ pub enum Expr {
     Attr {
         target: Box<Expr>,
         name: String,
+    },
+    /// Inline conditional expression — short-circuit.
+    ///
+    /// Added 2026-05-11. Exactly one of ``then_`` / ``else_``
+    /// evaluates at runtime, chosen by the truthiness of
+    /// ``cond``. Unlike candidate-dispatch guards (which all
+    /// evaluate before selection), an ``If`` expression can
+    /// gate an expression that would otherwise raise, e.g.
+    /// indexing a string past its length.
+    If {
+        cond: Box<Expr>,
+        then_: Box<Expr>,
+        else_: Box<Expr>,
     },
 }

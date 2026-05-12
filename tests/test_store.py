@@ -118,11 +118,12 @@ class SymbolStoreTests(unittest.TestCase):
 
     def test_tampered_bytes_raise_integrity_error(self) -> None:
         identity = self.store.put("greet", self.module.symbols[0])
-        # Find the file on disk and corrupt it.
+        # Find the file on disk and corrupt it. Post 2026-05-11 the
+        # primary suffix is .cbor, not .json.
         digest = identity.removeprefix("sha256:")
-        path = Path(self._tmp.name) / "sha256" / digest[:2] / f"{digest[2:]}.json"
+        path = Path(self._tmp.name) / "sha256" / digest[:2] / f"{digest[2:]}.cbor"
         original = path.read_bytes()
-        path.write_bytes(original + b" /* tampered */")
+        path.write_bytes(original + b"\x00")
         with self.assertRaises(IntegrityError) as cm:
             self.store.get_bytes(identity)
         self.assertEqual(cm.exception.expected, identity)
@@ -159,14 +160,13 @@ def b
 
     def test_parsed_get_matches_symbol_bytes(self) -> None:
         # get() returns a dict; its canonical re-serialization must match
-        # the bytes symbol_bytes would produce fresh.
-        import json
+        # the bytes symbol_bytes would produce fresh. As of 2026-05-11,
+        # the primary form is CBOR — compare against the CBOR round-trip.
+        from codifide.projection.cbor import canonical_cbor
 
         identity = self.store.put("greet", self.module.symbols[0])
         obj = self.store.get(identity)
-        reserialized = json.dumps(
-            obj, sort_keys=True, separators=(",", ":"), ensure_ascii=True
-        ).encode("utf-8")
+        reserialized = canonical_cbor(obj)
         self.assertEqual(
             reserialized,
             symbol_bytes("greet", self.module.symbols[0]),
@@ -265,14 +265,23 @@ class StoreRustConformance(unittest.TestCase):
             )
 
     def test_rust_binary_agrees_with_python_store_hash(self) -> None:
+        # Post 2026-05-11 the primary hash is CBOR. The Rust binary's
+        # default ``hash`` subcommand also hashes CBOR, but it accepts
+        # canonical JSON as input (it parses the JSON, re-serializes
+        # through its own CBOR writer, then hashes).
+        #
+        # The round trip: Python emits the envelope's canonical JSON,
+        # hands it to Rust, Rust emits its CBOR hash, we compare
+        # against Python's primary (CBOR) hash.
         import json
+        from codifide.projection.canonical import to_canonical
+        from codifide.core.types import Module
 
         m = _tiny_module()
         defn = m.symbols[0]
         python_hash = symbol_hash("greet", defn)
-        # Write the same envelope Python hashed, then hand it to Rust.
-        envelope_json = symbol_bytes("greet", defn).decode("utf-8")
-        envelope = json.loads(envelope_json)
+        # Build the same envelope Python hashed, as JSON for the Rust side.
+        envelope = to_canonical(Module(name="_", symbols=(defn,)))
         with tempfile.NamedTemporaryFile(
             "w", suffix=".json", delete=False, encoding="utf-8"
         ) as tmp:

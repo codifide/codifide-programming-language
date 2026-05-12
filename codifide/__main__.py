@@ -26,16 +26,50 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 from . import parse, run
 from .projection.canonical import to_canonical
 from .projection.cbor import canonical_cbor
-from .runtime.errors import CodifideError
-from .store import StoreError, SymbolStore, symbol_hash
+from .runtime.errors import CodifideError, ParseError
+from .store import StoreError, SymbolStore, symbol_hash, symbol_hash_json
+
+
+# Maximum size of a single .cod source file the CLI will read. Source
+# files are small by design; anything over this is either a mistake
+# (piped binary, /dev/zero) or hostile. The Rust canonical binary
+# already enforces the same bound for its JSON input (2026-05-10 CBOR
+# audit P1-7); this is the Python counterpart. See
+# dispatches/2026-05-11-cli-audit.md for the finding that motivated
+# adding it here.
+_MAX_SOURCE_BYTES = 16 * 1024 * 1024  # 16 MiB
 
 
 def _read(path: str) -> str:
-    return Path(path).read_text(encoding="utf-8")
+    """Read a .cod source file with a bounded byte count.
+
+    Reads at most ``_MAX_SOURCE_BYTES + 1`` bytes so we can distinguish
+    "exactly at the cap" from "over the cap". Exceeding the cap raises
+    ``ParseError`` — sourced via the parser's error channel because a
+    file we refuse to read cannot parse, and the host wants a typed
+    Codifide error rather than an OS-level error here.
+    """
+    try:
+        with open(path, "rb") as fh:
+            data = fh.read(_MAX_SOURCE_BYTES + 1)
+    except OSError as exc:
+        raise ParseError(f"cannot read {path!r}: {exc}") from exc
+    if len(data) > _MAX_SOURCE_BYTES:
+        raise ParseError(
+            f"source file {path!r} exceeds {_MAX_SOURCE_BYTES} bytes; "
+            f"refuse to read more. Codifide source files are small by design."
+        )
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ParseError(
+            f"source file {path!r} is not valid UTF-8: {exc}"
+        ) from exc
 
 
 def cmd_run(args: argparse.Namespace) -> int:
@@ -134,7 +168,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
     from .projection.canonical import canonical_bytes as canon_json
     from .projection.cbor import canonical_cbor
     from .runtime.interpreter import _check_transitive_effects, _ResolvedImports
-    from .store import SymbolStore, symbol_hash, symbol_hash_cbor
+    from .store import SymbolStore, symbol_hash, symbol_hash_cbor, symbol_hash_json
 
     try:
         src = _read(args.file)
@@ -167,18 +201,20 @@ def cmd_verify(args: argparse.Namespace) -> int:
         return 1
 
     # Per-symbol identity — what another agent would receive if they
-    # imported each symbol by content hash.
+    # imported each symbol by content hash. CBOR is the primary form
+    # post the 2026-05-11 migration; JSON is shown as a legacy
+    # inspection aid.
     print(f"module:  {module.name}")
     print(f"symbols: {len(module.symbols)}")
     print(f"imports: {len(module.imports)}")
     print(f"bytes:   JSON {len(j_bytes)}, CBOR {len(c_bytes)}")
     print()
     for defn in module.symbols:
-        h_json = symbol_hash(defn.name, defn)
         h_cbor = symbol_hash_cbor(defn.name, defn)
+        h_json = symbol_hash_json(defn.name, defn)
         print(f"  {defn.name}")
-        print(f"    json  {h_json}")
-        print(f"    cbor  {h_cbor}")
+        print(f"    cbor  {h_cbor}  (primary)")
+        print(f"    json  {h_json}  (legacy)")
     return 0
 
 
@@ -201,7 +237,11 @@ def cmd_store_put(args: argparse.Namespace) -> int:
     try:
         module = parse(_read(args.file))
         store = SymbolStore(_store_root(args))
-        entries = store.put_module(module, cbor=args.cbor)
+        # As of 2026-05-11, the primary put path is CBOR. ``--json``
+        # opts into the legacy JSON identity; ``--cbor`` is accepted
+        # but redundant. Either flag alone is explicit and fine.
+        use_cbor = not args.json
+        entries = store.put_module(module, cbor=use_cbor)
         for name, identity in entries:
             print(f"{identity}\t{name}")
         return 0
@@ -231,10 +271,13 @@ def cmd_store_list(args: argparse.Namespace) -> int:
 def cmd_store_hash(args: argparse.Namespace) -> int:
     # Compute identities without writing anything — useful for scripting
     # (e.g. seeing what a module would produce before committing to a put).
+    # Defaults to the primary (CBOR) identity; ``--json`` prints the
+    # legacy JSON identity for each symbol.
     try:
         module = parse(_read(args.file))
+        hash_fn = symbol_hash_json if args.json else symbol_hash
         for defn in module.symbols:
-            print(f"{symbol_hash(defn.name, defn)}\t{defn.name}")
+            print(f"{hash_fn(defn.name, defn)}\t{defn.name}")
         return 0
     except CodifideError as e:
         print(f"codifide: {e}", file=sys.stderr)
@@ -283,22 +326,27 @@ def cmd_store_index(args: argparse.Namespace) -> int:
     )
 
     # The module's content identity is the hash of its canonical bytes.
-    # We compute and store it by writing the canonical JSON directly,
-    # bypassing the symbol store's per-definition envelope since an
-    # index has no definitions.
+    # Post 2026-05-11 the primary identity is CBOR-over-bytes;
+    # ``--json`` emits the legacy JSON-hashed identity.
     import hashlib
     from .projection.canonical import to_canonical
+    from .projection.cbor import canonical_cbor
 
     canonical_obj = to_canonical(index_module)
-    data = json.dumps(
-        canonical_obj, sort_keys=True, separators=(",", ":"), ensure_ascii=True
-    ).encode("utf-8")
+    if getattr(args, "json", False):
+        data = json.dumps(
+            canonical_obj, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+        ).encode("utf-8")
+        suffix = ".json"
+    else:
+        data = canonical_cbor(canonical_obj)
+        suffix = ".cbor"
     identity = f"sha256:{hashlib.sha256(data).hexdigest()}"
 
     # Write through the store's atomic-write path. We use the internal
     # method because the public API is per-symbol; indices are modules,
-    # not symbols. The on-disk layout is identical.
-    store._write_atomic(identity, data)
+    # not symbols. The on-disk layout is identical beyond suffix.
+    store._write_atomic(identity, data, suffix=suffix)
     print(f"{identity}\t{index_module.name}")
     return 0
 
@@ -357,6 +405,103 @@ def cmd_store_verify(args: argparse.Namespace) -> int:
         f"({n_syms} symbol{'s' if n_syms != 1 else ''}, "
         f"{n_imports} import{'s' if n_imports != 1 else ''})"
     )
+    return 0
+
+
+def cmd_store_gc(args: argparse.Namespace) -> int:
+    """Report or delete unreachable identities.
+
+    Dry-run by default — safe to invoke; prints a plan without
+    touching the store. Pass ``--execute`` to actually delete.
+    ``--execute`` refuses to run if the ``ROOTS`` file is empty or
+    missing; the footgun guard is deliberate.
+
+    See ``dispatches/2026-05-11-store-gc-design.readout.md``.
+    """
+    from .store.gc import GCError
+    store = SymbolStore(_store_root(args))
+    try:
+        report = store.gc(execute=args.execute)
+    except GCError as exc:
+        print(f"codifide: {exc}", file=sys.stderr)
+        return 1
+    if report.executed:
+        print(report.summary())
+        if report.deleted:
+            for identity in report.deleted:
+                print(f"  deleted {identity}")
+    else:
+        print(report.summary())
+        if report.roots_count == 0:
+            print(
+                "codifide: ROOTS is empty or missing; `--execute` will refuse.\n"
+                "         Add roots with `codifide store roots add <identity>`.",
+                file=sys.stderr,
+            )
+        if report.deleted:
+            print("would delete:")
+            for identity in report.deleted:
+                print(f"  {identity}")
+            print("Pass --execute to actually delete.")
+    return 0
+
+
+def cmd_store_roots_list(args: argparse.Namespace) -> int:
+    store = SymbolStore(_store_root(args))
+    for identity in store.roots():
+        print(identity)
+    return 0
+
+
+def cmd_store_roots_add(args: argparse.Namespace) -> int:
+    try:
+        store = SymbolStore(_store_root(args))
+        store.add_root(args.identity)
+        return 0
+    except StoreError as exc:
+        print(f"codifide: {exc}", file=sys.stderr)
+        return 1
+
+
+def cmd_store_roots_remove(args: argparse.Namespace) -> int:
+    store = SymbolStore(_store_root(args))
+    removed = store.remove_root(args.identity)
+    if not removed:
+        print(
+            f"codifide: {args.identity} was not in ROOTS; nothing to remove",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
+
+
+def cmd_dispatch_index(args: argparse.Namespace) -> int:
+    """Regenerate or check-drift the dispatches/INDEX.md file."""
+    from pathlib import Path as _Path
+    from .dispatch_index import build_index, check_index, write_index
+
+    repo_root = _Path(__file__).resolve().parent.parent
+    dispatch_dir = repo_root / "dispatches"
+    if not dispatch_dir.exists():
+        print(
+            f"codifide: no dispatches directory at {dispatch_dir}",
+            file=sys.stderr,
+        )
+        return 1
+
+    if args.check:
+        if check_index(dispatch_dir):
+            return 0
+        print(
+            "codifide: dispatches/INDEX.md is out of sync with "
+            "dispatches/ contents.\n"
+            "         Regenerate with `python3 -m codifide dispatch-index`.",
+            file=sys.stderr,
+        )
+        return 1
+
+    path = write_index(dispatch_dir)
+    print(f"wrote {path.relative_to(repo_root)}")
     return 0
 
 
@@ -419,6 +564,17 @@ def main(argv=None) -> int:
     p_verify.add_argument("file")
     p_verify.set_defaults(func=cmd_verify)
 
+    p_dispatch_index = sub.add_parser(
+        "dispatch-index",
+        help="regenerate dispatches/INDEX.md from the directory contents",
+    )
+    p_dispatch_index.add_argument(
+        "--check",
+        action="store_true",
+        help="verify the checked-in INDEX.md matches what would be generated",
+    )
+    p_dispatch_index.set_defaults(func=cmd_dispatch_index)
+
     # Symbol store. A store root can be passed via --store or the
     # CODIFIDE_STORE environment variable; defaults to ~/.codifide/store.
     p_store = sub.add_parser(
@@ -436,7 +592,12 @@ def main(argv=None) -> int:
     p_put.add_argument(
         "--cbor",
         action="store_true",
-        help="store in CBOR form (produces different identities than JSON)",
+        help="(default) store in CBOR form — primary identity since 2026-05-11",
+    )
+    p_put.add_argument(
+        "--json",
+        action="store_true",
+        help="store in legacy JSON form (produces different identities than CBOR)",
     )
     p_put.set_defaults(func=cmd_store_put)
 
@@ -452,6 +613,11 @@ def main(argv=None) -> int:
         help="print the content hash of every symbol in a module without storing",
     )
     p_hash.add_argument("file")
+    p_hash.add_argument(
+        "--json",
+        action="store_true",
+        help="print legacy JSON hashes instead of primary CBOR hashes",
+    )
     p_hash.set_defaults(func=cmd_store_hash)
 
     p_index = store_sub.add_parser(
@@ -468,6 +634,11 @@ def main(argv=None) -> int:
         nargs="+",
         help="name=sha256:<hex> pairs defining the index's exports",
     )
+    p_index.add_argument(
+        "--json",
+        action="store_true",
+        help="publish the index as legacy JSON (default is CBOR since 2026-05-11)",
+    )
     p_index.set_defaults(func=cmd_store_index)
 
     p_verify = store_sub.add_parser(
@@ -476,6 +647,37 @@ def main(argv=None) -> int:
     )
     p_verify.add_argument("hash", help="identity of the module to verify")
     p_verify.set_defaults(func=cmd_store_verify)
+
+    # -- Garbage collection (2026-05-11 design dispatch) --------------
+    p_gc = store_sub.add_parser(
+        "gc",
+        help="report or delete identities unreachable from the ROOTS file",
+    )
+    p_gc.add_argument(
+        "--execute",
+        action="store_true",
+        help="actually delete (default is dry-run)",
+    )
+    p_gc.set_defaults(func=cmd_store_gc)
+
+    p_roots = store_sub.add_parser(
+        "roots",
+        help="manage the ROOTS file that declares live identities for GC",
+    )
+    roots_sub = p_roots.add_subparsers(dest="roots_cmd", required=True)
+
+    p_roots_list = roots_sub.add_parser("list", help="print current roots")
+    p_roots_list.set_defaults(func=cmd_store_roots_list)
+
+    p_roots_add = roots_sub.add_parser("add", help="add an identity as a root")
+    p_roots_add.add_argument("identity")
+    p_roots_add.set_defaults(func=cmd_store_roots_add)
+
+    p_roots_remove = roots_sub.add_parser(
+        "remove", help="remove an identity from the roots"
+    )
+    p_roots_remove.add_argument("identity")
+    p_roots_remove.set_defaults(func=cmd_store_roots_remove)
 
     args = parser.parse_args(argv)
     return args.func(args)

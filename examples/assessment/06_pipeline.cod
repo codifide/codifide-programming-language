@@ -1,0 +1,57 @@
+module pipeline_example
+
+# A small data-processing pipeline: clean input, classify, report.
+# Exercises multi-function composition, contracts on each stage,
+# cost dispatch for the classification step, and a composed main
+# that threads state via <- binds.
+# Difficulty: hardest of the six; realistic small program.
+
+def clean
+  intent "normalize input: trim and lowercase"
+  sig    (raw: String) -> String
+  effects {}
+  pre    ne(raw, "")
+  post   eq(result, lower(trim(raw)))
+  cand
+    lower(trim(raw))
+
+def classify_length
+  intent "bucket a cleaned string by length"
+  sig    (s: String) -> String
+  effects {}
+  pre    ne(s, "")
+  cand
+    intent "very short"
+    cost   1
+    when   lt(len(s), 4)
+    "short"
+  cand
+    intent "medium"
+    cost   10
+    when   lt(len(s), 20)
+    "medium"
+  cand
+    intent "long"
+    cost   100
+    "long"
+
+def report
+  intent "compose: clean the input, classify it, emit a sentence"
+  sig    (raw: String) -> String
+  effects {}
+  pre    ne(raw, "")
+  cand
+    cleaned <- clean(raw)
+    bucket  <- classify_length(cleaned)
+    "input '" ++ cleaned ++ "' is " ++ bucket
+
+def main
+  intent "run the pipeline on three inputs"
+  sig    () -> List
+  effects {}
+  cand
+    list(
+      report("  HI  "),
+      report("Hello, World"),
+      report("  This is a rather lengthy sentence indeed  ")
+    )

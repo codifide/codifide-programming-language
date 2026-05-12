@@ -33,6 +33,7 @@ from ..core.types import (
     Concat,
     Definition,
     Expr,
+    If,
     Lit,
     Module,
     Ref,
@@ -55,6 +56,14 @@ from .primitives import (
     _unwrap,
     build_default_registry,
 )
+
+
+# Sentinel representing "cost = +∞" for un-annotated candidates. Using
+# the maximum possible int guarantees that any concrete non-negative
+# cost sorts below it. We deliberately do not use math.inf because
+# cost is an int in the canonical form and mixing int + float in the
+# dispatcher's sort key would rely on Python-specific comparison rules.
+_COST_INFINITY = (1 << 63) - 1  # largest value i64 can hold; far beyond any realistic cost
 
 
 # ---------------------------------------------------------------------------
@@ -189,6 +198,10 @@ def _walk(expr: Expr):
         yield from _walk(expr.otherwise)
     elif isinstance(expr, Attr):
         yield from _walk(expr.target)
+    elif isinstance(expr, If):
+        yield from _walk(expr.cond)
+        yield from _walk(expr.then_)
+        yield from _walk(expr.else_)
 
 
 def _call_targets(expr: Expr):
@@ -398,11 +411,34 @@ class Interpreter:
 
     def _dispatch(self, defn: Definition, frame: _Frame) -> Any:
         # Guards, like pre/post, are contract expressions and run pure.
+        #
+        # Cost-based dispatch (added 2026-05-11). Evaluate every
+        # candidate's guard in declaration order (guards are pure, so
+        # evaluating all of them is free of observable side effects)
+        # and collect the satisfied ones. Among the satisfied set,
+        # pick by (cost_or_infinity, declaration_index). A candidate
+        # without a cost field has effective cost ``+∞`` so an
+        # un-annotated program continues to pick the earliest-declared
+        # satisfied candidate — identical to pre-amendment semantics.
         pure_frame = _with_pure_budget(frame)
-        for cand in defn.candidates:
-            if cand.guard is None or self._truthy(self._eval(cand.guard, pure_frame)):
-                return self._eval(cand.body, frame)
-        raise DispatchError(defn.name)
+        satisfied: List[tuple[int, int, Candidate]] = []
+        for idx, cand in enumerate(defn.candidates):
+            if cand.guard is None or self._truthy(
+                self._eval(cand.guard, pure_frame)
+            ):
+                # ``cost is None`` → effective cost +∞; represent with
+                # a sentinel larger than any practical int.
+                effective_cost = (
+                    cand.cost if cand.cost is not None else _COST_INFINITY
+                )
+                satisfied.append((effective_cost, idx, cand))
+        if not satisfied:
+            raise DispatchError(defn.name)
+        # ``min`` breaks ties by declaration index as documented in
+        # the spec amendment. Python's ``min`` is stable and the
+        # key is a 3-tuple starting with cost.
+        _, _, chosen = min(satisfied, key=lambda t: (t[0], t[1]))
+        return self._eval(chosen.body, frame)
 
     # -- Expression evaluation ------------------------------------------
 
@@ -422,7 +458,7 @@ class Interpreter:
             # Bare reference to a primitive namespace (e.g. `clock` on its
             # own) is allowed and returns a namespace sentinel; we just raise
             # for now to keep behavior tight.
-            raise CodifideError(f"unbound name: {expr.name!r}")
+            raise CodifideError(_unbound_name_message(expr.name))
         if isinstance(expr, Attr):
             # Attr over a dotted namespace resolves to either a primitive or
             # a record field. Try the dotted-primitive path FIRST when the
@@ -433,6 +469,12 @@ class Interpreter:
                 dotted = f"{expr.target.name}.{expr.name}"
                 if frame.prims.has(dotted):
                     return self._call_primitive(dotted, (), frame)
+                # Neither a local nor a known primitive. Raise a
+                # dotted-form error that can be matched against the
+                # known-guess hint table (e.g. `clock.hour` → point at
+                # `clock.now`). This catches misses like `str.reverse`
+                # used at expression position, not just at call position.
+                raise CodifideError(_unknown_callable_message(dotted))
             target = self._eval(expr.target, frame)
             payload = _unwrap(target)
             if isinstance(payload, dict) and expr.name in payload:
@@ -464,6 +506,15 @@ class Interpreter:
             )
         if isinstance(expr, BottomExpr):
             return Bottom
+        if isinstance(expr, If):
+            # Short-circuit conditional — evaluate cond, then exactly
+            # one of then/else. Unlike candidate-dispatch guards, If
+            # does NOT evaluate both branches (2026-05-11 amendment;
+            # see docs/CANONICAL.md §If).
+            cond_result = self._eval(expr.cond, frame)
+            if self._truthy(cond_result):
+                return self._eval(expr.then_, frame)
+            return self._eval(expr.else_, frame)
         if isinstance(expr, Believe):
             subject = self._eval(expr.subject, frame)
             # Bind `it` so arms can read the subject directly.
@@ -495,7 +546,7 @@ class Interpreter:
         # Primitive.
         if frame.prims.has(fn):
             return self._call_primitive(fn, arg_exprs, frame)
-        raise CodifideError(f"unknown callable: {fn!r}")
+        raise CodifideError(_unknown_callable_message(fn))
 
     def _call_primitive(self, name: str, arg_exprs: tuple, frame: _Frame) -> Any:
         spec = frame.prims.get(name)
@@ -653,4 +704,85 @@ def _describe(expr: Expr) -> str:
         return "bottom"
     if isinstance(expr, Concat):
         return " ++ ".join(_describe(p) for p in expr.parts)
+    if isinstance(expr, If):
+        return (
+            f"if {_describe(expr.cond)} "
+            f"then {_describe(expr.then_)} "
+            f"else {_describe(expr.else_)}"
+        )
     return type(expr).__name__
+
+
+# ---------------------------------------------------------------------------
+# Hints for known-guess misses
+# ---------------------------------------------------------------------------
+#
+# Four-model review (dispatches/2026-05-11-*) showed that fresh agents
+# reliably reach for a handful of names that look plausible but are not
+# Codifide primitives. The language knows the correct form in every
+# case; an error that does not say so is a missed teaching moment.
+# Table is exhaustive on the observed misses; extend as new patterns
+# show up in feedback dispatches.
+_CALLABLE_HINTS: Dict[str, str] = {
+    # String operations. Agents reach for method-shaped names; Codifide
+    # exposes them as top-level primitives.
+    "str.reverse":  "use `reverse(s)` — `reverse` is polymorphic over strings and lists",
+    "str.upper":    "use `upper(s)`",
+    "str.lower":    "use `lower(s)`",
+    "str.trim":     "use `trim(s)`",
+    "str.split":    "use `split(s, sep)`",
+    "str.replace":  "use `replace(s, old, new)`",
+    "str.join":     "use `join(sep, xs)`",
+    "str.contains": "use `contains(s, needle)`",
+    "str.starts_with": "use `starts_with(s, prefix)`",
+    "str.ends_with":   "use `ends_with(s, suffix)`",
+    # Time. clock.now returns a record with `hm` (string "HH:MM") and
+    # `unix` (float seconds). There is no clock.hour; compute from
+    # clock.now or pass the whole record through candidate dispatch.
+    "clock.hour":   "use `clock.now` — returns a record with fields `hm` and `unix`",
+    "clock.minute": "use `clock.now` — returns a record with fields `hm` and `unix`",
+    "clock.second": "use `clock.now` — returns a record with fields `hm` and `unix`",
+    # List operations agents guess by method name.
+    "list.reverse": "use `reverse(xs)`",
+    "list.len":     "use `len(xs)`",
+    "list.append":  "use `append(xs, item)` — returns a new list",
+    "list.head":    "use `head(xs)`",
+    "list.tail":    "use `tail(xs)`",
+    "list.sum":     "use `sum(xs)`",
+}
+
+
+def _unknown_callable_message(fn: str) -> str:
+    """Format an ``unknown callable`` error, adding a hint when possible.
+
+    The base message is preserved so callers that match on substring
+    keep working; the hint is appended on a second line so it is
+    visually separable.
+    """
+    base = f"unknown callable: {fn!r}"
+    hint = _CALLABLE_HINTS.get(fn)
+    if hint is not None:
+        return f"{base}\n  hint: {hint}"
+    return base
+
+
+# Unbound-name hints. Agents reach for bare names like `hour` or
+# `minute` when they want the current time; Codifide exposes time
+# through the `clock.now` primitive whose result is a record with
+# `hm` and `unix` fields. Point them at it instead of leaving them
+# to discover it by reading the manifest.
+_UNBOUND_HINTS: Dict[str, str] = {
+    "hour":   "time is read via `clock.now` — returns a record with `hm` and `unix` fields",
+    "minute": "time is read via `clock.now` — returns a record with `hm` and `unix` fields",
+    "second": "time is read via `clock.now` — returns a record with `hm` and `unix` fields",
+    "now":    "did you mean `clock.now`?",
+    "time":   "did you mean `clock.now`?",
+}
+
+
+def _unbound_name_message(name: str) -> str:
+    base = f"unbound name: {name!r}"
+    hint = _UNBOUND_HINTS.get(name)
+    if hint is not None:
+        return f"{base}\n  hint: {hint}"
+    return base

@@ -113,7 +113,32 @@ class Attr:
     kind: str = field(default="attr", init=False)
 
 
-Expr = Union[Lit, Ref, Call, Bind, Seq, Believe, BottomExpr, Concat, Attr]
+@dataclass(frozen=True)
+class If:
+    """Inline conditional expression: ``if cond then a else b``.
+
+    Added 2026-05-11 as a spec amendment. Unlike candidate dispatch
+    guards — which all evaluate in one pass before selection —
+    an ``If`` expression is **short-circuit**: exactly one of
+    ``then_`` or ``else_`` evaluates at runtime. This matters when a
+    branch would otherwise raise (e.g. indexing a string whose
+    length was the condition's check).
+
+    The condition is evaluated in the enclosing frame's effect
+    budget. The chosen branch is evaluated in the same budget. If
+    the ``If`` appears inside a guard or contract clause, the
+    enclosing effect budget is ∅ (same rule as every other
+    expression in a pure context).
+
+    See ``dispatches/2026-05-11-inline-conditional-proposal.md``.
+    """
+    cond: "Expr"
+    then_: "Expr"
+    else_: "Expr"
+    kind: str = field(default="if", init=False)
+
+
+Expr = Union[Lit, Ref, Call, Bind, Seq, Believe, BottomExpr, Concat, Attr, If]
 
 
 # ---------------------------------------------------------------------------
@@ -141,10 +166,33 @@ class Signature:
 
 @dataclass(frozen=True)
 class Candidate:
-    """One implementation of a definition's contract."""
+    """One implementation of a definition's contract.
+
+    The optional ``cost`` field (added 2026-05-11) lets a candidate
+    declare its dispatcher cost. Among candidates whose guards are
+    satisfied, the dispatcher picks the one with the smallest cost;
+    declaration order is the tiebreaker. A candidate without a
+    ``cost`` field has effective cost ``+∞`` for dispatch purposes —
+    it is chosen only if every satisfied candidate is also uncosted,
+    preserving v0 semantics when no annotations are present. See
+    ``dispatches/2026-05-11-cost-based-dispatch-proposal.readout.md``.
+    """
     body: Expr
     intent: str = "default"
     guard: Optional[Expr] = None
+    cost: Optional[int] = None
+
+    def __post_init__(self) -> None:
+        if self.cost is not None:
+            if not isinstance(self.cost, int) or isinstance(self.cost, bool):
+                raise ValueError(
+                    f"candidate cost must be a non-negative integer, "
+                    f"got {type(self.cost).__name__}: {self.cost!r}"
+                )
+            if self.cost < 0:
+                raise ValueError(
+                    f"candidate cost must be non-negative, got {self.cost}"
+                )
 
 
 @dataclass(frozen=True)

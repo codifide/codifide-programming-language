@@ -1,0 +1,48 @@
+module greeting_confidence_example
+
+# Produce a greeting whose confidence depends on how well we know
+# the user. Then dispatch on the confidence: high → use greeting,
+# medium → hedge, low → refuse. Exercises belief(), conf(),
+# believe dispatch, and first-class refusal.
+# Difficulty: medium (exercises the confidence-refusal idiom).
+
+def estimate_confidence
+  intent "confidence that we should greet this user at all"
+  sig    (name: String) -> Number
+  effects {}
+  cand
+    intent "empty name → very low confidence"
+    cost   1
+    when   eq(name, "")
+    0.0
+  cand
+    intent "single-letter name → medium confidence (probably initials)"
+    cost   10
+    when   eq(len(name), 1)
+    0.5
+  cand
+    intent "real-looking name"
+    cost   100
+    0.95
+
+def greet_or_refuse
+  intent "greet if we're confident; escalate or refuse otherwise"
+  sig    (name: String) -> String
+  effects {}
+  cand
+    score <- estimate_confidence(name)
+    wrapped <- belief(name, score)
+    believe wrapped
+      ge(conf(wrapped), 0.9)  => "Hello, " ++ name
+      ge(conf(wrapped), 0.4)  => "Hi there, I think your name is " ++ name ++ "?"
+      else                    => bottom
+
+def main
+  intent "try three names with varying confidence"
+  sig    () -> List
+  effects {}
+  cand
+    list(
+      greet_or_refuse("Ada"),
+      greet_or_refuse("A")
+    )

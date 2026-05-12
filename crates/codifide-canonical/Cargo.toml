@@ -1,6 +1,6 @@
 [package]
 name = "codifide-canonical"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 description = "Codifide canonical form: typed hypergraph with JSON projection and content addressing."
 license = "MIT"

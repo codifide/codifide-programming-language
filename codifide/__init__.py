@@ -32,8 +32,11 @@ from .store import (
     NotFound,
     StoreError,
     SymbolStore,
-    symbol_bytes,
-    symbol_hash,
+    symbol_bytes,           # primary = CBOR
+    symbol_bytes_json,      # legacy JSON form
+    symbol_hash,            # primary = CBOR hash
+    symbol_hash_cbor,       # alias of symbol_hash
+    symbol_hash_json,       # legacy JSON hash
 )
 from .runtime.errors import (
     CodifideError,
@@ -47,7 +50,7 @@ from .runtime.errors import (
     BottomPropagationError,
 )
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 
 __all__ = [
     "Module",
@@ -79,7 +82,10 @@ __all__ = [
     "BottomPropagationError",
     "SymbolStore",
     "symbol_bytes",
+    "symbol_bytes_json",
     "symbol_hash",
+    "symbol_hash_cbor",
+    "symbol_hash_json",
     "StoreError",
     "NotFound",
     "IntegrityError",

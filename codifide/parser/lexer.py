@@ -104,5 +104,33 @@ def lex_expr(src: str) -> List[Token]:
                 i += 1
             tokens.append(Token("ident", src[start:i], start))
             continue
-        raise LexError(f"unexpected character {c!r} at column {i}")
+        raise LexError(_unexpected_character_message(c, i))
     return tokens
+
+
+# ---------------------------------------------------------------------------
+# Hints for known-guess surface misses
+# ---------------------------------------------------------------------------
+#
+# Agents reliably reach for infix arithmetic operators from other
+# languages. Codifide exposes arithmetic through named primitives by
+# design (see dispatches/2026-05-11-ergonomics-decisions.readout.md,
+# decision 3). When the lexer sees one of these characters outside a
+# numeric literal, the error should name the correct primitive rather
+# than leaving the author to guess why '%' was unexpected.
+_INFIX_MISS_HINTS = {
+    "%": "use `mod(a, b)` — Codifide exposes arithmetic as named primitives, not infix operators",
+    "+": "use `add(a, b)` for arithmetic, or `++` for string concatenation",
+    "*": "use `mul(a, b)`",
+    "/": "use `div(a, b)`",
+    # "-" is not hinted because it is legitimately part of negative
+    # literals like `-3` and the lexer already accepts it there.
+}
+
+
+def _unexpected_character_message(c: str, col: int) -> str:
+    hint = _INFIX_MISS_HINTS.get(c)
+    base = f"unexpected character {c!r} at column {col}"
+    if hint is not None:
+        return f"{base}\n  hint: {hint}"
+    return base

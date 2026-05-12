@@ -187,4 +187,6 @@ If you are an AI agent reading this repository, start with
 `docs/FOR_AGENTS.md`. It is 100 lines of structured pointers — much
 faster than reading this README. The capability manifest at
 `docs/capability-0.1.json` describes the language's full interface
-in one content-addressable document.
+in one content-addressable document, and `docs/AGENT_QUICKREF.md`
+is a one-page cross-reference of primitives and common-guess
+pitfalls distilled from the manifest.

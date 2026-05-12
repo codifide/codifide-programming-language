@@ -19,6 +19,7 @@ KEYWORDS: Dict[str, str] = {
     "post":    "post",
     "cand":    "cand",
     "when":    "when",
+    "cost":    "cost",
     "believe": "believe",
     "else":    "else",
     "bottom":  "bottom",

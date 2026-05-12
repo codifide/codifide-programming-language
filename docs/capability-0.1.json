@@ -73,6 +73,23 @@
         }
       ]
     },
+    "if": {
+      "description": "Inline conditional expression. Evaluates ``cond``; then evaluates EXACTLY ONE of ``then`` or ``else`` based on truthiness. Short-circuit \u2014 unlike candidate-dispatch guards, which all evaluate before selection, this expression does not evaluate the un-taken branch. Added in the 2026-05-11 spec amendment.",
+      "fields": [
+        {
+          "name": "cond",
+          "type": "Expr"
+        },
+        {
+          "name": "then",
+          "type": "Expr"
+        },
+        {
+          "name": "else",
+          "type": "Expr"
+        }
+      ]
+    },
     "lit": {
       "description": "A literal value carrying its type, confidence, and provenance \u2014 the small knowledge-graph shape of every Codifide value.",
       "fields": [
@@ -167,7 +184,7 @@
       "when": "\u22a5 reached a primitive that cannot consume it."
     }
   ],
-  "generator": "codifide-python-0.1.0",
+  "generator": "codifide-python-1.0.0",
   "literal_types": [
     "Any",
     "Bool",
@@ -204,6 +221,11 @@
     },
     {
       "effect": null,
+      "name": "at",
+      "returns": "Any"
+    },
+    {
+      "effect": null,
       "name": "belief",
       "returns": "Any"
     },
@@ -211,6 +233,11 @@
       "effect": null,
       "name": "ceil",
       "returns": "Int"
+    },
+    {
+      "effect": null,
+      "name": "char_at",
+      "returns": "String"
     },
     {
       "effect": "clock.read",
@@ -281,6 +308,11 @@
       "effect": null,
       "name": "host_sorted",
       "returns": "List"
+    },
+    {
+      "effect": null,
+      "name": "indexof",
+      "returns": "Int"
     },
     {
       "effect": "io.stdout",
@@ -395,12 +427,17 @@
     {
       "effect": null,
       "name": "reverse",
-      "returns": "List"
+      "returns": "Any"
     },
     {
       "effect": null,
       "name": "round",
       "returns": "Int"
+    },
+    {
+      "effect": null,
+      "name": "slice",
+      "returns": "Any"
     },
     {
       "effect": null,
@@ -476,6 +513,13 @@
         "glyphs": [
           "\u0192"
         ]
+      },
+      {
+        "ascii": [
+          "cost"
+        ],
+        "canonical": "cost",
+        "glyphs": []
       },
       {
         "ascii": [

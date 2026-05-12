@@ -32,6 +32,32 @@ They are not part of expressions; they shape the module header.
 
 The parser accepts either form and emits the canonical form on projection.
 
+### Line continuation
+
+The outer parser is line-oriented, but an individual expression may
+span multiple physical lines whenever brackets (`(`, `[`, `{`) are
+unbalanced. Continuation runs until brackets balance or until the
+next physical line begins with a keyword head (`intent`, `sig`,
+`effects`, `pre`, `post`, `cand`, `when`, `believe`, `else`,
+`module`, `def`, `from`, `import`), whichever comes first. If
+brackets remain unbalanced when continuation stops, the parser
+raises `ParseError`.
+
+This means a call like:
+
+```codifide
+list(
+  classify_number(5),
+  classify_number(50),
+  classify_number(500)
+)
+```
+
+is a single expression, not three. Bind right-hand sides, `pre`,
+`post`, and `when` clauses all follow the same rule. The canonical
+form is indifferent to line breaks; two spellings of the same
+expression produce the same canonical bytes.
+
 ## A first program
 
 ```codifide
@@ -121,10 +147,92 @@ def sort
     insertion(xs)
 ```
 
-The runtime evaluates candidate guards in declaration order and picks the
-first that holds. Contract checking is identical for every candidate — they
-all answer to the same post. Guards run with the same empty effect budget
-as pre and post.
+The runtime evaluates candidate guards in declaration order. Among the
+candidates whose guards hold, the runtime picks the cheapest (see
+below); declaration order is the tiebreaker. Contract checking is
+identical for every candidate — they all answer to the same post.
+Guards run with the same empty effect budget as pre and post.
+
+### Cost annotations
+
+A candidate may carry a `cost` annotation — a non-negative integer
+that ranks it against other satisfied candidates. Lower cost wins.
+
+```codifide
+def classify
+  intent "label a request; use the cheapest sufficient path"
+  sig    (req: Request) -> Label
+  effects {model.vision}
+
+  cand
+    intent "fast heuristic"
+    cost   1
+    when   is_obvious(req)
+    fast.classify(req)
+
+  cand
+    intent "full vision inference"
+    cost   1000
+    vision.classify(req)
+```
+
+A candidate without a `cost` annotation has effective cost `+∞` —
+it is picked only when no annotated candidate can satisfy the call.
+This means:
+
+- A module with zero cost annotations dispatches in declaration
+  order, identical to pre-amendment behavior. No existing program
+  changes meaning.
+- Adding a cost annotation to any candidate in a module changes
+  the dispatch of that definition from "first-satisfied" to
+  "cheapest-satisfied, declaration order as tiebreaker." If you
+  want to preserve declaration-order behavior for a mixed module,
+  annotate every candidate.
+
+Cost is static — the annotation is a literal integer on the
+candidate, not an expression. Cost is informational; the runtime
+does not validate that a `cost 1` candidate actually runs in one
+unit of work. Honest annotation is an agent's responsibility, the
+same shape of discipline as intent.
+
+## Inline conditional
+
+`if cond then a else b` is an expression that evaluates `cond`, then
+exactly one of `a` or `b` depending on truthiness. Added 2026-05-11
+as a spec amendment.
+
+```codifide
+def absolute
+  intent "absolute value"
+  sig    (n: Int) -> Int
+  effects {}
+  cand
+    if lt(n, 0) then neg(n) else n
+
+def safe_head
+  intent "first char, or empty when the input is empty"
+  sig    (s: String) -> String
+  effects {}
+  cand
+    if gt(len(s), 0) then char_at(s, 0) else ""
+```
+
+**Short-circuit.** Unlike candidate-dispatch guards — which all
+evaluate in one pass before selection — the un-taken branch of
+`if` does **not** evaluate. `safe_head("")` does not hit
+`char_at`'s index-out-of-range because the else-branch is the
+one that runs.
+
+This is the reason `if` exists alongside candidate dispatch.
+Guards are for "which function body runs at this call"; `if` is
+for "which of two values is the result of this expression."
+Reach for guards when you want multiple bodies satisfying a
+contract; reach for `if` when you want one body that chooses
+between two values.
+
+Pure context: when `if` appears inside a `pre`, `post`, or
+`when` clause, both branches evaluate with the empty effect
+budget (matching every other expression in a pure context).
 
 ## Belief dispatch
 
@@ -209,6 +317,29 @@ collide, resolution proceeds in this order:
 A local `def foo` shadows `import foo = ...`, and an imported `foo` shadows
 a primitive `foo`. Effects are still checked against the resolved callee, so
 shadowing cannot be used to smuggle effects past the transitive check.
+
+## Primitive polymorphism
+
+A pure primitive may accept multiple input types when the semantics
+transfer cleanly and the return shape is unambiguous. The rule keeps
+the primitive surface small without collapsing distinct operations
+into one name.
+
+Today the only polymorphic primitive is `reverse`: `reverse("abc")`
+returns `"cba"`, `reverse([1, 2, 3])` returns `[3, 2, 1]`. Both
+idioms reflect the same operation — reverse a sequence — and the
+result type is determined by the input type without ambiguity.
+Primitives whose semantics differ per type (say, `len` on a list
+versus on a string) remain a single primitive with one semantics
+because the output shape does not change. Primitives whose
+semantics would be surprising under polymorphism get distinct
+names (`min` / `max` for two-arg numeric vs `min_of` / `max_of`
+over a list).
+
+An agent consuming the capability manifest sees `reverse` with
+`returns: "Any"`, which is the manifest's way of saying "the
+return type tracks the input type." Primitives with a fixed
+return type continue to report that type in the manifest.
 
 ## Errors
 

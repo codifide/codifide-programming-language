@@ -1,0 +1,126 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: carryover queue — post-work attestation (2026-05-11)
+  at: 2026-05-11
+  author: Glyph
+  intent: >
+    Attest that the three items flagged for this session in the paired
+    decisions dispatch have landed, and that the four deferred items
+    are deferred with explicit reasoning rather than drift.
+
+  state:
+    shipped:
+      - cbor-numeric-boundary-conformance
+      - rust-canonical-fuzz-harness
+      - cli-filesystem-safety-audit-with-p1-fix
+    in_flight: []
+    blocked:
+      - primary-hash-migration-json-to-cbor
+      - store-gc
+      - cost-based-candidate-dispatch
+    refused:
+      - cbor-aware-sable-reaudit-with-no-cbor-changes
+
+  evidence:
+    - claim: integer boundary CBOR agreement holds for all tested values
+      kind: test
+      source: "python3 -m unittest tests.test_cbor_boundaries.IntegerBoundaryConformance"
+      result: "passes"
+      confidence: 1.0
+
+    - claim: signed zero and exact-f16 agree across implementations
+      kind: test
+      source: "tests.test_cbor_boundaries.SignedZeroConformance, SmallIntegerFloatConformance"
+      result: "passes"
+      confidence: 1.0
+
+    - claim: exhaustive f16 enumeration reveals 14 percent divergence from serde_json decimal parsing
+      kind: measure
+      source: "tests.test_cbor_boundaries.HalfPrecisionAllPatternsDiagnostic (skipped with reason)"
+      result: "287/2000 sampled patterns disagree; skipped as known limitation"
+      confidence: 1.0
+
+    - claim: Rust fuzz harness catches no panics on adversarial or random input
+      kind: test
+      source: "cargo test --release -p codifide-canonical"
+      result: "14 passed (10 unit + 4 fuzz); 0 failed"
+      confidence: 1.0
+
+    - claim: /dev/zero no longer hangs the CLI
+      kind: run
+      source: "python3 -m codifide canonical /dev/zero"
+      result: "typed ParseError naming the size cap, exit 1 within 1 second"
+      confidence: 1.0
+
+    - claim: legitimate example programs still parse through the CLI
+      kind: test
+      source: "tests.test_cli_filesystem.BoundedSourceReadTests.test_legitimate_source_files_still_parse"
+      result: "passes"
+      confidence: 1.0
+
+    - claim: total Python test count 141 passing (plus 1 skipped diagnostic)
+      kind: test
+      source: "python3 -m codifide test"
+      result: "OK (skipped=1); 141 tests in ~1s"
+      confidence: 1.0
+
+  findings_filed:
+    - id: AUD-2026-05-11-04
+      severity: P2
+      subject: "JSON decimal parser disagreement causes f16-subnormal CBOR divergence"
+      fixed: false
+      document: dispatches/2026-05-11-cbor-numeric-boundaries.md
+      disposition: "Narrow conformance claim in docs; structurally closed by primary-hash CBOR migration"
+
+    - id: AUD-2026-05-11-05
+      severity: P1
+      subject: "Unbounded source read in Python CLI"
+      fixed: true
+      document: dispatches/2026-05-11-cli-audit.md
+      disposition: "Fixed in this session; regression tests in tests/test_cli_filesystem.py"
+
+    - id: AUD-2026-05-11-06
+      severity: P3
+      subject: "codifide run follows symlinks"
+      fixed: false
+      document: dispatches/2026-05-11-cli-audit.md
+      disposition: "Accepted as documented behavior; refusing would break legitimate developer workflow"
+
+    - id: AUD-2026-05-11-07
+      severity: P3
+      subject: "--store accepts arbitrary paths including traversal"
+      fixed: false
+      document: dispatches/2026-05-11-cli-audit.md
+      disposition: "Accepted as documented behavior; analogous to git --git-dir"
+
+  unknowns:
+    - question: Does the JSON decimal-parser finding (AUD-04) also affect canonical JSON bytes?
+      why_unknown: The mechanism is identical; existing JSON conformance passes only because .cod examples avoid vulnerable values.
+      how_to_resolve: Extend the boundary fixture to the JSON byte form and measure.
+
+    - question: Should the Rust fuzz harness include a golden-baseline byte comparison rather than only panic-free?
+      why_unknown: Design choice not yet made; current harness is deliberately minimal.
+      how_to_resolve: Decide with a follow-up dispatch on whether fuzz should test semantic agreement or only robustness.
+
+    - question: Does the cumulative set of 2026-05-11 changes (ergonomics + carryover) improve fresh-agent authoring rates?
+      why_unknown: Unmeasured; no external experiment run yet.
+      how_to_resolve: External model run against the new manifest hash.
+
+  next:
+    - action: update CHANGELOG.md with the carryover-pass entry
+      effect: "{fs.write}"
+    - action: append 2026-05-11 session state with carryover-pass status
+      effect: "{fs.write}"
+    - action: (future) design dispatch for store GC
+      effect: "{fs.write}"
+    - action: (future) proposal dispatch for primary-hash migration
+      effect: "{fs.write}"
+    - action: (future) spec-amendment proposal for cost-based dispatch
+      effect: "{fs.write}"
+
+  links:
+    human_readout: dispatches/2026-05-11-carryover-post.readout.md
+    decisions_readout: dispatches/2026-05-11-carryover-decisions.readout.md
+    cbor_finding: dispatches/2026-05-11-cbor-numeric-boundaries.md
+    cli_audit: dispatches/2026-05-11-cli-audit.md
+    capability_manifest_hash: sha256:845dbbbff6b8ba8957dc40383e9a54b386b172f8fa70ccc16a18be10e498afd4

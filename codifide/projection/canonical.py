@@ -26,6 +26,7 @@ from ..core.types import (
     Concat,
     Definition,
     Expr,
+    If,
     Lit,
     Module,
     Param,
@@ -72,19 +73,15 @@ def from_canonical(obj: Dict[str, Any]) -> Module:
     return Module(name=name, symbols=defs, imports=imports)
 
 
-def canonical_bytes(module: Module) -> bytes:
-    """Deterministic byte serialization of a Module.
+def canonical_bytes_json(module: Module) -> bytes:
+    """Deterministic JSON byte serialization of a Module.
 
-    Two structurally-equal Modules produce identical bytes. The rules
-    (sorted keys, no insignificant whitespace, ASCII-escaped non-ASCII) must
-    match every other spec-conforming implementation; agreement is the whole
-    point of having a canonical form.
+    Legacy — pre-2026-05-11 this was the primary byte form. Callers
+    that need the JSON form explicitly (human inspection, legacy-hash
+    reconstruction) can call this. The primary byte form is CBOR; see
+    :func:`canonical_bytes`.
     """
     obj = to_canonical(module)
-    # `sort_keys=True` applies recursively in json.dumps.
-    # Compact separators strip insignificant whitespace.
-    # ensure_ascii=True (the default) escapes non-ASCII as \uXXXX so byte
-    # comparison across implementations is not dependent on source encoding.
     return json.dumps(
         obj,
         sort_keys=True,
@@ -93,12 +90,41 @@ def canonical_bytes(module: Module) -> bytes:
     ).encode("utf-8")
 
 
-def content_hash(module: Module) -> str:
-    """SHA-256 of the canonical byte form, hex-prefixed with `sha256:`.
+def canonical_bytes(module: Module) -> bytes:
+    """Deterministic CBOR byte serialization of a Module.
 
-    This is a definition's identity under the content-addressed scheme
-    described in the spec. The hash is stable across implementations because
-    the input bytes are.
+    As of 2026-05-11, the primary byte form is CBOR (RFC 8949 §4.2
+    deterministic encoding). This closes AUD-2026-05-11-08 — the JSON
+    byte form cannot be made byte-equal across Python and Rust on
+    f16-class floats because the two shortest-decimal writers produce
+    different text for the same double.
+
+    CBOR hashes over IEEE-754 bits and has no decimal-text
+    intermediate. Two structurally-equal Modules produce identical
+    bytes on every conforming implementation, full stop.
+    """
+    from .cbor import canonical_cbor
+
+    return canonical_cbor(to_canonical(module))
+
+
+def content_hash_json(module: Module) -> str:
+    """SHA-256 of the legacy JSON canonical byte form.
+
+    Preserved for callers that need to reproduce pre-migration
+    identities. The primary identity function is :func:`content_hash`,
+    which hashes over CBOR.
+    """
+    digest = hashlib.sha256(canonical_bytes_json(module)).hexdigest()
+    return f"sha256:{digest}"
+
+
+def content_hash(module: Module) -> str:
+    """SHA-256 of the canonical CBOR byte form, hex-prefixed with `sha256:`.
+
+    This is a Module's primary content identity. Stable across
+    implementations because the CBOR byte form is deterministic under
+    RFC 8949 §4.2.
     """
     digest = hashlib.sha256(canonical_bytes(module)).hexdigest()
     return f"sha256:{digest}"
@@ -107,15 +133,10 @@ def content_hash(module: Module) -> str:
 def canonical_cbor_bytes(module: Module) -> bytes:
     """Deterministic CBOR byte serialization of a Module.
 
-    RFC 8949 §4.2 canonical encoding of the same abstract structure
-    ``to_canonical`` produces. Both implementations — Python here, Rust
-    in the ``codifide-canonical`` crate — MUST produce byte-identical
-    output for the same Module; the conformance test enforces that.
-
-    CBOR is the v0.2 binary canonical form. JSON remains authoritative
-    for content addressing in v0.1; switching the hash algorithm would
-    invalidate every existing identity, which is a breaking change that
-    belongs to a future release, not this one.
+    Alias of :func:`canonical_bytes` post the 2026-05-11 migration —
+    both return CBOR bytes. The explicit ``_cbor_bytes`` name is kept
+    so callers that spell out their intent at the call site continue to
+    work unchanged.
     """
     from .cbor import canonical_cbor
 
@@ -125,11 +146,9 @@ def canonical_cbor_bytes(module: Module) -> bytes:
 def content_hash_cbor(module: Module) -> str:
     """SHA-256 of canonical CBOR bytes, hex-prefixed with `sha256:`.
 
-    Parallel to ``content_hash`` but computed over the CBOR byte form
-    instead of the JSON byte form. Present so agents that prefer the
-    binary wire can compute a stable identity in the same shape.
-    Switching v0.1's primary hash from JSON to CBOR is deferred; this
-    function is the tool that makes that switch testable when it lands.
+    Alias of :func:`content_hash` post the 2026-05-11 migration —
+    both hash over CBOR bytes. Kept as an explicit name for callers
+    that want "this is the CBOR hash" obvious at the call site.
     """
     digest = hashlib.sha256(canonical_cbor_bytes(module)).hexdigest()
     return f"sha256:{digest}"
@@ -180,20 +199,44 @@ def _sig_from_json(obj: Dict[str, Any]) -> Signature:
 
 
 def _cand_to_json(c: Candidate) -> Dict[str, Any]:
-    return {
+    obj: Dict[str, Any] = {
         "kind": "candidate",
         "intent": c.intent,
         "guard": _expr_to_json(c.guard) if c.guard is not None else None,
         "body": _expr_to_json(c.body),
     }
+    # Only emit ``cost`` when present. This keeps the canonical bytes
+    # of un-costed candidates identical to the pre-amendment form, so
+    # no existing content hash is invalidated by the amendment. See
+    # dispatches/2026-05-11-cost-based-dispatch-proposal.readout.md.
+    if c.cost is not None:
+        obj["cost"] = c.cost
+    return obj
 
 
 def _cand_from_json(obj: Dict[str, Any]) -> Candidate:
     guard = obj.get("guard")
+    cost = obj.get("cost")
+    # Canonical form typing: cost MUST be a non-negative integer when
+    # present. A float or negative value is a spec violation and is
+    # rejected by the Candidate constructor. The parser is responsible
+    # for raising at parse time for the surface syntax; this branch
+    # catches canonical input that slipped through a non-conforming
+    # producer.
+    if cost is not None and (
+        not isinstance(cost, int)
+        or isinstance(cost, bool)
+        or cost < 0
+    ):
+        raise ValueError(
+            f"canonical form: candidate.cost must be a non-negative integer, "
+            f"got {cost!r}"
+        )
     return Candidate(
         body=_expr_from_json(obj["body"]),
         intent=obj.get("intent", "default"),
         guard=_expr_from_json(guard) if guard is not None else None,
+        cost=cost,
     )
 
 
@@ -241,6 +284,13 @@ def _expr_to_json(e: Expr) -> Dict[str, Any]:
         return {"kind": "concat", "parts": [_expr_to_json(p) for p in e.parts]}
     if isinstance(e, Attr):
         return {"kind": "attr", "target": _expr_to_json(e.target), "name": e.name}
+    if isinstance(e, If):
+        return {
+            "kind": "if",
+            "cond": _expr_to_json(e.cond),
+            "then": _expr_to_json(e.then_),
+            "else": _expr_to_json(e.else_),
+        }
     raise TypeError(f"cannot serialize expression: {type(e).__name__}")
 
 
@@ -280,4 +330,10 @@ def _expr_from_json(obj: Dict[str, Any]) -> Expr:
         return Concat(parts=tuple(_expr_from_json(p) for p in obj.get("parts", [])))
     if k == "attr":
         return Attr(target=_expr_from_json(obj["target"]), name=obj["name"])
+    if k == "if":
+        return If(
+            cond=_expr_from_json(obj["cond"]),
+            then_=_expr_from_json(obj["then"]),
+            else_=_expr_from_json(obj["else"]),
+        )
     raise ValueError(f"unknown expression kind: {k!r}")

@@ -1,0 +1,19 @@
+module word_count_example
+
+# Count the words in a string, using `split` + `len`.
+# Simulation of an AI-generated first attempt post-2026-05-11 pass.
+
+def word_count
+  intent "count whitespace-separated words"
+  sig    (s: String) -> Int
+  effects {}
+  pre    ne(s, "")
+  cand
+    len(split(s, " "))
+
+def main
+  intent "count words in a known sentence"
+  sig    () -> Int
+  effects {}
+  cand
+    word_count("the quick brown fox")
