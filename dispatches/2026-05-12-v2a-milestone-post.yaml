@@ -1,0 +1,54 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: v2-A milestone — Rust interpreter is the default runtime (2026-05-12)
+  at: 2026-05-12
+  author: Glyph
+  intent: >
+    Attest the v2-A milestone. Rust interpreter passes 70/70 conformance
+    tests, is the default runtime, version bumped to 2.0.0.
+
+  version:
+    previous: "1.0.0"
+    current: "2.0.0"
+    python_package: codifide==2.0.0
+    rust_crates:
+      - codifide-canonical==2.0.0
+      - codifide-interpreter==2.0.0
+
+  test_counts:
+    python_passing: 286
+    python_skipped: 0
+    rust_canonical_passing: 28
+    rust_interpreter_conformance: 70
+
+  bugs_fixed:
+    - id: round-bankers-rounding
+      description: round(2.5) returned 3 instead of 2; fixed with half-to-even logic
+    - id: is_bottom-propagation-guard
+      description: is_bottom(bottom) raised BottomPropagationError; fixed by bypassing guard
+    - id: top-level-refusal
+      description: Bottom escaping main did not raise RefusalError; fixed in run()
+    - id: missing-entry-flag
+      description: codifide-run had no --entry flag; added --entry and --args
+
+  default_runtime: rust
+  fallback_runtime: python
+  runtime_selection:
+    flag: "--runtime rust|python"
+    env_var: CODIFIDE_RUNTIME
+
+  not_yet_done:
+    - graph-native-parallel-evaluator
+    - rust-parser
+    - import-resolution-in-rust-runtime
+
+  open_question:
+    description: >
+      Rust parser vs graph-native parallel evaluator — which comes next?
+      Parser removes the Python subprocess dependency; parallel evaluator
+      delivers the v2-A performance story. Awaiting Douglas's direction.
+
+  links:
+    human_readout: dispatches/2026-05-12-v2a-milestone-post.readout.md
+    first_implementation: dispatches/2026-05-12-rust-interpreter-post.readout.md
+    session_open: dispatches/2026-05-12-v2a-session-open.readout.md

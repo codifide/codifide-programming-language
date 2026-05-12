@@ -9,6 +9,21 @@ Filename convention:
 - `<date>-<slug>.md`         — standalone dispatch (rare)
 
 
+## 2026-05-12
+
+| slug | subject | readout | yaml | audit |
+|---|---|---|---|---|
+| `benchmarks` | Benchmarks — Rust interpreter baseline (2026-05-12) | [md](./2026-05-12-benchmarks.readout.md) | [yaml](./2026-05-12-benchmarks.yaml) |  |
+| `parallel-evaluator` |  |  |  | [md](./2026-05-12-parallel-evaluator-audit.md) |
+| `parallel-evaluator-proposal` |  | [md](./2026-05-12-parallel-evaluator-proposal.readout.md) |  |  |
+| `rust-interpreter` |  |  |  | [md](./2026-05-12-rust-interpreter-audit.md) |
+| `rust-interpreter-post` | Rust interpreter — first implementation landed (2026-05-12) | [md](./2026-05-12-rust-interpreter-post.readout.md) | [yaml](./2026-05-12-rust-interpreter-post.yaml) |  |
+| `rust-interpreter-proposal` | Rust interpreter port — proposal (2026-05-12) | [md](./2026-05-12-rust-interpreter-proposal.readout.md) | [yaml](./2026-05-12-rust-interpreter-proposal.yaml) |  |
+| `rust-parser-post` |  | [md](./2026-05-12-rust-parser-post.readout.md) |  |  |
+| `rust-parser-proposal` |  | [md](./2026-05-12-rust-parser-proposal.readout.md) |  |  |
+| `v2a-milestone-post` | v2-A milestone — Rust interpreter is the default runtime (2026-05-12) | [md](./2026-05-12-v2a-milestone-post.readout.md) | [yaml](./2026-05-12-v2a-milestone-post.yaml) |  |
+| `v2a-session-open` | v2-A session open — Rust interpreter port (2026-05-12) | [md](./2026-05-12-v2a-session-open.readout.md) | [yaml](./2026-05-12-v2a-session-open.yaml) |  |
+
 ## 2026-05-11
 
 | slug | subject | readout | yaml | audit |

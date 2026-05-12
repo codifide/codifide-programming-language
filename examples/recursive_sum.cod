@@ -1,0 +1,42 @@
+module recursive_sum_example
+
+# Recursive sum over a list, with a contract that the result equals
+# the sum primitive. Demonstrates:
+#   - Recursion with a base case and recursive case via cost dispatch
+#   - Postcondition that cross-checks the result against a primitive
+#   - The if expression for safe head/tail access
+#   - Inline conditional short-circuit (if len == 0 then 0 else ...)
+#
+# This is a clean example of the Codifide idiom for recursive
+# functions: two candidates, one for the base case (cost 1, cheapest),
+# one for the recursive case (cost 10). The dispatcher picks the
+# base case when the list is empty, the recursive case otherwise.
+
+def rsum
+  intent "sum a list of numbers recursively"
+  sig    (xs: List) -> Number
+  effects {}
+  post   eq(result, sum(xs))
+
+  cand
+    intent "base case: empty list sums to zero"
+    cost   1
+    when   eq(len(xs), 0)
+    0
+
+  cand
+    intent "recursive case: head plus sum of tail"
+    cost   10
+    add(head(xs), rsum(tail(xs)))
+
+def main
+  intent "sum several lists and verify results"
+  sig    () -> List
+  effects {}
+  cand
+    list(
+      rsum(list(1, 2, 3, 4, 5)),
+      rsum(list(10, 20, 30)),
+      rsum(list()),
+      rsum(list(100))
+    )

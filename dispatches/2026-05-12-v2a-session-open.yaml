@@ -1,0 +1,81 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: v2-A session open — Rust interpreter port (2026-05-12)
+  at: 2026-05-12
+  author: Glyph
+  intent: >
+    Record the opening of the v2-A session. Shape A chosen: Rust
+    interpreter port, graph-native parallel evaluator, effect-scoped
+    concurrency, benchmarks. Governance artifacts filed before
+    implementation starts.
+
+  v2_shape: A
+  v2_decision: "Shape A — Rust interpreter + graph-native parallel runtime"
+
+  baseline:
+    python_tests_passing: 216
+    python_tests_skipped: 0
+    rust_tests_passing: 28
+    capability_manifest_hash: sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d
+    version: "1.0.0"
+
+  v2_scope:
+    - id: rust-interpreter-port
+      description: >
+        Port the full evaluator to Rust. Python stays as the spec;
+        Rust is opt-in via flag until it passes all tests, then
+        becomes the default.
+      governance: proposal-required
+      status: proposal-filed
+
+    - id: graph-native-parallel-evaluator
+      description: >
+        After sequential port passes all tests, parallelize at the
+        node level. Independent branches run concurrently; shared-
+        effect branches serialize.
+      governance: proposal-required
+      status: deferred-until-sequential-port-passes
+
+    - id: effect-scoped-concurrency
+      description: >
+        Runtime honors the effect algebra at execution time. Two
+        branches sharing io.stdout serialize; disjoint-effect
+        branches run in parallel.
+      governance: proposal-required
+      status: deferred-until-parallel-evaluator
+
+    - id: benchmarks-first-class
+      description: >
+        Every example gets a performance fixture. Regressions are
+        regressions.
+      governance: implementation-only
+      status: deferred-until-rust-interpreter-passes
+
+  session_artifacts_filed:
+    - dispatches/2026-05-12-v2a-session-open.readout.md
+    - dispatches/2026-05-12-v2a-session-open.yaml
+    - dispatches/2026-05-12-rust-interpreter-proposal.readout.md
+    - dispatches/2026-05-12-rust-interpreter-proposal.yaml
+    - dispatches/2026-05-12-rust-interpreter-audit.md
+
+  awaiting_approval:
+    - id: rust-interpreter-proposal
+      approver: Douglas
+      blocking: implementation-start
+
+  unknowns:
+    - Whether the Python test suite is complete enough to catch
+      all semantic edge cases the Rust port will surface.
+    - Whether the sequential port will reveal implicit Python
+      behaviors (exception model, integer semantics, dynamic
+      dispatch) that need explicit handling in Rust.
+    - Estimated session count for the sequential port alone
+      (session state says 2-3 for all of v2-A; the sequential
+      port is the first and largest step).
+
+  links:
+    human_readout: dispatches/2026-05-12-v2a-session-open.readout.md
+    proposal: dispatches/2026-05-12-rust-interpreter-proposal.readout.md
+    audit: dispatches/2026-05-12-rust-interpreter-audit.md
+    session_state: sessions/2026-05-12.md
+    prior_session: sessions/2026-05-11.md

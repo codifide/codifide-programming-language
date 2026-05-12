@@ -1,0 +1,109 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: Rust interpreter port — proposal (2026-05-12)
+  at: 2026-05-12
+  author: Glyph
+  intent: >
+    Propose porting the Codifide evaluator from Python to Rust.
+    Python stays as the spec; Rust becomes the production runtime.
+    Coexistence via --runtime flag during the port. Version bump
+    to 2.0.0 when Rust passes all tests and becomes the default.
+
+  proposal_type: new-capability
+  governance_required:
+    - proposal-dispatch: true
+    - sable-audit: true
+    - douglas-approval: true
+
+  semantics_to_match:
+    source: codifide/runtime/interpreter.py
+    items:
+      - candidate-dispatch-cost-based
+      - effect-enforcement-primitive-call-half
+      - effect-enforcement-transitive-static-pass
+      - contract-purity-empty-effect-budget
+      - precondition-evaluation
+      - postcondition-evaluation-skipped-on-bottom
+      - belief-dispatch-believe-block
+      - inline-conditional-short-circuit
+      - first-class-refusal-bottom
+      - recursion-limit-default-64
+      - all-eight-typed-error-classes
+      - import-resolution-at-module-load
+      - all-49-primitives
+
+  typed_errors:
+    - CodifideError
+    - ParseError
+    - EffectViolation
+    - ContractViolation
+    - DispatchError
+    - RefusalError
+    - RecursionLimitError
+    - PrimitiveError
+    - BottomPropagationError
+
+  coexistence_plan:
+    during_port:
+      default_runtime: python
+      rust_opt_in: "--runtime rust"
+      rust_env_var: CODIFIDE_RUNTIME=rust
+    after_port_passes_all_tests:
+      default_runtime: rust
+      python_fallback: "--runtime python"
+      version_bump: "1.0.0 -> 2.0.0"
+
+  conformance_surface:
+    mechanism: subprocess-bridge
+    new_test_file: tests/test_rust_interpreter.py
+    rust_subcommand: "codifide-run run <file.cod>"
+    authority: existing 216 Python tests
+
+  crate_structure:
+    new_crate: crates/codifide-interpreter
+    depends_on: crates/codifide-canonical
+    files:
+      - src/interpreter.rs
+      - src/primitives.rs
+      - src/errors.rs
+      - src/value.rs
+      - src/lib.rs
+      - src/bin/codifide_run.rs
+
+  not_in_scope:
+    - graph-native-parallel-evaluator
+    - effect-scoped-concurrency-model
+    - benchmarks
+    - canonical-form-changes
+    - capability-manifest-changes
+
+  risks:
+    - id: implicit-python-behaviors
+      severity: medium
+      mitigation: conformance-bridge-catches-divergence-as-test-failure
+    - id: large-primitive-set-long-feedback-loop
+      severity: low
+      mitigation: port-in-layers-evaluator-core-first
+
+  unknowns:
+    - Whether subprocess bridge or PyO3 extension is the right
+      long-term architecture for the conformance bridge.
+    - Whether the test suite is complete enough to catch all
+      semantic edge cases the Rust port will surface.
+    - Whether Python's arbitrary-precision integers will require
+      special handling in the Rust port (Rust's i64/u64 vs
+      Python's unbounded int).
+
+  awaiting:
+    - id: sable-audit
+      file: dispatches/2026-05-12-rust-interpreter-audit.md
+      status: filed
+    - id: douglas-approval
+      status: pending
+
+  links:
+    human_readout: dispatches/2026-05-12-rust-interpreter-proposal.readout.md
+    audit: dispatches/2026-05-12-rust-interpreter-audit.md
+    session_open: dispatches/2026-05-12-v2a-session-open.readout.md
+    python_reference: codifide/runtime/interpreter.py
+    rust_canonical_crate: crates/codifide-canonical/

@@ -1,0 +1,78 @@
+module text_stats_example
+
+# Compute multiple statistics over a string in one pass.
+# Demonstrates:
+#   - Multiple independent computations composed into a record-like list
+#   - Cost-based dispatch for length classification
+#   - String primitives: len, lower, trim, split, contains
+#   - Contracts that cross-check results
+#   - The parallel evaluator opportunity: word_count, char_count,
+#     has_question, and classify_length are all independent pure
+#     functions — no shared effects, no data dependencies between them.
+
+def word_count
+  intent "count words by splitting on spaces"
+  sig    (s: String) -> Int
+  effects {}
+  pre    ne(s, "")
+  cand
+    len(split(trim(s), " "))
+
+def char_count
+  intent "count non-space characters"
+  sig    (s: String) -> Int
+  effects {}
+  pre    ne(s, "")
+  cand
+    len(replace(s, " ", ""))
+
+def has_question
+  intent "does the string contain a question mark"
+  sig    (s: String) -> Bool
+  effects {}
+  cand
+    contains(s, "?")
+
+def classify_length
+  intent "short medium or long based on word count"
+  sig    (s: String) -> String
+  effects {}
+  pre    ne(s, "")
+  cand
+    intent "short"
+    cost   1
+    when   lt(word_count(s), 5)
+    "short"
+  cand
+    intent "medium"
+    cost   10
+    when   lt(word_count(s), 15)
+    "medium"
+  cand
+    intent "long"
+    cost   100
+    "long"
+
+def analyze
+  intent "return stats for one string as a list"
+  sig    (s: String) -> List
+  effects {}
+  pre    ne(s, "")
+  cand
+    list(
+      word_count(s),
+      char_count(s),
+      has_question(s),
+      classify_length(s)
+    )
+
+def main
+  intent "analyze three sentences"
+  sig    () -> List
+  effects {}
+  cand
+    list(
+      analyze("Hello world"),
+      analyze("The quick brown fox jumps over the lazy dog"),
+      analyze("Is this a question?")
+    )

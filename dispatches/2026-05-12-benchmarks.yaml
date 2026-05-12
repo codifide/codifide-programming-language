@@ -1,0 +1,70 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: Benchmarks — Rust interpreter baseline (2026-05-12)
+  at: 2026-05-12
+  author: Glyph
+  intent: >
+    Record the first performance measurements for the Rust interpreter.
+    Baseline for the graph-native parallel evaluator. Five programs,
+    two runtimes, Criterion on Rust side.
+
+  methodology:
+    python:
+      tool: time.perf_counter
+      iterations: 200
+      metric: median_microseconds
+      note: module parsed once, run() called in loop
+    rust:
+      tool: criterion
+      samples: 100
+      metric: median_microseconds
+      note: module parsed once, run in tight loop
+
+  results:
+    - program: sort
+      python_us: 147.5
+      rust_us: 23.6
+      speedup: "6.3x"
+      note: dominated by host_sorted primitive
+    - program: classify
+      python_us: 89.9
+      rust_us: 5.9
+      speedup: "15.2x"
+      note: one model call, one believe dispatch
+    - program: fizzbuzz
+      python_us: 713.9
+      rust_us: 28.8
+      speedup: "24.8x"
+      note: 15 independent dispatch-heavy calls — parallel evaluator target
+    - program: balanced_brackets
+      python_us: 2274.7
+      rust_us: 98.3
+      speedup: "23.1x"
+      note: deep recursion, sequential by nature
+    - program: pipeline
+      python_us: 342.2
+      rust_us: 17.4
+      speedup: "19.7x"
+      note: multi-function composition, contracts
+
+  summary:
+    range: "6-25x"
+    v2a_proposal_predicted: "10-100x"
+    assessment: >
+      Lower bound (6x) is host-primitive-heavy programs where the
+      interpreter overhead is a small fraction of total work. Upper
+      bound (25x) is pure dispatch-heavy programs. Both ends are real.
+
+  benchmark_file: crates/codifide-interpreter/benches/interpreter.rs
+  run_command: "cargo bench -p codifide-interpreter"
+  regression_threshold: "10% on any fixture"
+
+  parallel_evaluator_opportunity:
+    fizzbuzz_main: "15 independent fizzbuzz_one calls — no data dependencies"
+    pipeline_main: "3 independent report calls — no data dependencies"
+    balanced_brackets: "sequential by nature — no parallelism available"
+    classify: "single call chain — no parallelism available"
+
+  links:
+    human_readout: dispatches/2026-05-12-benchmarks.readout.md
+    session_state: sessions/2026-05-12.md

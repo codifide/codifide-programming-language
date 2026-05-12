@@ -73,11 +73,70 @@ def _read(path: str) -> str:
 
 
 def cmd_run(args: argparse.Namespace) -> int:
+    # Runtime selection: Rust is the default in v2.0.0; Python is the
+    # reference fallback via --runtime python.
+    runtime = getattr(args, "runtime", None) or os.environ.get("CODIFIDE_RUNTIME", "rust")
+
+    if runtime == "rust":
+        return _cmd_run_rust(args)
+    return _cmd_run_python(args)
+
+
+def _cmd_run_rust(args: argparse.Namespace) -> int:
+    """Delegate execution to the Rust interpreter binary."""
+    import shutil
+    import subprocess
+
+    # Locate the Rust binary: prefer the release build next to this repo,
+    # then fall back to PATH.
+    repo_root = Path(__file__).resolve().parent.parent
+    rust_bin = repo_root / "target" / "release" / "codifide-run"
+    if not rust_bin.exists():
+        rust_bin_path = shutil.which("codifide-run")
+        if rust_bin_path is None:
+            # Rust binary not available; fall back to Python silently.
+            return _cmd_run_python(args)
+        rust_bin = Path(rust_bin_path)
+
+    cmd = [str(rust_bin), "run", args.file]
+    if args.entry:
+        cmd += ["--entry", args.entry]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    # Forward stderr directly.
+    if result.stderr:
+        print(result.stderr.rstrip(), file=sys.stderr)
+    if result.returncode != 0:
+        return result.returncode
+
+    # The binary prints io.say output on earlier lines and the JSON result
+    # on the last line. Print io.say lines as-is; unwrap the JSON result
+    # for display (matching Python's `print(result)` behavior).
+    lines = result.stdout.splitlines()
+    if not lines:
+        return 0
+    # All lines except the last are io.say output — print them directly.
+    for line in lines[:-1]:
+        print(line)
+    # Last line is the JSON result — unwrap for display.
+    last = lines[-1]
     try:
-        # Parse first without the store; if the source uses `from`
-        # imports, the parser will return an error that names the
-        # missing store. We open the store then and retry, so modules
-        # that do not need a store do not pay for opening one.
+        val = json.loads(last)
+        # Print like Python's print(): strings unquoted, everything else as repr.
+        if isinstance(val, str):
+            print(val)
+        elif val is None:
+            pass  # None result: print nothing (matches Python behavior)
+        else:
+            print(val)
+    except (json.JSONDecodeError, ValueError):
+        print(last)
+    return 0
+
+
+def _cmd_run_python(args: argparse.Namespace) -> int:
+    """Original Python tree-walking interpreter."""
+    try:
         src = _read(args.file)
         store: Optional[SymbolStore] = None
         try:
@@ -86,12 +145,10 @@ def cmd_run(args: argparse.Namespace) -> int:
             store = SymbolStore(_store_root(args))
             module = parse(src, store=store)
         if store is None and module.imports:
-            # Plain `import` at runtime still needs a store.
             store = SymbolStore(_store_root(args))
         entry = args.entry or _default_entry(module)
         result = run(module, entry, store=store)
         if result is not None:
-            # Print the unwrapped result for scripting convenience.
             print(result)
         return 0
     except CodifideError as e:
@@ -523,6 +580,13 @@ def main(argv=None) -> int:
     p_run = sub.add_parser("run", help="execute a Codifide program")
     p_run.add_argument("file")
     p_run.add_argument("--entry", help="entry definition (default: main or sole definition)")
+    p_run.add_argument(
+        "--runtime",
+        choices=["rust", "python"],
+        default=None,
+        help="interpreter runtime: rust (default) or python (reference). "
+             "Override with CODIFIDE_RUNTIME env var.",
+    )
     p_run.add_argument(
         "--store",
         help="store root for import resolution (default: $CODIFIDE_STORE or ~/.codifide/store)",

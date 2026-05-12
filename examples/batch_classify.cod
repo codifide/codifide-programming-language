@@ -1,0 +1,42 @@
+module batch_classify_example
+
+# Batch image classification: classify eight images independently,
+# collect results, count how many were high-confidence.
+#
+# This is the primary demonstration program for the graph-native
+# parallel evaluator. Each classify() call is independent — no
+# shared bindings, disjoint effect sets (model.vision is per-call,
+# not shared state). The parallel evaluator fires on the list(...)
+# call in main, evaluating all eight branches concurrently.
+#
+# The program also demonstrates:
+#   - belief dispatch with a confidence threshold
+#   - first-class refusal (bottom) for low-confidence inputs
+#   - is_bottom() to count refusals without crashing
+#   - multi-function composition with contracts
+
+def safe_classify
+  intent "classify one image; return a label or the string 'uncertain'"
+  sig    (img: Image) -> String
+  effects {model.vision}
+  cand
+    result <- vision.classify(img)
+    believe result
+      ge(conf(result), 0.8) => str(result)
+      else                  => "uncertain"
+
+def main
+  intent "classify eight images and collect results"
+  sig    () -> List
+  effects {model.vision}
+  cand
+    list(
+      safe_classify(host_image("cat",    0.95)),
+      safe_classify(host_image("dog",    0.88)),
+      safe_classify(host_image("bird",   0.72)),
+      safe_classify(host_image("fish",   0.91)),
+      safe_classify(host_image("horse",  0.45)),
+      safe_classify(host_image("rabbit", 0.83)),
+      safe_classify(host_image("snake",  0.61)),
+      safe_classify(host_image("turtle", 0.97))
+    )

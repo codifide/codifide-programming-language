@@ -1,0 +1,73 @@
+dispatch:
+  schema: codifide.dispatch/0.1
+  subject: Rust interpreter — first implementation landed (2026-05-12)
+  at: 2026-05-12
+  author: Glyph
+  intent: >
+    Attest the first implementation of the Rust interpreter. The
+    tree-walker is running, the conformance bridge passes, and all
+    Sable blocking findings are resolved. Python remains the default
+    runtime; 2.0.0 milestone is when Rust passes all 216 tests.
+
+  test_counts:
+    python_passing: 219
+    python_skipped: 0
+    rust_canonical_passing: 28
+    rust_interpreter_unit_tests: 0
+    conformance_bridge_tests: 3
+    conformance_bridge_passing: 3
+
+  shipped:
+    crate: crates/codifide-interpreter/
+    files:
+      - src/value.rs
+      - src/errors.rs
+      - src/primitives.rs
+      - src/interpreter.rs
+      - src/bin/codifide_run.rs
+      - src/lib.rs
+    test_file: tests/test_rust_interpreter.py
+
+  sable_findings_status:
+    RI-1: resolved-f64-numerics
+    RI-2: resolved-bottom-as-enum-variant
+    RI-3: resolved-json-output-format-bridge-built
+    RI-4: open-effect-trace-not-yet-tested-in-postconditions
+    RI-5: resolved-hint-messages-ported
+    RI-6: resolved-static-transitive-check-runs
+
+  conformance_bridge:
+    top_level_examples: pass
+    assessment_battery: pass
+    ai_generated_examples: "14/15 pass (is_even.cod skipped — uses % operator)"
+    clock_programs: "verified no-error; exact-value skipped (different call instants)"
+
+  not_yet_done:
+    - rust-interpreter-not-default-runtime
+    - no-rust-parser-uses-python-bridge
+    - imports-not-supported-in-rust-runtime
+    - graph-native-parallel-evaluator-not-started
+
+  open_items:
+    - id: RI-4-effect-trace-postconditions
+      severity: P3
+      description: >
+        EffectTrace accumulates correctly but no test exercises a
+        postcondition that reads io.stdout.tail or similar.
+    - id: clock-mock-for-conformance
+      severity: P3
+      description: >
+        Clock-skip heuristic works for current examples but would
+        miss a program where clock.now does not affect the return
+        value. A mock clock would be more robust.
+    - id: imports-in-rust-runtime
+      severity: P2
+      description: >
+        The Rust interpreter does not resolve imports through the
+        symbol store. Current test suite does not exercise this path.
+
+  links:
+    human_readout: dispatches/2026-05-12-rust-interpreter-post.readout.md
+    proposal: dispatches/2026-05-12-rust-interpreter-proposal.readout.md
+    audit: dispatches/2026-05-12-rust-interpreter-audit.md
+    session_open: dispatches/2026-05-12-v2a-session-open.readout.md
