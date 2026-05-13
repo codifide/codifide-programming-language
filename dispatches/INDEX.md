@@ -24,6 +24,7 @@ Filename convention:
 | `t1-1-pipeline-task-spec` | T1-1 pipeline task spec filed — content-moderation pipeline for agent case study | [md](./2026-05-13-t1-1-pipeline-task-spec.readout.md) | [yaml](./2026-05-13-t1-1-pipeline-task-spec.yaml) |  |
 | `track1-sable` |  |  |  | [md](./2026-05-13-track1-sable-audit.md) |
 | `track1-sable-post` | Track 1 Sable audit post-resolution — T1-6 | [md](./2026-05-13-track1-sable-post.readout.md) | [yaml](./2026-05-13-track1-sable-post.yaml) |  |
+| `track1-summary` | Track 1 case study summary — agent adoption initiative gate dispatch | [md](./2026-05-13-track1-summary.readout.md) | [yaml](./2026-05-13-track1-summary.yaml) |  |
 
 ## 2026-05-12
 

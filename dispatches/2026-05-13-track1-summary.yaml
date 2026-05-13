@@ -1,0 +1,63 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "Track 1 case study summary — agent adoption initiative gate dispatch"
+  initiative: agent-adoption
+  track: "1"
+  task: T1-7
+  capability_hash: "sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d"
+  sessions:
+    - model: "GPT-4o"
+      programs_completed: 5
+      first_attempt_successes: 4
+      real_errors: 0
+      latent_bugs: 0
+    - model: "Gemini 2.5 Pro"
+      programs_completed: 5
+      first_attempt_successes: 1
+      self_corrections: 3
+      real_errors: 0
+      latent_bugs: 1  # lower() omission
+    - model: "Claude Sonnet 4.6"
+      programs_completed: 5
+      first_attempt_successes: 4
+      real_errors: 1  # bind-before-when
+      latent_bugs: 0
+  what_worked:
+    - "def structure (intent, sig, effects) — no parser rejections"
+    - "believe blocks with else => bottom — correct on first or second attempt"
+    - "belief(label, confidence) in candidate bodies"
+    - "effect declarations — pure and io.stdout"
+    - "capability manifest as interface"
+    - "anticipatory reasoning across all three models"
+  universal_failure:
+    program: 5
+    cause: "content-addressed composition — transitive dependency + Rust parser gap"
+    status: "documented and partially fixed"
+  hardest_pattern:
+    description: "routing after a believe block"
+    gpt4o: "tried believe on string values (wrong)"
+    gemini: "if/then/else with dead is_bottom() code"
+    claude: "bind-before-when (runtime error)"
+    status: "documented in quickref"
+  findings_applied: 7
+  findings_deferred: 4
+  v2_implications:
+    - item: "RPC API"
+      evidence: "Program 5 friction — agents must manage store manually"
+      priority: "confirmed highest priority"
+    - item: "Static bind-before-when detection"
+      evidence: "Claude hit it; GPT-4o and Gemini avoided by accident"
+      priority: "v2.0 parser work"
+    - item: "Manifest note field"
+      evidence: "is_bottom() caveat not surfaced in manifest"
+      priority: "Track 2 — before manifest endpoint goes live"
+  track2_additions:
+    - id: T2-9
+      description: "Update capability manifest schema to support note field on primitives; add is_bottom() caveat; regenerate docs/capability-0.1.json"
+  track1_status: complete
+  track2_status: ready_to_start
+  unknowns:
+    - question: "Would RPC API eliminate Program 5 friction or shift it to a different failure mode?"
+      how_to_resolve: "Include at least one agent session against manifest endpoint in Track 2"
