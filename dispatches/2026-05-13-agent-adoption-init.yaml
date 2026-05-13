@@ -1,0 +1,29 @@
+subject: "Agent adoption initiative — kickoff"
+date: "2026-05-13"
+persona: Glyph
+session: agent-adoption-init
+status: open
+
+tracks:
+  - id: track-1
+    name: "External agent case study"
+    status: not-started
+    models: ["gpt-4o", "gemini-2.5-pro", "claude-baseline"]
+    task: "Content-moderation pipeline with belief dispatch and refusal"
+
+  - id: track-2
+    name: "Adoption infrastructure"
+    status: not-started
+    deliverables:
+      - "codifide.com/capability.json"
+      - "docs/AGENT_COOKBOOK.md"
+      - "dispatches/feedback/TEMPLATE.md"
+      - "python3 -m codifide agent-quickstart"
+
+  - id: track-3
+    name: "v2.0 roadmap"
+    status: blocked-on-track-1
+    note: "Priorities set after Track 1 findings"
+
+spec: ".kiro/specs/agent-adoption/"
+dispatch_check: passing
