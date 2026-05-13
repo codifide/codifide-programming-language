@@ -1,61 +1,96 @@
-# Agent feedback dispatch template
+# Codifide Feedback Dispatch — Template
 
-Copy this file to `dispatches/feedback/<date>-<short-slug>.md` and
-fill in the fields below. Every field is intentionally small. The
-goal is signal density, not completeness.
+Copy this file to `dispatches/feedback/YYYY-MM-DD-<model>-feedback.md` and
+fill it in. File it in the repo or send it to the project maintainers.
+
+Every field matters. Short answers are fine. "N/A" is fine. Honest is required.
 
 ---
 
-## Who
+## Header
 
-- **Agent:** (your identifier — model family, version, role)
-- **Date:** YYYY-MM-DD
-- **Codifide version:** (capability manifest hash is the authoritative
-  identifier; `python3 -m codifide capability --hash`)
+**Date:** YYYY-MM-DD  
+**Model:** (e.g. GPT-4o, Gemini 2.5 Pro, Claude Sonnet 4.6)  
+**Capability manifest hash:** (run `python3 -m codifide capability --hash` or check `codifide.com/capability.json`)  
+**Task attempted:** (one sentence — what were you trying to build?)  
+**Session type:** (fresh context / continuation / assisted)
 
-## What I tried to do
+---
 
-One paragraph. What was the task? What Codifide construct did you
-reach for?
+## What failed
 
-## What I wrote
+Describe the exact failure. Include:
+- The code you wrote
+- The exact error message
+- What you tried to fix it
+- Whether the fix worked
 
-A short `.cod` snippet or a canonical JSON excerpt. Minimum
-reproducing example, not the whole program. If you wrote multiple
-drafts, just the final one.
+```codifide
+# paste the failing code here
+```
 
-## What happened
+**Error:**
+```
+paste the exact error message here
+```
 
-What the runtime, parser, or store did. Exact error messages if
-they came up. Exact output if they didn't.
+**Fix attempted:**
 
-## What I expected
+**Did it work?** yes / no / partially
 
-What a naive reading of `docs/CANONICAL.md` or `docs/LANGUAGE.md`
-would have led you to expect.
+---
 
-## The gap
+## What surprised you
 
-One sentence on what the divergence tells you about Codifide. Is this
-a bug in the implementation? A gap in the spec? An idiom that
-hasn't been written down? An architectural mismatch?
+Anything the language did that you did not expect — good or bad. This is the
+most valuable section. Surprises reveal the gap between the language's design
+intent and an agent's mental model.
 
-## Suggested next action
+---
 
-One of:
+## What you reached for that doesn't exist
 
-- **fix-implementation** — the spec is right, the code is wrong.
-- **tighten-spec** — the code is right, the spec was silent.
-- **document-idiom** — both are right, but an agent coming in fresh
-  can't figure out which door to walk through.
-- **rethink-design** — the divergence suggests something about the
-  language's design is wrong.
+Primitives, syntax, or patterns you tried that Codifide doesn't have. Be
+specific — "I tried `str.split(s, ',')` and got `unknown callable`" is more
+useful than "string operations were confusing."
 
-Pick one. If you can't pick one, say so and explain what prevents
-choosing.
+| You tried | What Codifide has |
+|---|---|
+| | |
 
-## What I did not test
+---
 
-Your equivalent of Sable's signature move. Naming coverage gaps is
-part of honest feedback. If you touched only one primitive, only
-one effect, only one canonical wire form — say so.
+## What worked well
+
+Patterns or features that worked exactly as you expected, or better.
+
+---
+
+## Suggestions
+
+Specific, actionable suggestions for the language, docs, or error messages.
+Not "make it easier" — "the error message for X should say Y" or "the quickref
+is missing Z."
+
+---
+
+## Programs completed
+
+| Program | Status | First attempt? |
+|---|---|---|
+| 1 | pass / fail / skip | yes / no |
+| 2 | pass / fail / skip | yes / no |
+| 3 | pass / fail / skip | yes / no |
+| 4 | pass / fail / skip | yes / no |
+| 5 | pass / fail / skip | yes / no |
+
+---
+
+## One-sentence assessment
+
+How agent-ready is Codifide for the task you attempted?
+
+---
+
+*This template is part of the Codifide Agent Adoption Initiative.*  
+*Feedback dispatches are reviewed by Sable and inform the v2.0 roadmap.*

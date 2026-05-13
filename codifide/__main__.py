@@ -635,6 +635,132 @@ def cmd_dispatch_check(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_agent_quickstart(args: argparse.Namespace) -> int:
+    """Bootstrap a fresh agent environment and write a hello-world program.
+
+    Steps:
+    1. Check Python version (3.9+ required).
+    2. Run the test suite — confirms the interpreter is healthy.
+    3. Write examples/quickstart.cod — a hello-world with intent, effects,
+       belief, and a content hash.
+    4. Run it.
+    5. Print the content hash.
+    6. Print "You are ready to write Codifide."
+
+    Designed to be the first command a fresh agent runs after cloning the
+    repo or installing the package.
+    """
+    import subprocess
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    repo_root = _Path(__file__).resolve().parent.parent
+    ok = "\033[32m✓\033[0m"
+    fail = "\033[31m✗\033[0m"
+
+    print("codifide agent-quickstart\n")
+
+    # Step 1 — Python version
+    major, minor = _sys.version_info[:2]
+    if major < 3 or (major == 3 and minor < 9):
+        print(f"{fail} Python {major}.{minor} detected. Codifide requires Python 3.9+.")
+        return 1
+    print(f"{ok} Python {major}.{minor}")
+
+    # Step 2 — test suite
+    print(f"   Running test suite (this takes a few seconds)...")
+    result = subprocess.run(
+        [_sys.executable, "-m", "pytest", "--tb=short", "-q"],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+    )
+    # Extract the summary line (last non-empty line of stdout)
+    summary = next(
+        (l for l in reversed(result.stdout.splitlines()) if l.strip()),
+        "no output"
+    )
+    if result.returncode != 0:
+        print(f"{fail} Test suite failed: {summary}")
+        print(result.stdout[-2000:] if result.stdout else "")
+        return 1
+    print(f"{ok} {summary}")
+
+    # Step 3 — write quickstart.cod
+    quickstart_path = repo_root / "examples" / "quickstart.cod"
+    quickstart_path.parent.mkdir(parents=True, exist_ok=True)
+    quickstart_src = '''\
+module quickstart
+
+# Hello, Codifide.
+#
+# This program demonstrates the four things that make Codifide different:
+#   1. intent  — every function names the choice it represents
+#   2. effects — every function declares its side effects
+#   3. belief  — values carry confidence scores
+#   4. content addressing — every symbol has a stable hash identity
+
+def classify_greeting
+  intent "label a greeting as warm or neutral based on keyword signals"
+  sig    (msg: String) -> Label
+  effects {}
+  cand
+    intent "warm greeting"
+    when   contains(lower(msg), "hello")
+    belief("warm", 0.90)
+  cand
+    intent "neutral fallback"
+    belief("neutral", 0.60)
+
+def main
+  intent "demonstrate Codifide to a fresh agent"
+  sig    () -> Label
+  effects {io.stdout}
+  cand
+    result <- classify_greeting("Hello, Codifide")
+    io.say(result)
+'''
+    quickstart_path.write_text(quickstart_src, encoding="utf-8")
+    print(f"{ok} Wrote {quickstart_path.relative_to(repo_root)}")
+
+    # Step 4 — run it
+    run_result = subprocess.run(
+        [_sys.executable, "-m", "codifide", "run",
+         str(quickstart_path), "--runtime", "python"],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+    )
+    if run_result.returncode != 0:
+        print(f"{fail} Run failed: {run_result.stderr.strip()}")
+        return 1
+    output = run_result.stdout.strip()
+    print(f"{ok} Ran quickstart.cod → {output!r}")
+
+    # Step 5 — content hash
+    hash_result = subprocess.run(
+        [_sys.executable, "-m", "codifide", "store", "hash",
+         str(quickstart_path)],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+    )
+    if hash_result.returncode == 0:
+        for line in hash_result.stdout.strip().splitlines():
+            print(f"   {line}")
+
+    # Step 6
+    print(f"\n{ok} You are ready to write Codifide.")
+    print(
+        "\n   Next steps:"
+        "\n   - Read docs/FOR_AGENTS.md"
+        "\n   - Run: python3 -m codifide capability"
+        "\n   - Browse examples/ for working programs"
+        "\n   - Read docs/AGENT_COOKBOOK.md if you hit an error"
+    )
+    return 0
+
+
 def _default_entry(module) -> str:
     # If there's only one definition, use it; else prefer `main`.
     if len(module.symbols) == 1:
@@ -821,6 +947,12 @@ def main(argv=None) -> int:
     )
     p_roots_remove.add_argument("identity")
     p_roots_remove.set_defaults(func=cmd_store_roots_remove)
+
+    p_quickstart = sub.add_parser(
+        "agent-quickstart",
+        help="bootstrap a fresh agent environment and write a hello-world program",
+    )
+    p_quickstart.set_defaults(func=cmd_agent_quickstart)
 
     args = parser.parse_args(argv)
     return args.func(args)

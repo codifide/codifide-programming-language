@@ -1,0 +1,29 @@
+module quickstart
+
+# Hello, Codifide.
+#
+# This program demonstrates the four things that make Codifide different:
+#   1. intent  — every function names the choice it represents
+#   2. effects — every function declares its side effects
+#   3. belief  — values carry confidence scores
+#   4. content addressing — every symbol has a stable hash identity
+
+def classify_greeting
+  intent "label a greeting as warm or neutral based on keyword signals"
+  sig    (msg: String) -> Label
+  effects {}
+  cand
+    intent "warm greeting"
+    when   contains(lower(msg), "hello")
+    belief("warm", 0.90)
+  cand
+    intent "neutral fallback"
+    belief("neutral", 0.60)
+
+def main
+  intent "demonstrate Codifide to a fresh agent"
+  sig    () -> Label
+  effects {io.stdout}
+  cand
+    result <- classify_greeting("Hello, Codifide")
+    io.say(result)

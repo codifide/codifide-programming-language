@@ -1,0 +1,27 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "T2-4+T2-5+T2-6 — feedback template and agent-quickstart CLI"
+  initiative: agent-adoption
+  track: "2"
+  tasks: [T2-4, T2-5, T2-6]
+  capability_hash: "sha256:713d6f6b3a6cfb747cec3bfba0f25331c61b0052bdd166523c175daa2c1f6756"
+  artifacts:
+    - "dispatches/feedback/TEMPLATE.md"
+    - "codifide/__main__.py (agent-quickstart subcommand)"
+    - "examples/quickstart.cod"
+  quickstart_test:
+    python_version: "3.9"
+    tests_passed: 289
+    quickstart_ran: true
+    output: "warm (io.say) + warm (return value)"
+    content_hashes_printed: true
+    exit_code: 0
+  test_results:
+    python_tests: 289
+    failures: 0
+  unknowns:
+    - question: "Should quickstart also fetch manifest hash from codifide.com to confirm version alignment?"
+      how_to_resolve: "Add optional --check-remote flag in a future pass"
+  status: complete
