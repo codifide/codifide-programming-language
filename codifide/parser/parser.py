@@ -392,9 +392,12 @@ def _parse_from_import(
             )
     if store is None:
         raise ParseError(
-            f"from-import requires a store to resolve {identity}. Pass "
-            f"store= to parse() or use `import <name> = sha256:<hex>` "
-            f"for direct identity binding.",
+            f"from-import requires a store and is not yet supported in the Rust parser. "
+            f"Use `CODIFIDE_RUNTIME=python python3 -m codifide run ...` to enable "
+            f"from-imports, or use a store index to bundle all transitive dependencies "
+            f"and then from-import the index. "
+            f"(`import name = sha256:<hex>` only imports a single symbol and does not "
+            f"carry transitive dependencies.)",
             line=line.lineno,
         )
     # Resolve names against the target module's imports table. We fetch

@@ -1,0 +1,44 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "Track 1 Sable audit post-resolution — T1-6"
+  initiative: agent-adoption
+  track: "1"
+  task: T1-6
+  capability_hash: "sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d"
+  audit_file: "dispatches/2026-05-13-track1-sable-audit.md"
+  findings_total: 7
+  findings_applied: 3
+  findings_deferred: 4
+  applied:
+    - id: AUD-T1-03
+      severity: P1
+      fix: "parser from-import error message updated to explain CODIFIDE_RUNTIME=python and transitive dependency problem"
+      file: "codifide/parser/parser.py"
+    - id: AUD-T1-05
+      severity: P3
+      fix: "main_refuse renamed to main_uncertain in AGENT_TASK_SPEC.md; expected output updated"
+      file: "docs/AGENT_TASK_SPEC.md"
+    - id: AUD-T1-06
+      severity: P3
+      fix: "third test message added to Program 3 requirement (escalate-to-human path)"
+      file: "docs/AGENT_TASK_SPEC.md"
+  deferred:
+    - id: AUD-T1-01
+      severity: P2
+      reason: "manifest schema change needed; deferred to Track 2"
+    - id: AUD-T1-02
+      severity: P2
+      reason: "parser scope tracking required; deferred to v2.0 roadmap"
+    - id: AUD-T1-04
+      severity: P3
+      reason: "design question — enforcement would break existing programs; needs dispatch"
+    - id: AUD-T1-07
+      severity: "P2 (docs), P0 (primitives — none found)"
+      reason: "primitive behavior correct; manifest doc gap covered by AUD-T1-01"
+  test_results:
+    python_tests: 289
+    failures: 0
+    regressions: 0
+  status: complete

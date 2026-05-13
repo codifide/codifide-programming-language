@@ -112,8 +112,8 @@ def main_unsafe
   cand
     moderate("this message contains spam")
 
-def main_refuse
-  intent "test the refusal path"
+def main_uncertain
+  intent "test the uncertain path — hello world has no keywords, returns uncertain"
   sig    () -> Label
   effects {}
   cand
@@ -125,8 +125,8 @@ def main_refuse
 # Should return a label
 python3 -m codifide run moderation_gate.cod --entry main_unsafe
 
-# Should raise RefusalError (bottom propagated)
-python3 -m codifide run moderation_gate.cod --entry main_refuse
+# Should return "uncertain" (confidence 0.75 clears the 0.70 gate)
+python3 -m codifide run moderation_gate.cod --entry main_uncertain
 ```
 
 ---
@@ -147,15 +147,16 @@ Write a function `route_message` that:
 Use candidate dispatch with `when` guards to route on the label value.
 The function must declare `effects {}`.
 
-Add a `main` that calls `route_message` with two test messages — one
-that should be blocked and one that should be approved.
+Add a `main` that calls `route_message` with three test messages — one
+that should be blocked, one that should be approved, and one that should
+escalate (a message with no keywords, which routes to `"escalate-to-human"`).
 
 **Run it:**
 ```bash
 python3 -m codifide run escalation_router.cod
 ```
 
-Expected output: the routing decisions for your two test messages.
+Expected output: the routing decisions for your three test messages.
 
 ---
 
