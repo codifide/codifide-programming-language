@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../publicsite"
+		},
+		{
+			"path": "../codifide-health"
+		},
+		{
+			"path": "../DecodeTheSign"
+		},
+		{
+			"path": "../agentic-stage-gate-governance"
+		}
+	],
+	"settings": {
+	}
+}
