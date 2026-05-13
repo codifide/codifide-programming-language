@@ -1,0 +1,37 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "T2-1 + T2-2 — capability manifest endpoints live at codifide.com"
+  initiative: agent-adoption
+  track: "2"
+  tasks: [T2-1, T2-2]
+  capability_hash: "sha256:713d6f6b3a6cfb747cec3bfba0f25331c61b0052bdd166523c175daa2c1f6756"
+  endpoints:
+    json:
+      url: "https://www.codifide.com/capability.json"
+      content_type: "application/json; charset=utf-8"
+      size_bytes: 12841
+      http_status: 200
+      cors: "Access-Control-Allow-Origin: *"
+      cache: "public, max-age=3600"
+    cbor:
+      url: "https://www.codifide.com/capability.cbor"
+      content_type: "application/cbor"
+      size_bytes: 6358
+      http_status: 200
+      cors: "Access-Control-Allow-Origin: *"
+      cache: "public, max-age=3600"
+  publicsite_changes:
+    - "capability.json added as static file"
+    - "capability.cbor added as static file"
+    - "vercel.json: specific routes before catch-all; Content-Type headers; CORS"
+  verification:
+    json_200: true
+    cbor_200: true
+    is_bottom_note_present: true
+    primitives_count: 57
+  unknowns:
+    - question: "Should cache TTL be longer once the language stabilizes?"
+      how_to_resolve: "Revisit at v2.0 release — extend to max-age=86400 or longer"
+  status: complete
