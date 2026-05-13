@@ -27,6 +27,9 @@ dispatch:
     python_tests: 289
     failures: 0
   next_session:
-    first_task: T2-9
-    description: "Add note field to manifest schema; add is_bottom() caveat; regenerate capability-0.1.json"
+    completed_since_last_close: [T2-9, T2-1, T2-2]
+    first_task: T2-3
+    description: "Write docs/AGENT_COOKBOOK.md — top failure modes from Track 1"
+    manifest_endpoint_live: true
+    new_capability_hash: "sha256:713d6f6b3a6cfb747cec3bfba0f25331c61b0052bdd166523c175daa2c1f6756"
   dispatch_check: clean

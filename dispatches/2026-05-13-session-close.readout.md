@@ -88,13 +88,13 @@ from "spec filed, nothing started" to "Track 1 complete, Track 2 ready."
 
 **Track 2 — Adoption Infrastructure**
 
-Start with T2-9 (manifest note field) → T2-1 (generate manifest files) →
-T2-2 (deploy to codifide.com). Then T2-3 (cookbook), T2-4 (feedback template),
-T2-5/T2-6 (agent-quickstart).
+Start with T2-3 (cookbook), T2-4 (feedback template), T2-5/T2-6 (agent-quickstart).
 
 Key context for next session:
 - Track 1 verdict: Programs 1–4 agent-ready; Program 5 needs RPC API
-- Deferred findings: AUD-T1-01 (manifest note field), AUD-T1-02 (static
-  bind-before-when), AUD-T1-04 (belief return type)
-- T2-9 is the first task: add `note` field to manifest schema, add
-  is_bottom() caveat, regenerate capability-0.1.json
+- T2-9 ✅ Manifest note field (is_bottom caveat live in manifest)
+- T2-1 ✅ capability.json and capability.cbor generated
+- T2-2 ✅ Live at codifide.com/capability.json and codifide.com/capability.cbor
+- New manifest hash: sha256:713d6f6b3a6cfb747cec3bfba0f25331c61b0052bdd166523c175daa2c1f6756
+- Deferred findings: AUD-T1-02 (static bind-before-when), AUD-T1-04 (belief return type)
+- T2-3 cookbook failure mode list is in tasks.md
