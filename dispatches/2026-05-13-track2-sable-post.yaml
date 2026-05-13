@@ -1,0 +1,38 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "Track 2 Sable audit post-resolution — T2-8"
+  initiative: agent-adoption
+  track: "2"
+  task: T2-8
+  capability_hash: "sha256:713d6f6b3a6cfb747cec3bfba0f25331c61b0052bdd166523c175daa2c1f6756"
+  audit_file: "dispatches/2026-05-13-track2-sable-audit.md"
+  findings_total: 5
+  findings_applied: 3
+  findings_deferred: 2
+  applied:
+    - id: AUD-T2-01
+      severity: P2
+      fix: "agent-quickstart regenerates dispatch index before running test suite"
+      file: "codifide/__main__.py"
+    - id: AUD-T2-02
+      severity: P2
+      fix: "quickstart output explains io.say + CLI echo double output"
+      file: "codifide/__main__.py"
+    - id: AUD-T2-05
+      severity: "P1 → P2"
+      fix: "FOR_AGENTS.md: stable public URLs + CBOR decoder note added"
+      file: "docs/FOR_AGENTS.md"
+  deferred:
+    - id: AUD-T2-03
+      severity: P3
+      reason: "manifest docs field requires schema amendment"
+    - id: AUD-T2-04
+      severity: P3
+      reason: "acceptance gap — will close when feedback template is used in a real session"
+  test_results:
+    python_tests: 289
+    failures: 0
+    regressions: 0
+  track2_status: complete

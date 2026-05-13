@@ -25,10 +25,13 @@ Filename convention:
 | `t2-1-t2-2-manifest-endpoint` | T2-1 + T2-2 — capability manifest endpoints live at codifide.com | [md](./2026-05-13-t2-1-t2-2-manifest-endpoint.readout.md) | [yaml](./2026-05-13-t2-1-t2-2-manifest-endpoint.yaml) |  |
 | `t2-3-agent-cookbook` | T2-3 — AGENT_COOKBOOK.md filed — 10 failure modes from 5 sessions | [md](./2026-05-13-t2-3-agent-cookbook.readout.md) | [yaml](./2026-05-13-t2-3-agent-cookbook.yaml) |  |
 | `t2-4-t2-5-t2-6-quickstart` | T2-4+T2-5+T2-6 — feedback template and agent-quickstart CLI | [md](./2026-05-13-t2-4-t2-5-t2-6-quickstart.readout.md) | [yaml](./2026-05-13-t2-4-t2-5-t2-6-quickstart.yaml) |  |
+| `t2-7-track2-complete` | Track 2 complete — adoption infrastructure shipped | [md](./2026-05-13-t2-7-track2-complete.readout.md) | [yaml](./2026-05-13-t2-7-track2-complete.yaml) |  |
 | `t2-9-manifest-note-field` | T2-9 — capability manifest note field added; is_bottom() caveat live | [md](./2026-05-13-t2-9-manifest-note-field.readout.md) | [yaml](./2026-05-13-t2-9-manifest-note-field.yaml) |  |
 | `track1-sable` |  |  |  | [md](./2026-05-13-track1-sable-audit.md) |
 | `track1-sable-post` | Track 1 Sable audit post-resolution — T1-6 | [md](./2026-05-13-track1-sable-post.readout.md) | [yaml](./2026-05-13-track1-sable-post.yaml) |  |
 | `track1-summary` | Track 1 case study summary — agent adoption initiative gate dispatch | [md](./2026-05-13-track1-summary.readout.md) | [yaml](./2026-05-13-track1-summary.yaml) |  |
+| `track2-sable` |  |  |  | [md](./2026-05-13-track2-sable-audit.md) |
+| `track2-sable-post` | Track 2 Sable audit post-resolution — T2-8 | [md](./2026-05-13-track2-sable-post.readout.md) | [yaml](./2026-05-13-track2-sable-post.yaml) |  |
 
 ## 2026-05-12
 

@@ -1,0 +1,26 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "Track 2 complete — adoption infrastructure shipped"
+  initiative: agent-adoption
+  track: "2"
+  task: T2-7
+  capability_hash: "sha256:713d6f6b3a6cfb747cec3bfba0f25331c61b0052bdd166523c175daa2c1f6756"
+  shipped:
+    - "T2-9: manifest note field (is_bottom caveat)"
+    - "T2-1: capability.json and capability.cbor generated"
+    - "T2-2: live at codifide.com/capability.json and codifide.com/capability.cbor"
+    - "T2-3: docs/AGENT_COOKBOOK.md — 10 failure modes"
+    - "T2-4: dispatches/feedback/TEMPLATE.md"
+    - "T2-5: python3 -m codifide agent-quickstart"
+    - "T2-6: tested — 289 tests pass, quickstart exits 0"
+  acceptance_gaps:
+    - "feedback template not yet used in a real agent session"
+    - "quickstart tested in current env, not a clean env"
+    - "cookbook URL not in capability manifest"
+  track2_status: complete_with_gaps
+  track3_status: ready_to_start
+  unknowns:
+    - question: "Will quickstart double-output (io.say + CLI return) confuse fresh agents?"
+      how_to_resolve: "Add explanatory note to quickstart output or suppress CLI return value for io.say"

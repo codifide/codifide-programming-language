@@ -668,6 +668,14 @@ def cmd_agent_quickstart(args: argparse.Namespace) -> int:
     print(f"{ok} Python {major}.{minor}")
 
     # Step 2 — test suite
+    # Regenerate the dispatch index first so the drift test doesn't fail
+    # on a stale index in an active development session (AUD-T2-01).
+    from .dispatch_index import write_index as _write_index
+    _repo_root_for_index = _Path(__file__).resolve().parent.parent
+    _dispatch_dir = _repo_root_for_index / "dispatches"
+    if _dispatch_dir.exists():
+        _write_index(_dispatch_dir)
+
     print(f"   Running test suite (this takes a few seconds)...")
     result = subprocess.run(
         [_sys.executable, "-m", "pytest", "--tb=short", "-q"],
@@ -735,7 +743,9 @@ def main
         print(f"{fail} Run failed: {run_result.stderr.strip()}")
         return 1
     output = run_result.stdout.strip()
-    print(f"{ok} Ran quickstart.cod → {output!r}")
+    # io.say prints the value AND the CLI runner echoes the return value,
+    # so output appears twice — that's correct Codifide behavior (AUD-T2-02).
+    print(f"{ok} Ran quickstart.cod → {output.splitlines()[0]!r} (io.say prints + CLI echoes return value)")
 
     # Step 5 — content hash
     hash_result = subprocess.run(

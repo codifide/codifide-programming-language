@@ -19,6 +19,17 @@ python3 -m codifide capability --cbor  # 5.5 KB binary form
 python3 -m codifide capability --hash  # sha256:... identity
 ```
 
+The manifest is also available at a stable public URL — no repo clone required:
+
+```bash
+curl https://www.codifide.com/capability.json   # JSON form
+curl https://www.codifide.com/capability.cbor   # CBOR form (RFC 8949)
+```
+
+The CBOR form can be decoded with any RFC 8949 CBOR decoder, or with
+`python3 -m codifide capability --cbor` which produces the same bytes.
+The JSON form is the human-verifiable alternative.
+
 For a one-page distilled cross-reference of the primitive surface
 and the common-guess pitfalls, read `docs/AGENT_QUICKREF.md`. It is
 derived from the manifest and kept in sync; if they disagree, the
