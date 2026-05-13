@@ -17,7 +17,7 @@
                 language
 -->
 <svg xmlns="http://www.w3.org/2000/svg"
-     viewBox="0 0 420 100"
+     viewBox="0 0 520 100"
      fill="none"
      stroke-width="3.2"
      stroke-linecap="round"
@@ -50,11 +50,11 @@
     <tspan fill="#3A8FC8">codi</tspan><tspan fill="#1D3A7B">fide</tspan>
   </text>
 
-  <!-- Sub-brand descriptor: "language" -->
+  <!-- Sub-brand descriptor: "programming language" -->
   <text x="112" y="82"
-        font-size="22"
-        letter-spacing="4"
+        font-size="18"
+        letter-spacing="3"
         fill="#1D3A7B"
         stroke="none"
-        font-weight="500">language</text>
+        font-weight="500">programming language</text>
 </svg>
