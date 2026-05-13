@@ -70,28 +70,32 @@ rename or re-intend a symbol without minting a new identity.
 The language is small. The current implementation is a prototype. The
 properties it pins down are the ones that matter before scale, not after.
 
-## What's in v0.1-dev
+## What's in v1.0
 
-- Canonical JSON form for the hypergraph, with a deterministic canonical byte
-  form and SHA-256 content hash.
-- Surface parser (ASCII keywords with optional unicode glyphs).
+- Canonical JSON and CBOR forms for the hypergraph, with a deterministic canonical byte
+  form and SHA-256 content hash. CBOR is the primary hash format.
+- Surface parser (ASCII keywords with optional unicode glyphs), with multi-line expression
+  continuation and fuzz-hardened against malformed input.
 - Tree-walking interpreter with:
   - Transitive effect-subset check across the call graph.
   - Pre- and postcondition enforcement, evaluated with an empty effect budget.
   - Multi-candidate dispatch with declaration-order guards.
+  - Cost-based candidate selection — `min(cost, declaration_index)` among satisfied candidates.
   - Belief dispatch on runtime confidence.
+  - Inline conditional expression (`if ... then ... else`) with short-circuit evaluation.
   - First-class refusal (`bottom` / `⊥`) with explicit propagation.
   - Eight typed error kinds; host exceptions do not leak.
   - Configurable call-depth bound with a typed `RecursionLimitError`.
-  - Parser-fuzz hardening for malformed surface input.
+- Indexed primitives: `slice`, `at`, `char_at`, `indexof`.
 - Content-addressed symbol store with Git-style sharded loose objects, atomic
-  writes, hash-verified reads, and idempotent writes.
+  writes, hash-verified reads, idempotent writes, and garbage collection via declared roots.
 - Content-addressed imports (`import foo = sha256:...`) and index modules with
   `from <identity> import name1, name2` resolved at parse time.
 - Rust canonical crate (`crates/codifide-canonical/`) with byte-level conformance
-  to the Python reference on every example program.
+  to the Python reference on every example program, including CBOR-input subcommands.
 - Three-persona system: Quill (human readouts), Glyph (agent dispatches),
   Sable (adversarial audits).
+- 216 Python tests passing, 28 Rust canonical tests passing, 0 skipped.
 
 ## What working Codifide code looks like
 
