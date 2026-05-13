@@ -23,6 +23,7 @@ Filename convention:
 | `session-close` | session close 2026-05-13 — Track 1 complete, Track 2 ready | [md](./2026-05-13-session-close.readout.md) | [yaml](./2026-05-13-session-close.yaml) |  |
 | `t1-1-pipeline-task-spec` | T1-1 pipeline task spec filed — content-moderation pipeline for agent case study | [md](./2026-05-13-t1-1-pipeline-task-spec.readout.md) | [yaml](./2026-05-13-t1-1-pipeline-task-spec.yaml) |  |
 | `t2-1-t2-2-manifest-endpoint` | T2-1 + T2-2 — capability manifest endpoints live at codifide.com | [md](./2026-05-13-t2-1-t2-2-manifest-endpoint.readout.md) | [yaml](./2026-05-13-t2-1-t2-2-manifest-endpoint.yaml) |  |
+| `t2-3-agent-cookbook` | T2-3 — AGENT_COOKBOOK.md filed — 10 failure modes from 5 sessions | [md](./2026-05-13-t2-3-agent-cookbook.readout.md) | [yaml](./2026-05-13-t2-3-agent-cookbook.yaml) |  |
 | `t2-9-manifest-note-field` | T2-9 — capability manifest note field added; is_bottom() caveat live | [md](./2026-05-13-t2-9-manifest-note-field.readout.md) | [yaml](./2026-05-13-t2-9-manifest-note-field.yaml) |  |
 | `track1-sable` |  |  |  | [md](./2026-05-13-track1-sable-audit.md) |
 | `track1-sable-post` | Track 1 Sable audit post-resolution — T1-6 | [md](./2026-05-13-track1-sable-post.readout.md) | [yaml](./2026-05-13-track1-sable-post.yaml) |  |

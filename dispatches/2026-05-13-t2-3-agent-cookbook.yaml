@@ -1,0 +1,31 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "T2-3 — AGENT_COOKBOOK.md filed — 10 failure modes from 5 sessions"
+  initiative: agent-adoption
+  track: "2"
+  task: T2-3
+  capability_hash: "sha256:713d6f6b3a6cfb747cec3bfba0f25331c61b0052bdd166523c175daa2c1f6756"
+  artifact: "docs/AGENT_COOKBOOK.md"
+  entries: 10
+  sources:
+    - "2026-05-11 four-model v1.0 review"
+    - "2026-05-13 Track 1 case studies (T1-2, T1-3, T1-4)"
+  failure_modes_covered:
+    - "infix arithmetic operators"
+    - "method-shaped string/list names"
+    - "contains() case-sensitivity"
+    - "clock.hour vs clock.now"
+    - "believe block missing else"
+    - "is_bottom() propagation trap"
+    - "bind-before-when execution order"
+    - "content-addressed composition transitive dependency"
+    - "missing intent/sig/effects on def"
+    - "belief() return type advisory"
+  also_updated:
+    - "docs/FOR_AGENTS.md: cookbook linked in if-you-get-stuck section"
+  unknowns:
+    - question: "Should cookbook URL be in the capability manifest?"
+      how_to_resolve: "Consider adding docs field to manifest schema in a future amendment"
+  status: complete

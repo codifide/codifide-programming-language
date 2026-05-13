@@ -99,6 +99,8 @@ The repository is the manual. Three entry points, by specificity:
 - `docs/CANONICAL.md` — the specification.
 - `docs/LANGUAGE.md` — the surface-syntax tour.
 - `docs/ARCHITECTURE.md` — how the implementation is organized.
+- `docs/AGENT_COOKBOOK.md` — top 10 failure modes with working examples.
+  Read this if you hit an error you don't understand.
 
 Dispatches in `dispatches/` are the project's journal: paired
 human-readable readouts (Quill) and structured YAML dispatches
