@@ -1,0 +1,33 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "pre-T1-4 fixes — three findings from T1-2 and T1-3 applied by consensus"
+  initiative: agent-adoption
+  track: "1"
+  capability_hash: "sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d"
+  fixes_applied:
+    - finding: "GEM-2 (P3) — contains() case-sensitivity"
+      files:
+        - "docs/AGENT_QUICKREF.md"
+        - "docs/AGENT_TASK_SPEC.md"
+        - "docs/GPT4O_PROMPT.md"
+      change: "added lower() normalization note and reminder"
+    - finding: "GEM-1 (P2) — is_bottom() cannot catch propagated bottom"
+      files:
+        - "docs/AGENT_QUICKREF.md"
+        - "docs/GPT4O_PROMPT.md"
+      change: "added is_bottom idiom section with working/broken examples; cross-reference in bottom propagates rule"
+    - finding: "GEM-3 (P3) — routing style undocumented"
+      files:
+        - "docs/AGENT_QUICKREF.md"
+        - "docs/GPT4O_PROMPT.md"
+      change: "added multi-branch routing idiom: cand+when for 3+ branches, if/then/else for binary"
+  spec_changes: none
+  language_changes: none
+  consensus: all three personas reviewed and agreed
+  unknowns:
+    - question: "Are there other is_bottom()-class traps in the manifest?"
+      why_unknown: "Only is_bottom() was tested; other bottom-adjacent primitives not audited"
+      how_to_resolve: "Sable audit of full primitive surface for bottom-adjacent behavior after T1-4"
+  status: complete

@@ -69,9 +69,10 @@ Write a pure function `classify_content` that:
 - Returns a `Label` (`"safe"`, `"unsafe"`, or `"uncertain"`)
 - Uses belief dispatch — each candidate returns `belief(label, confidence)`
 - Classifies as `"unsafe"` with confidence ≥ 0.90 when the message
-  contains any of: `"spam"`, `"hate"`, `"violence"`
+  contains any of: `"spam"`, `"hate"`, `"violence"` (use `lower()` to
+  normalize before checking — `contains` is case-sensitive)
 - Classifies as `"safe"` with confidence ≥ 0.90 when the message
-  contains `"approved"` or `"verified"`
+  contains `"approved"` or `"verified"` (normalize with `lower()` here too)
 - Falls back to `"uncertain"` with confidence **0.75** when no keyword matches
 
 Add a `main` function that calls `classify_content` with a test message

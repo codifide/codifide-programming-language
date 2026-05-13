@@ -1,0 +1,60 @@
+module moderation_pipeline
+
+# Gemini 2.5 Pro case study — Program 4
+# Gemini's first attempt forgot effects {io.stdout} on main.
+# Anticipated EffectViolation. Self-corrected.
+# Final version has effects {io.stdout} on both run_pipeline and main.
+
+def classify_content
+  intent "classify a message based on keywords"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    intent "unsafe keyword match"
+    when   or(contains(message, "spam"), contains(message, "hate"), contains(message, "violence"))
+    belief("unsafe", 0.90)
+  cand
+    intent "safe keyword match"
+    when   or(contains(message, "approved"), contains(message, "verified"))
+    belief("safe", 0.90)
+  cand
+    intent "fallback for no keyword match"
+    belief("uncertain", 0.75)
+
+def moderate
+  intent "refuse classification when confidence is too low"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    result <- classify_content(message)
+    believe result
+      ge(conf(result), 0.70) => result
+      else                   => bottom
+
+def route_message
+  intent "route a message based on its moderation status"
+  sig    (message: String) -> String
+  effects {}
+  cand
+    moderation_result <- moderate(message)
+    if is_bottom(moderation_result) then
+      bottom
+    else
+      if eq(moderation_result, "unsafe") then "blocked"
+      else if eq(moderation_result, "safe") then "approved"
+      else "escalate-to-human"
+
+def run_pipeline
+  intent "run the full moderation pipeline and print the result"
+  sig    (message: String) -> String
+  effects {io.stdout}
+  cand
+    decision <- route_message(message)
+    io.say(decision)
+
+def main
+  intent "test the full pipeline with I/O"
+  sig    () -> String
+  effects {io.stdout}
+  cand
+    run_pipeline("this message contains approved content")

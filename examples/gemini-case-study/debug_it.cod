@@ -1,0 +1,45 @@
+module debug_it
+
+def classify
+  intent "return a belief"
+  sig    (msg: String) -> Label
+  effects {}
+  cand
+    when contains(msg, "spam")
+    belief("unsafe", 0.90)
+  cand
+    belief("uncertain", 0.75)
+
+def gate_with_result
+  intent "gate using result variable name"
+  sig    (msg: String) -> Label
+  effects {}
+  cand
+    result <- classify(msg)
+    believe result
+      ge(conf(result), 0.70) => result
+      else                   => bottom
+
+def gate_with_it
+  intent "gate using it variable name"
+  sig    (msg: String) -> Label
+  effects {}
+  cand
+    result <- classify(msg)
+    believe result
+      ge(conf(it), 0.70) => it
+      else               => bottom
+
+def main_result
+  intent "test with result"
+  sig    () -> Label
+  effects {}
+  cand
+    gate_with_result("spam message")
+
+def main_it
+  intent "test with it"
+  sig    () -> Label
+  effects {}
+  cand
+    gate_with_it("spam message")

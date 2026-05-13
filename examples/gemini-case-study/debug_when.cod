@@ -1,0 +1,39 @@
+module debug_when
+
+def test_single_contains
+  intent "test single contains in when guard"
+  sig    (msg: String) -> String
+  effects {}
+  cand
+    intent "match"
+    when   contains(msg, "spam")
+    "matched"
+  cand
+    intent "no match"
+    "no match"
+
+def test_or_contains
+  intent "test or(contains) in when guard"
+  sig    (msg: String) -> String
+  effects {}
+  cand
+    intent "match"
+    when   or(contains(msg, "spam"), contains(msg, "hate"))
+    "matched"
+  cand
+    intent "no match"
+    "no match"
+
+def main
+  intent "test both"
+  sig    () -> String
+  effects {}
+  cand
+    test_single_contains("spam message")
+
+def main2
+  intent "test or"
+  sig    () -> String
+  effects {}
+  cand
+    test_or_contains("spam message")

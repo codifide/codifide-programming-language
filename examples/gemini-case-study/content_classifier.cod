@@ -1,0 +1,30 @@
+module content_classifier
+
+# Gemini 2.5 Pro case study — Program 1
+# Gemini's approach: contains() + or() for keyword matching,
+# belief(label, confidence) in each candidate, fallback cand.
+# Note: Gemini used lower() in GPT-4o's version but NOT here —
+# testing whether case-sensitive matching is an issue.
+
+def classify_content
+  intent "classify a message based on keywords"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    intent "unsafe keyword match"
+    when   or(contains(message, "spam"), contains(message, "hate"), contains(message, "violence"))
+    belief("unsafe", 0.90)
+  cand
+    intent "safe keyword match"
+    when   or(contains(message, "approved"), contains(message, "verified"))
+    belief("safe", 0.90)
+  cand
+    intent "fallback for no keyword match"
+    belief("uncertain", 0.75)
+
+def main
+  intent "test the classifier"
+  sig    () -> Label
+  effects {}
+  cand
+    classify_content("this is a verified message")

@@ -1,0 +1,38 @@
+module debug_believe
+
+# Test: does believe result => result return the belief value or the inner value?
+# And does conf() work on a belief value returned from a function?
+
+def make_belief
+  intent "return a belief value"
+  sig    (msg: String) -> Label
+  effects {}
+  cand
+    when contains(msg, "spam")
+    belief("unsafe", 0.90)
+  cand
+    belief("uncertain", 0.75)
+
+def gate
+  intent "gate on confidence"
+  sig    (msg: String) -> Label
+  effects {}
+  cand
+    r <- make_belief(msg)
+    believe r
+      ge(conf(r), 0.70) => r
+      else              => bottom
+
+def main_spam
+  intent "test with spam"
+  sig    () -> Label
+  effects {}
+  cand
+    gate("spam message")
+
+def main_hello
+  intent "test with hello"
+  sig    () -> Label
+  effects {}
+  cand
+    gate("hello world")

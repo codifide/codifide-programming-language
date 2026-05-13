@@ -110,6 +110,9 @@ named primitives.
 ### Strings (pure)
 `upper lower trim starts_with ends_with contains replace split join str reverse slice at char_at indexof`
 
+**`contains` is case-sensitive.** Always normalize first:
+`contains(lower(msg), "keyword")`
+
 ### Confidence (pure)
 `conf belief` — `belief(value, 0.85)` wraps a value with a confidence score;
 `conf(x)` reads it.
@@ -175,6 +178,50 @@ def classify
   cand
     intent "high"
     "high"
+```
+
+## Multi-branch routing
+
+Use `cand` + `when` for three or more branches (idiomatic):
+
+```
+def route
+  intent "route by label"
+  sig    (label: String) -> String
+  effects {}
+  cand
+    intent "unsafe"
+    when   eq(label, "unsafe")
+    "blocked"
+  cand
+    intent "safe"
+    when   eq(label, "safe")
+    "approved"
+  cand
+    intent "fallback"
+    "escalate-to-human"
+```
+
+Use `if/then/else` for binary choices inside a single candidate body.
+
+## `is_bottom` — value inspector only
+
+`is_bottom(x)` works on literal `bottom` values. It **cannot** catch
+a `bottom` that propagated through a bind — that raises
+`BottomPropagationError` before `is_bottom` sees it.
+
+```
+# WRONG
+cand
+  r <- function_that_refuses()
+  if is_bottom(r) then "caught" else r   # BottomPropagationError
+
+# RIGHT — use believe to handle propagated bottom
+cand
+  r <- function_that_refuses()
+  believe r
+    ge(conf(r), 0.70) => r
+    else              => bottom
 ```
 
 ## Surface rules that surprised other agents
@@ -322,8 +369,8 @@ Write a pure function `classify_content` that:
 - Takes a `String` message
 - Returns a `Label` (`"safe"`, `"unsafe"`, or `"uncertain"`)
 - Uses belief dispatch — each candidate returns `belief(label, confidence)`
-- Classifies as `"unsafe"` with confidence ≥ 0.90 when the message contains any of: `"spam"`, `"hate"`, `"violence"`
-- Classifies as `"safe"` with confidence ≥ 0.90 when the message contains `"approved"` or `"verified"`
+- Classifies as `"unsafe"` with confidence ≥ 0.90 when the message contains any of: `"spam"`, `"hate"`, `"violence"` (use `lower()` — `contains` is case-sensitive)
+- Classifies as `"safe"` with confidence ≥ 0.90 when the message contains `"approved"` or `"verified"` (use `lower()` here too)
 - Falls back to `"uncertain"` with confidence 0.40 when no keyword matches
 
 Add a `main` function that calls `classify_content` with a test message of your choice.

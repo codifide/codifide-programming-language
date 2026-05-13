@@ -1,0 +1,26 @@
+module debug_is_bottom
+
+# Test: does is_bottom() work on a propagated bottom?
+# bottom propagates through bind — does it reach is_bottom() or raise first?
+
+def returns_bottom
+  intent "always refuse"
+  sig    () -> String
+  effects {}
+  cand
+    bottom
+
+def test_is_bottom_on_propagated
+  intent "try to catch bottom with is_bottom before it propagates"
+  sig    () -> String
+  effects {}
+  cand
+    r <- returns_bottom()
+    if is_bottom(r) then "caught" else "not bottom"
+
+def main
+  intent "test is_bottom on propagated bottom"
+  sig    () -> String
+  effects {}
+  cand
+    test_is_bottom_on_propagated()

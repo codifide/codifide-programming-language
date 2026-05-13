@@ -1,0 +1,46 @@
+module moderation_gate
+
+# Gemini 2.5 Pro case study — Program 2
+# Gemini's first attempt omitted intent strings from cand blocks in
+# classify_content. It self-corrected, predicting a ParseError.
+# Final version has intent on all cand blocks.
+
+def classify_content
+  intent "classify a message based on keywords"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    intent "unsafe keyword match"
+    when   or(contains(message, "spam"), contains(message, "hate"), contains(message, "violence"))
+    belief("unsafe", 0.90)
+  cand
+    intent "safe keyword match"
+    when   or(contains(message, "approved"), contains(message, "verified"))
+    belief("safe", 0.90)
+  cand
+    intent "fallback for no keyword match"
+    belief("uncertain", 0.75)
+
+def moderate
+  intent "refuse classification when confidence is too low"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    result <- classify_content(message)
+    believe result
+      ge(conf(result), 0.70) => result
+      else                   => bottom
+
+def main_unsafe
+  intent "test the unsafe path"
+  sig    () -> Label
+  effects {}
+  cand
+    moderate("this message contains spam")
+
+def main_refuse
+  intent "test the refusal path"
+  sig    () -> Label
+  effects {}
+  cand
+    moderate("hello world")

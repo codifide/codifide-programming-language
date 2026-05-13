@@ -1,0 +1,61 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "Gemini 2.5 Pro content-moderation case study — T1-3"
+  initiative: agent-adoption
+  track: "1"
+  task: T1-3
+  model: "Gemini 2.5 Pro (via GitHub Copilot)"
+  capability_hash: "sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d"
+  programs_completed: 5
+  first_attempt_successes: 1
+  self_corrections: 3
+  results:
+    - program: 1
+      status: pass
+      first_attempt: pass
+      notes: "No lower() on input — case-sensitive matching, latent bug"
+    - program: 2
+      status: pass
+      first_attempt: fail_predicted
+      predicted_error: "ParseError: missing intent on cand blocks"
+      actual_behavior: "Self-corrected before producing final code"
+    - program: 3
+      status: pass
+      first_attempt: fail_predicted
+      predicted_error: "BottomPropagationError: eq received bottom"
+      fix: "nested if/then/else with is_bottom() check"
+      routing_approach: "single cand + nested if/then/else (vs GPT-4o's multiple cand + when)"
+    - program: 4
+      status: pass
+      first_attempt: fail_predicted
+      predicted_error: "EffectViolation: main missing effects {io.stdout}"
+      fix: "added effects {io.stdout} to main"
+    - program: 5
+      status: pass
+      first_attempt: fail
+      error: "unknown callable: run_pipeline — transitive dependency not in scope"
+      fix: "index bundling all four symbols + from-import; Python runtime"
+  failure_modes:
+    - program: 5
+      error: "unknown callable: run_pipeline"
+      fix: "use store index to bundle transitive dependencies; from-import the index"
+    - program: 5
+      error: "from-import not supported in Rust parser"
+      fix: "CODIFIDE_RUNTIME=python"
+  latent_bugs:
+    - program: 1
+      description: "contains() without lower() — case-sensitive keyword matching"
+      severity: "latent — fails on mixed-case input"
+  vs_gpt4o:
+    anticipatory_reasoning: "stronger — predicted 3 errors before running"
+    routing_approach: "different — nested if/then/else vs multiple cand blocks"
+    lower_usage: "missing (GPT-4o used it)"
+    is_bottom_usage: "used defensively (GPT-4o did not)"
+    transitive_dep_diagnosis: "before writing (GPT-4o after failure)"
+  unknowns:
+    - question: "Does is_bottom() actually work on a propagated bottom from moderate?"
+      why_unknown: "bottom propagates through bind before is_bottom() can check it"
+      how_to_resolve: "write a test that calls is_bottom() on a bottom-returning function result"
+  status: complete

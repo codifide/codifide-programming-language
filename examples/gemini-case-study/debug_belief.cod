@@ -1,0 +1,8 @@
+module debug_belief
+
+def main
+  intent "test what belief prints"
+  sig    () -> Label
+  effects {}
+  cand
+    belief("unsafe", 0.90)

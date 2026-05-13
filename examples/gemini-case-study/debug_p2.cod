@@ -1,0 +1,24 @@
+module debug_p2
+
+def classify_content
+  intent "classify a message based on keywords"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    intent "unsafe keyword match"
+    when   or(contains(message, "spam"), contains(message, "hate"), contains(message, "violence"))
+    belief("unsafe", 0.90)
+  cand
+    intent "safe keyword match"
+    when   or(contains(message, "approved"), contains(message, "verified"))
+    belief("safe", 0.90)
+  cand
+    intent "fallback for no keyword match"
+    belief("uncertain", 0.75)
+
+def main
+  intent "debug classify_content directly"
+  sig    () -> Label
+  effects {}
+  cand
+    classify_content("this message contains spam")

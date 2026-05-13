@@ -74,6 +74,9 @@ Also available as infix: `==`, `!=`, `<`, `<=`, `>`, `>=`.
 `char_at` is string-only. `indexof` returns `-1` when not found.
 `str` converts any value to its string form.
 
+**`contains` is case-sensitive.** `contains("Hello", "hello")` is `false`.
+Normalize first: `contains(lower(msg), "keyword")`.
+
 ### Confidence (pure)
 `conf belief` — `belief(value, 0.85)` wraps a value with a confidence
 score; `conf(x)` reads it. Use these to feed a `believe` block.
@@ -211,18 +214,61 @@ def classify
     "high"
 ```
 
-**Confidence-gated refusal.**
+**Multi-branch value routing.**
+
+Use `cand` + `when` guards when each branch is a distinct decision path
+(idiomatic, shows intent per branch):
+
 ```codifide
-def label
-  intent "label or refuse"
-  sig    (img: Image) -> Label
-  effects {model.vision}
+def route
+  intent "route by label"
+  sig    (label: String) -> String
+  effects {}
   cand
-    result <- vision.classify(img)
-    believe result
-      ge(conf(result), 0.85) => result
-      else                   => bottom
+    intent "unsafe goes to blocked"
+    when   eq(label, "unsafe")
+    "blocked"
+  cand
+    intent "safe goes to approved"
+    when   eq(label, "safe")
+    "approved"
+  cand
+    intent "anything else escalates"
+    "escalate-to-human"
 ```
+
+Use `if/then/else` when you need to choose between two values inline
+within a single candidate body:
+
+```codifide
+cand
+  if eq(label, "unsafe") then "blocked" else "approved"
+```
+
+Both patterns are valid. `cand` + `when` is preferred for three or more
+branches; `if/then/else` is preferred for binary choices inside a body.
+
+**`is_bottom` — value inspector, not propagation catcher.**
+
+`is_bottom(x)` returns `true` when `x` is a literal `bottom` value.
+It **cannot** catch a `bottom` that propagated through a bind:
+
+```codifide
+# WRONG — bottom propagates through the bind before is_bottom sees it
+cand
+  r <- function_that_refuses()
+  if is_bottom(r) then "caught" else r   # raises BottomPropagationError
+
+# RIGHT — use a believe arm to handle propagated bottom
+cand
+  r <- function_that_refuses()
+  believe r
+    ge(conf(r), 0.70) => r
+    else              => bottom          # or handle the refusal here
+```
+
+`is_bottom` is useful when `bottom` is passed as an explicit argument
+or stored in a data structure, not when it arrives via function return.
 
 ## Content-addressed imports
 
@@ -276,7 +322,8 @@ not yet support `from`-import syntax.
   if the surrounding function is allowed to.
 - **`bottom` propagates.** A `bottom` that escapes a top-level call
   raises `RefusalError`. Handle it in a `believe` arm or accept the
-  refusal.
+  refusal. `is_bottom()` cannot catch a propagated `bottom` — see
+  the `is_bottom` note in Idioms above.
 - **Multi-line expressions are fine.** Call arguments, bind
   right-hand sides, and contract expressions may span multiple
   physical lines as long as brackets are balanced at the end.

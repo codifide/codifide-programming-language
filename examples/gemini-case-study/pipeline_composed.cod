@@ -1,0 +1,29 @@
+module pipeline_composed
+
+# Gemini 2.5 Pro case study — Program 5 (corrected)
+# Gemini's approach: store the self-contained moderation_pipeline.cod,
+# import run_pipeline by hash. Valid intent — but individual symbol
+# imports don't carry transitive dependencies. run_pipeline calls
+# route_message which calls moderate which calls classify_content;
+# none are in scope from a single import.
+#
+# Fix: use an index bundling all four symbols, then from-import.
+# Same fix as GPT-4o case study.
+#
+# Index: sha256:855fa6525b6fdef0c8ad28a4aa96acb3b338fd5628059c8efc3c4d236241255c
+
+from sha256:855fa6525b6fdef0c8ad28a4aa96acb3b338fd5628059c8efc3c4d236241255c import classify_content, moderate, route_message, run_pipeline
+
+def composed_pipeline
+  intent "run the imported moderation pipeline"
+  sig    (message: String) -> String
+  effects {io.stdout}
+  cand
+    run_pipeline(message)
+
+def main
+  intent "test the composed pipeline"
+  sig    () -> String
+  effects {io.stdout}
+  cand
+    composed_pipeline("this is a final test of the composed spam pipeline")
