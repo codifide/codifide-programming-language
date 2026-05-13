@@ -224,6 +224,43 @@ def label
       else                   => bottom
 ```
 
+## Content-addressed imports
+
+Individual symbol imports bring one symbol into scope by name:
+
+```codifide
+import classify_content = sha256:<hash>
+```
+
+**Important:** individual imports do not carry transitive dependencies.
+If `route_message` calls `moderate` internally, you must also import
+`moderate` explicitly — or use an index.
+
+The idiomatic pattern for multi-symbol composition is an **index**:
+
+```bash
+# Publish symbols
+python3 -m codifide store put module_a.cod
+python3 -m codifide store put module_b.cod
+
+# Bundle into an index
+python3 -m codifide store index --name my_lib \
+  "symbol_a=sha256:<hash-a>" \
+  "symbol_b=sha256:<hash-b>"
+# → prints: sha256:<index-hash> my_lib
+```
+
+Then from-import the whole bundle:
+
+```codifide
+from sha256:<index-hash> import symbol_a, symbol_b
+```
+
+**Runtime note:** `from`-imports require the Python runtime in v2.0.
+Use `CODIFIDE_RUNTIME=python python3 -m codifide run ...` or set
+`export CODIFIDE_RUNTIME=python` in your shell. The Rust parser does
+not yet support `from`-import syntax.
+
 ## Surface rules that surprised other agents
 
 - **Every `def` must declare `intent`.** The parser rejects

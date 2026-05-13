@@ -1,0 +1,34 @@
+module content_classifier
+
+# GPT-4o case study — Program 1
+# Reconstructed from GPT-4o's described approach:
+# - contains() for keyword matching
+# - or() for multi-keyword unsafe check
+# - belief(label, confidence) in each candidate
+# - fallback to "uncertain" at low confidence
+
+def classify_content
+  intent "label a message as safe, unsafe, or uncertain based on keyword signals"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    intent "unsafe keywords — spam, hate, violence"
+    when   or(contains(lower(message), "spam"),
+              contains(lower(message), "hate"),
+              contains(lower(message), "violence"))
+    belief("unsafe", 0.90)
+  cand
+    intent "safe keywords — approved or verified"
+    when   or(contains(lower(message), "approved"),
+              contains(lower(message), "verified"))
+    belief("safe", 0.90)
+  cand
+    intent "no strong signal — uncertain at low confidence"
+    belief("uncertain", 0.40)
+
+def main
+  intent "test the classifier with a spam message"
+  sig    () -> Label
+  effects {}
+  cand
+    classify_content("this message contains spam")

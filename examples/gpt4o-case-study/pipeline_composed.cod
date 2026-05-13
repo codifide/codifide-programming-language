@@ -1,0 +1,28 @@
+module pipeline_composed
+
+# GPT-4o case study — Program 5 (corrected)
+# GPT-4o's approach: import classify_content and route_message by hash.
+# What actually happened: individual symbol imports don't carry transitive
+# dependencies. route_message calls moderate internally, but moderate isn't
+# in scope when route_message executes.
+#
+# Fix: use an index that bundles all three symbols, then from-import.
+# This is the correct content-addressed composition pattern in Codifide.
+#
+# Index hash: sha256:85fe057bdbb79ae253be1758133f364c0bf993b7b08f6b7df3e3d307a864f0cc
+
+from sha256:85fe057bdbb79ae253be1758133f364c0bf993b7b08f6b7df3e3d307a864f0cc import classify_content, moderate, route_message
+
+def composed_pipeline
+  intent "run the content-moderation pipeline via content-addressed imports"
+  sig    (message: String) -> Decision
+  effects {}
+  cand
+    route_message(message)
+
+def main
+  intent "demonstrate content-addressed composition"
+  sig    () -> Decision
+  effects {}
+  cand
+    composed_pipeline("this message contains violence")

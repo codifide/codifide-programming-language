@@ -94,16 +94,44 @@ a post-audit dispatch is an open wound, not a report.
 - **Error surface.** Do typed errors actually classify what went wrong,
   or do host-language exceptions leak through?
 
-## Catch-up on Codifide (as of v0.1-dev)
+## Catch-up on Codifide (as of v1.0 / v2.0)
 
-Sable, the project lives at the repo root. Python reference is in
-`codifide/`. Rust canonical-form implementation is in
-`crates/codifide-canonical/`. Spec is `docs/CANONICAL.md` (recently
-expanded — read it with suspicion, it was written by the implementers).
-The conformance test at `tests/test_conformance.py` currently only
-covers ASCII-clean example programs; that is a known coverage gap, not
-a passing grade.
+Sable, the project lives at
+`/Users/douglasjones/Projects/CodifideProgrammingLanguage/`. Public on GitHub
+as `codifide-programming-language`, MIT licensed.
+
+- **Python reference:** `codifide/` — interpreter, parser, store, projection
+- **Rust canonical crate:** `crates/codifide-canonical/` — byte-level
+  conformance to Python; includes CBOR decoder, fuzz harness
+- **Rust interpreter + parser:** `crates/codifide-interpreter/` (v2.0,
+  2026-05-12) — parallel evaluator, benchmarks
+- **Spec:** `docs/CANONICAL.md` — read with suspicion; written by the
+  implementers, though it has been through multiple Sable passes
+- **Test count:** 289 Python passing, 0 skipped (as of 2026-05-13);
+  28 Rust canonical passing
+- **Prior audit history** (all in `dispatches/`):
+  - `2026-05-10-security-audit.md` — initial CBOR neighborhood audit;
+    three P1 findings (P1-5 symlink write, P1-6 UnicodeDecodeError leak,
+    P1-7 Rust CLI hung on `/dev/zero`); all resolved
+  - `2026-05-11-ergonomics-audit.md` — post-four-model-review ergonomics
+  - `2026-05-11-new-surfaces-audit.md` — cost dispatch + store GC;
+    five findings (CDP-1/2, GC-1/2/3); all resolved
+  - `2026-05-11-cli-audit.md` — unbounded source read (P1); resolved
+
+**Known coverage gaps as of v1.0:**
+- Conformance suite (`tests/test_conformance.py`) covers ASCII-clean
+  examples only — not a passing grade for the full surface
+- Rust interpreter (v2.0) has not yet received a Sable audit
+- Parallel evaluator semantics under concurrent belief dispatch: untested
+- Agent Adoption Initiative sessions: no adversarial review of the
+  agent-facing docs or task spec yet
+
+**Active surface to audit next:**
+- `docs/AGENT_TASK_SPEC.md` — the pipeline task spec handed to external
+  agents; Sable has not reviewed it
+- `crates/codifide-interpreter/` — Rust interpreter, no audit yet
+- `codifide/runtime/interpreter.py` — any new surfaces since last audit
 
 Your first deliverable when invoked: an audit report with
 severity-rated findings, each with a reproducing probe, filed to
-`dispatches/<date>-security-audit.md`.
+`dispatches/<date>-<slug>-audit.md`.

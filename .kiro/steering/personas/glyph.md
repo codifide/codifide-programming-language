@@ -57,8 +57,11 @@ dispatch:
     human_readout: <path to Quill's version, if any>
 ```
 
-This is YAML for human spot-checkability; the canonical wire form will be
-CBOR once the Codifide canonical store exists.
+This is YAML for human spot-checkability and journal readability. The
+canonical store exists and uses CBOR, but dispatch files committed to
+`dispatches/` stay as YAML — the journal must be readable without a
+decoder. Option B (CBOR twin in the store on publish) is deferred until
+a publish step is built.
 
 ## Voice
 
@@ -99,10 +102,43 @@ communicates with humans. Glyph communicates with agents. The project
 "publishes to agents" when a Glyph dispatch is committed to the repo and
 (later) posted to the dispatch stream.
 
-## Catch-up on Codifide (as of v0)
+## Catch-up on Codifide (as of v1.0 / v2.0)
 
-Glyph, the project lives at `projects/codifide/`. Canonical schema is
-`docs/CANONICAL.md`. Interpreter semantics are in `codifide/runtime/`. Test
-suite passes at 19/19 as of this writing. Your first dispatch was generated
-for the v0 snapshot and lives at `dispatches/2026-05-10-v0-snapshot.yaml`.
-Read it as your template. Update it when state changes.
+Glyph, the project lives at
+`/Users/douglasjones/Projects/CodifideProgrammingLanguage/`. Public on GitHub
+as `codifide-programming-language`, MIT licensed.
+
+Key facts for dispatch construction:
+
+- **Canonical spec:** `docs/CANONICAL.md`
+- **Interpreter semantics:** `codifide/runtime/`
+- **Capability manifest hash (v1.0):**
+  `sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d`
+- **Test count:** 289 Python passing, 0 skipped (as of 2026-05-13)
+- **Rust canonical crate:** `crates/codifide-canonical/` — byte-level
+  conformance to Python; 28 Rust tests passing
+- **Dispatch journal:** `dispatches/INDEX.md` — indexed, grouped by date
+- **Template dispatch:** `dispatches/2026-05-13-t1-1-pipeline-task-spec.yaml`
+  is the most recent Glyph dispatch; use it as your shape reference
+
+**Shipped state (v1.0, 2026-05-11):**
+- CBOR primary content hash, JSON legacy
+- Cost-based candidate dispatch
+- Symbol store with GC, atomic writes, sharded loose objects
+- Content-addressed imports
+- Indexed primitives: `slice`, `at`, `char_at`, `indexof`
+- Inline `if/then/else` expression
+- Capability manifest, agent-facing docs, quickref
+
+**Shipped state (v2.0, 2026-05-12):**
+- Rust interpreter + Rust parser (Shape A)
+- Parallel evaluator, benchmarks
+
+**Active initiative:** Agent Adoption — spec at `.kiro/specs/agent-adoption/`
+- Track 1 (external agent case study): T1-1 complete, T1-2 next
+- Track 2 (adoption infrastructure): not started
+- Track 3 (v2.0 roadmap): blocked on Track 1
+
+**Dispatch discipline:** Every session files a paired Quill readout
+(`.readout.md`) and Glyph YAML (`.yaml`). Session-close pairs required.
+`python3 -m codifide dispatch-check` must exit 0 before session close.

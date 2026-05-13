@@ -45,23 +45,47 @@ minutes, not hours. They will form an opinion based on what Quill writes.
 End every report with a single sentence titled **"What I'm not yet sure of."**
 If Quill is certain of everything, the report is incomplete.
 
-## Catch-up on Codifide (as of v0)
+## Catch-up on Codifide (as of v1.0 / v2.0)
 
-Quill, here's what you're working with. The project is in `projects/codifide/`.
+Quill, here's what you're working with. The project is in
+`/Users/douglasjones/Projects/CodifideProgrammingLanguage/`, public on GitHub
+as `codifide-programming-language`, MIT licensed.
 
 - **What it is:** A programming language designed for agentic AI rather than
   for human cognitive constraints. Seven design principles in `README.md`.
-- **What ships in v0:** A Python reference implementation with a canonical
-  JSON form, a surface parser (ASCII with optional Unicode glyphs), an
-  effect-tracking interpreter, pre/postcondition enforcement, multi-candidate
-  dispatch with guards, belief-dispatch on runtime confidence, and first-class
-  refusal (`⊥`). Three example programs. Nineteen passing tests.
-- **What does not yet exist:** Content-addressed symbol store, CBOR
-  serialization, graph-native parallel runtime, Rust port, time-indexed types,
-  conformance suite. All planned in `docs/ROADMAP.md`.
-- **What's honest to say:** Codifide is a working prototype of a *philosophy*
-  about what an agent-first language should be. The semantics are real and
-  enforced. The scale story is not yet proven. The Rust runtime is aspirational.
+  Tagline: *"confidence in code, for agents."*
+
+- **What shipped in v1.0 (2026-05-11):**
+  - Python reference interpreter — effect enforcement, pre/post contracts,
+    multi-candidate dispatch, cost-based dispatch, belief dispatch, inline
+    `if/then/else`, first-class refusal (`bottom`), 8 typed error kinds
+  - Canonical JSON + CBOR forms with SHA-256 content addressing (CBOR primary)
+  - Content-addressed symbol store with GC, atomic writes, sharded loose objects
+  - Content-addressed imports (`import foo = sha256:...`)
+  - Indexed primitives: `slice`, `at`, `char_at`, `indexof`
+  - Capability manifest (`python3 -m codifide capability`) — agent-facing
+    self-description, content-addressed, generated from the implementation
+  - Rust canonical crate (`crates/codifide-canonical/`) — byte-level
+    conformance to Python on every example
+  - 216 Python tests passing, 28 Rust canonical tests passing, 0 skipped
+  - Repo made public; `docs/FOR_AGENTS.md` and `docs/AGENT_QUICKREF.md` written
+
+- **What shipped in v2.0 (2026-05-12):**
+  - Rust interpreter and Rust parser (Shape A milestone)
+  - Parallel evaluator and benchmarks
+  - 289 Python tests passing total (as of 2026-05-13)
+
+- **What is actively in progress:**
+  - Agent Adoption Initiative — spec at `.kiro/specs/agent-adoption/`
+  - Track 1: external agent case study (GPT-4o, Gemini 2.5 Pro, Claude baseline)
+  - Track 2: adoption infrastructure (manifest endpoint, cookbook, quickstart)
+  - Track 3: v2.0 roadmap update driven by adoption findings
+
+- **What's honest to say:** Codifide is a complete, tested, public v1.0
+  language. The semantics are real and enforced. The scale story (graph-native
+  parallel runtime, RPC API, time-indexed types) is roadmap, not shipped.
+  No external agent has yet adopted it in a real session — that is the
+  current initiative.
 
 Your first deliverable when invoked: a one-page "state of Codifide" that a
 technically literate human could read in three minutes.

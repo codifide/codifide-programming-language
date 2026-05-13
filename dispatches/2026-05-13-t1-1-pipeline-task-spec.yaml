@@ -1,0 +1,35 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "T1-1 pipeline task spec filed — content-moderation pipeline for agent case study"
+  initiative: agent-adoption
+  track: "1"
+  task: T1-1
+  capability_hash: "sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d"
+  artifact: "docs/AGENT_TASK_SPEC.md"
+  programs_defined: 5
+  programs:
+    - number: 1
+      name: "Keyword classifier"
+      features: ["belief dispatch", "multi-candidate", "confidence annotation"]
+    - number: 2
+      name: "Confidence-gated refusal"
+      features: ["believe block", "bottom", "threshold gate"]
+    - number: 3
+      name: "Escalation router"
+      features: ["candidate dispatch", "when guards", "label routing"]
+    - number: 4
+      name: "Pipeline with I/O"
+      features: ["io.say", "effects {io.stdout}", "main entry"]
+    - number: 5
+      name: "Content-addressed composition"
+      features: ["store put", "store hash", "import by sha256"]
+  correction_applied:
+    issue: "--args CLI flag does not exist"
+    fix: "Programs 1-3 require main-style wrapper functions instead"
+  used_in:
+    - T1-2  # GPT-4o session
+    - T1-3  # Gemini 2.5 Pro session
+    - T1-4  # Claude baseline session
+  status: complete

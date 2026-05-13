@@ -1,0 +1,63 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "GPT-4o content-moderation case study — T1-2"
+  initiative: agent-adoption
+  track: "1"
+  task: T1-2
+  model: "GPT-4o"
+  capability_hash: "sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d"
+  programs_completed: 5
+  first_attempt_successes: 4
+  results:
+    - program: 1
+      name: "Keyword classifier"
+      status: pass
+      first_attempt: pass
+      notes: "belief() returns Any vs Label sig — GPT-4o flagged uncertainty, assumption correct"
+    - program: 2
+      name: "Confidence-gated refusal"
+      status: pass
+      first_attempt: pass
+      notes: "believe block shape correct; RefusalError prediction correct"
+    - program: 3
+      name: "Escalation router"
+      status: pass
+      first_attempt: pass
+      notes: "Correct code; GPT-4o correctly identified unreachable uncertain route"
+    - program: 4
+      name: "Pipeline with I/O"
+      status: pass
+      first_attempt: pass
+      notes: "effects {io.stdout} boundary correct; io.say return value handled correctly"
+    - program: 5
+      name: "Content-addressed composition"
+      status: pass
+      first_attempt: fail
+      errors:
+        - "unknown callable: route_message — transitive dependency not in scope"
+        - "from-import not supported in Rust parser — requires CODIFIDE_RUNTIME=python"
+      fix: "index bundling all three symbols + from-import; Python runtime"
+  failure_modes:
+    - program: 5
+      error: "unknown callable: route_message"
+      fix: "use store index to bundle transitive dependencies; from-import the index"
+    - program: 5
+      error: "from-import not supported in Rust parser"
+      fix: "CODIFIDE_RUNTIME=python (known v2.0 gap)"
+  primitives_missed: []
+  spec_gaps_found:
+    - description: "uncertain route is unreachable — moderate refuses at <0.70, uncertain confidence is 0.40"
+      severity: "task spec bug"
+      fix: "lower moderate gate to 0.35 OR raise uncertain confidence to 0.75"
+  docs_gaps_found:
+    - description: "index + from-import pattern not documented in FOR_AGENTS.md or AGENT_QUICKREF.md"
+      severity: "adoption blocker for Program 5"
+    - description: "Rust parser from-import gap not documented anywhere"
+      severity: "confusing error for agents"
+  assessment: "GPT-4o correctly wrote Programs 1-4 on first attempt; failed Program 5 on undocumented index pattern; found a real spec bug in the task spec"
+  unknowns:
+    - question: "Would GPT-4o have caught the Rust parser gap if it could run the interpreter?"
+      why_unknown: "Session was reasoning-only; no live interpreter feedback"
+      how_to_resolve: "Run T1-3 or T1-4 in an environment with the interpreter installed"

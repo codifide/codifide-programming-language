@@ -1,0 +1,27 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "persona catch-up sections updated from v0 to v1.0/v2.0 state"
+  initiative: agent-adoption
+  task: pre-T1-2 preparation
+  capability_hash: "sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d"
+  files_changed:
+    - path: ".kiro/steering/personas/quill.md"
+      change: "catch-up section replaced: v0 (19 tests, no store/CBOR/Rust) → v1.0/v2.0"
+    - path: ".kiro/steering/personas/glyph.md"
+      change: "catch-up section replaced: v0 template reference → current manifest hash, test count, dispatch pointer, initiative state"
+    - path: ".kiro/steering/personas/sable.md"
+      change: "catch-up section replaced: v0.1-dev → full audit history, coverage gaps, active surface"
+  unchanged:
+    - role definitions
+    - voice guidelines
+    - integrity rules
+    - signature moves
+    - severity scale (Sable)
+    - dispatch schema (Glyph)
+  unknowns:
+    - question: "Should the Glyph dispatch schema note be updated to reflect CBOR store now exists?"
+      why_unknown: "The note says 'will be CBOR once the store exists' — the store exists now"
+      how_to_resolve: "Decide whether Glyph dispatches should move to CBOR wire form or stay YAML"
+  status: complete

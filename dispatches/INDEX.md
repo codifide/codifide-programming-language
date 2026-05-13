@@ -9,6 +9,16 @@ Filename convention:
 - `<date>-<slug>.md`         — standalone dispatch (rare)
 
 
+## 2026-05-13
+
+| slug | subject | readout | yaml | audit |
+|---|---|---|---|---|
+| `agent-adoption-init` | Agent adoption initiative — kickoff | [md](./2026-05-13-agent-adoption-init.readout.md) | [yaml](./2026-05-13-agent-adoption-init.yaml) |  |
+| `gpt4o-case-study` | GPT-4o content-moderation case study — T1-2 | [md](./2026-05-13-gpt4o-case-study.readout.md) | [yaml](./2026-05-13-gpt4o-case-study.yaml) |  |
+| `persona-catchup` | persona catch-up sections updated from v0 to v1.0/v2.0 state | [md](./2026-05-13-persona-catchup.readout.md) | [yaml](./2026-05-13-persona-catchup.yaml) |  |
+| `session-close` | Session close — 2026-05-13 | [md](./2026-05-13-session-close.readout.md) | [yaml](./2026-05-13-session-close.yaml) |  |
+| `t1-1-pipeline-task-spec` | T1-1 pipeline task spec filed — content-moderation pipeline for agent case study | [md](./2026-05-13-t1-1-pipeline-task-spec.readout.md) | [yaml](./2026-05-13-t1-1-pipeline-task-spec.yaml) |  |
+
 ## 2026-05-12
 
 | slug | subject | readout | yaml | audit |

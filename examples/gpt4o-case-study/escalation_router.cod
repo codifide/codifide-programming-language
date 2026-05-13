@@ -1,0 +1,56 @@
+module escalation_router
+
+# GPT-4o case study — Program 3
+# Reconstructed from GPT-4o's described approach:
+# - inline classify_content and moderate
+# - route_message calls moderate, guards on label value
+# - "uncertain" candidate included even though GPT-4o noted it's unreachable
+#   given the current confidence thresholds
+
+def classify_content
+  intent "label a message as safe, unsafe, or uncertain based on keyword signals"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    intent "unsafe keywords"
+    when   or(contains(lower(message), "spam"),
+              contains(lower(message), "hate"),
+              contains(lower(message), "violence"))
+    belief("unsafe", 0.90)
+  cand
+    intent "safe keywords"
+    when   or(contains(lower(message), "approved"),
+              contains(lower(message), "verified"))
+    belief("safe", 0.90)
+  cand
+    intent "no strong signal"
+    belief("uncertain", 0.40)
+
+def moderate
+  intent "refuse classification when confidence is too low"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    result <- classify_content(message)
+    believe result
+      ge(conf(result), 0.70) => result
+      else                   => bottom
+
+def route_message
+  intent "route a message to blocked, approved, or escalate-to-human based on moderation"
+  sig    (message: String) -> Decision
+  effects {}
+  cand
+    label <- moderate(message)
+    believe label
+      eq(label, "unsafe")    => "blocked"
+      eq(label, "safe")      => "approved"
+      eq(label, "uncertain") => "escalate-to-human"
+      else                   => bottom
+
+def main
+  intent "test routing with a blocked and an approved message"
+  sig    () -> Decision
+  effects {}
+  cand
+    route_message("this message contains hate")
