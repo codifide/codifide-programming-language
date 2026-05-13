@@ -92,8 +92,8 @@ from "spec filed, nothing started" to "Track 1 complete, Track 2 ready."
 - T2-1 ✅ capability.json and capability.cbor generated
 - T2-2 ✅ Live at codifide.com/capability.json and codifide.com/capability.cbor
 - T2-3 ✅ docs/AGENT_COOKBOOK.md — 10 failure modes from 5 sessions
-- T2-4 🔜 dispatches/feedback/TEMPLATE.md
-- T2-5 🔜 python3 -m codifide agent-quickstart CLI
-- T2-6 🔜 Test quickstart
+- T2-4 ✅ dispatches/feedback/TEMPLATE.md
+- T2-5 ✅ python3 -m codifide agent-quickstart CLI
+- T2-6 ✅ Tested — 289 tests pass, quickstart exits 0
 - T2-7 🔜 Track 2 completion dispatch
-- T2-8 🔜 Sable audit
+- T2-8 🔜 Sable audit of adoption infrastructure
