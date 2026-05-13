@@ -1,0 +1,31 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "T2-9 — capability manifest note field added; is_bottom() caveat live"
+  initiative: agent-adoption
+  track: "2"
+  task: T2-9
+  closes: AUD-T1-01
+  old_capability_hash: "sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d"
+  new_capability_hash: "sha256:713d6f6b3a6cfb747cec3bfba0f25331c61b0052bdd166523c175daa2c1f6756"
+  files_changed:
+    - "codifide/runtime/primitives.py"
+    - "codifide/capability.py"
+    - "docs/capability-0.1.json"
+    - "docs/CAPABILITY.md"
+  schema_change:
+    field: "note"
+    type: "Optional[str]"
+    location: "primitives array entries"
+    semantics: "advisory documentation caveat; absence means no special caveat"
+  primitives_with_notes:
+    - name: "is_bottom"
+      note: "Value inspector only — cannot catch propagated bottom"
+  test_results:
+    python_tests: 289
+    failures: 0
+  enables: T2-1
+  unknowns:
+    - question: "Are there other primitives that warrant notes?"
+      how_to_resolve: "Review during T2-3 cookbook writing — failure modes map to note candidates"

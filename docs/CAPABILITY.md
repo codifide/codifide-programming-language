@@ -94,6 +94,23 @@ manifest for dispatch planning use it as a hint, not as a checked
 type. The authoritative rule is that the primitive's effect, when
 non-null, must be in the caller's declared effect set.
 
+An optional `note` field may appear on primitives with non-obvious
+semantics. When present, it is a plain-English caveat that an agent
+should read before using the primitive. Example:
+
+```json
+{
+  "name":    "is_bottom",
+  "effect":  null,
+  "returns": "Bool",
+  "note":    "Value inspector only. Returns true when passed a literal `bottom` value. Cannot catch a `bottom` that propagated through a bind..."
+}
+```
+
+Consumers MUST treat `note` as advisory documentation, not as a
+machine-readable constraint. The absence of `note` means no special
+caveat applies.
+
 ## Effects
 
 A sorted, deduplicated list of every effect label the manifest

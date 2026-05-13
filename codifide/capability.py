@@ -193,11 +193,14 @@ def _primitives() -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
     for name in sorted(reg._prims.keys()):  # noqa: SLF001 - module-local use
         spec = reg._prims[name]  # noqa: SLF001
-        out.append({
+        entry: Dict[str, Any] = {
             "name":    spec.name,
             "effect":  spec.effect,
             "returns": spec.returns,
-        })
+        }
+        if spec.note is not None:
+            entry["note"] = spec.note
+        out.append(entry)
     return out
 
 

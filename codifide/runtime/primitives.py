@@ -28,6 +28,7 @@ class PrimitiveSpec:
     effect: Optional[str]        # None means pure (effect = ∅)
     returns: str
     fn: Callable[..., Any]
+    note: Optional[str] = None   # Optional caveat for the capability manifest
 
 
 class PrimitiveRegistry:
@@ -43,8 +44,9 @@ class PrimitiveRegistry:
         *,
         effect: Optional[str] = None,
         returns: str = "Any",
+        note: Optional[str] = None,
     ) -> None:
-        self._prims[name] = PrimitiveSpec(name=name, effect=effect, returns=returns, fn=fn)
+        self._prims[name] = PrimitiveSpec(name=name, effect=effect, returns=returns, fn=fn, note=note)
 
     def has(self, name: str) -> bool:
         return name in self._prims
@@ -388,7 +390,17 @@ def build_default_registry(trace: EffectTrace) -> PrimitiveRegistry:
     )
 
     # -- Refusal helpers -----------------------------------------------------
-    reg.register("is_bottom", lambda x: x is Bottom, returns="Bool")
+    reg.register(
+        "is_bottom",
+        lambda x: x is Bottom,
+        returns="Bool",
+        note=(
+            "Value inspector only. Returns true when passed a literal `bottom` "
+            "value. Cannot catch a `bottom` that propagated through a bind — "
+            "`bottom` raises BottomPropagationError before this primitive sees it. "
+            "To handle propagated refusals, use a `believe` arm with `else => bottom`."
+        ),
+    )
 
     # -- Escalate stub (for classify example) --------------------------------
     def escalate(img: Any, label: Any) -> str:

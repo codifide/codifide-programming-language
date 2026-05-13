@@ -322,6 +322,7 @@
     {
       "effect": null,
       "name": "is_bottom",
+      "note": "Value inspector only. Returns true when passed a literal `bottom` value. Cannot catch a `bottom` that propagated through a bind \u2014 `bottom` raises BottomPropagationError before this primitive sees it. To handle propagated refusals, use a `believe` arm with `else => bottom`.",
       "returns": "Bool"
     },
     {

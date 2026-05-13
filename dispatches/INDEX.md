@@ -22,6 +22,7 @@ Filename convention:
 | `pre-t14-fixes` | pre-T1-4 fixes — three findings from T1-2 and T1-3 applied by consensus | [md](./2026-05-13-pre-t14-fixes.readout.md) | [yaml](./2026-05-13-pre-t14-fixes.yaml) |  |
 | `session-close` | session close 2026-05-13 — Track 1 complete, Track 2 ready | [md](./2026-05-13-session-close.readout.md) | [yaml](./2026-05-13-session-close.yaml) |  |
 | `t1-1-pipeline-task-spec` | T1-1 pipeline task spec filed — content-moderation pipeline for agent case study | [md](./2026-05-13-t1-1-pipeline-task-spec.readout.md) | [yaml](./2026-05-13-t1-1-pipeline-task-spec.yaml) |  |
+| `t2-9-manifest-note-field` | T2-9 — capability manifest note field added; is_bottom() caveat live | [md](./2026-05-13-t2-9-manifest-note-field.readout.md) | [yaml](./2026-05-13-t2-9-manifest-note-field.yaml) |  |
 | `track1-sable` |  |  |  | [md](./2026-05-13-track1-sable-audit.md) |
 | `track1-sable-post` | Track 1 Sable audit post-resolution — T1-6 | [md](./2026-05-13-track1-sable-post.readout.md) | [yaml](./2026-05-13-track1-sable-post.yaml) |  |
 | `track1-summary` | Track 1 case study summary — agent adoption initiative gate dispatch | [md](./2026-05-13-track1-summary.readout.md) | [yaml](./2026-05-13-track1-summary.yaml) |  |
