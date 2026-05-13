@@ -86,14 +86,19 @@ from "spec filed, nothing started" to "Track 1 complete, Track 2 ready."
 
 ## Next session
 
-**Track 2 — Adoption Infrastructure (continuing)**
+**Track 3 — v2.0 Roadmap**
 
-- T2-9 ✅ Manifest note field
-- T2-1 ✅ capability.json and capability.cbor generated
-- T2-2 ✅ Live at codifide.com/capability.json and codifide.com/capability.cbor
-- T2-3 ✅ docs/AGENT_COOKBOOK.md — 10 failure modes from 5 sessions
-- T2-4 ✅ dispatches/feedback/TEMPLATE.md
-- T2-5 ✅ python3 -m codifide agent-quickstart CLI
-- T2-6 ✅ Tested — 289 tests pass, quickstart exits 0
-- T2-7 🔜 Track 2 completion dispatch
-- T2-8 🔜 Sable audit of adoption infrastructure
+Track 2 complete. All tasks done.
+
+- T3-1 🔜 Collect findings from T1-6 and T2-8
+- T3-2 🔜 Update docs/ROADMAP.md with adoption evidence
+- T3-3 🔜 Open new spec for v2.0 language work
+- T3-4 🔜 File Quill/Glyph dispatch for roadmap update
+- T3-5 🔜 Sable audit of v2.0 roadmap
+
+Key v2.0 inputs from Track 1 + Track 2:
+- RPC API: confirmed highest priority (Program 5 friction)
+- Static bind-before-when detection (parser scope tracking)
+- Manifest docs field (AUD-T2-03)
+- Manifest note field already shipped (T2-9)
+- Feedback template not yet used in real session (AUD-T2-04 open)
