@@ -67,7 +67,7 @@ agents naming the same hash see the same bytes, the same contracts, and the
 same intent. Intent is part of a definition's canonical form; you cannot
 rename or re-intend a symbol without minting a new identity.
 
-The language is small. The current implementation is a prototype. The
+The language is small. v1.0 shipped on 2026-05-11. The
 properties it pins down are the ones that matter before scale, not after.
 
 ## What's in v1.0
