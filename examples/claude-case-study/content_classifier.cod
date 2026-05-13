@@ -1,0 +1,27 @@
+module content_classifier
+
+def classify_content
+  intent "label a message as safe, unsafe, or uncertain based on keyword signals"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    intent "unsafe — spam, hate, or violence detected"
+    when   or(contains(lower(message), "spam"),
+              contains(lower(message), "hate"),
+              contains(lower(message), "violence"))
+    belief("unsafe", 0.90)
+  cand
+    intent "safe — approved or verified signal"
+    when   or(contains(lower(message), "approved"),
+              contains(lower(message), "verified"))
+    belief("safe", 0.90)
+  cand
+    intent "uncertain — no strong signal"
+    belief("uncertain", 0.75)
+
+def main
+  intent "test the classifier with a spam message"
+  sig    () -> Label
+  effects {}
+  cand
+    classify_content("this message contains spam")

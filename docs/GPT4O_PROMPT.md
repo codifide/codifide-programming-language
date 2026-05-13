@@ -230,6 +230,14 @@ cand
 - **Every `def` must declare `effects`.** Use `effects {}` for pure functions.
 - **`believe` blocks require `else => ...`.** Partial dispatch is a parse error.
 - **Contracts run pure.** Pre, post, and `when` guards cannot call effectful primitives.
+- **`when` guards execute before the candidate body.** A bind (`<-`) is part of the body — the bound name doesn't exist yet when `when` runs. This fails:
+  ```
+  cand
+    label <- moderate(message)   # body — runs after guard
+    when   eq(label, "unsafe")   # guard — runs first; label unbound
+    "blocked"
+  ```
+  Error: `unknown callable: 'label'`. Fix: single cand, bind in body, `if/then/else` to route.
 - **`bottom` propagates.** An unhandled `bottom` raises `RefusalError`.
 - **Multi-line expressions are fine** as long as brackets are balanced.
 

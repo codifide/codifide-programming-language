@@ -1,0 +1,12 @@
+module test_hint
+
+def bad_pattern
+  intent "trigger the bind-before-when error to test the hint"
+  sig    (msg: String) -> String
+  effects {}
+  cand
+    label <- bad_pattern(msg)
+    when   eq(label, "x")
+    "matched"
+  cand
+    "fallback"

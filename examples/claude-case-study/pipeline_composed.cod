@@ -1,0 +1,22 @@
+module pipeline_composed
+
+# Content-addressed composition via index.
+# Individual imports don't carry transitive dependencies — use an index
+# that bundles all symbols, then from-import.
+# Requires Python runtime: CODIFIDE_RUNTIME=python
+
+from sha256:f6467502a22d15edc9f6975329f701dc069c56cb7d55def87ae2c1da8c55be87 import classify_content, moderate, route_message, run_pipeline
+
+def composed_pipeline
+  intent "run the content-moderation pipeline via content-addressed imports"
+  sig    (message: String) -> Decision
+  effects {io.stdout}
+  cand
+    run_pipeline(message)
+
+def main
+  intent "demonstrate content-addressed composition"
+  sig    () -> Decision
+  effects {io.stdout}
+  cand
+    composed_pipeline("this message contains violence")

@@ -1,0 +1,44 @@
+module moderation_gate
+
+def classify_content
+  intent "label a message as safe, unsafe, or uncertain based on keyword signals"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    intent "unsafe — spam, hate, or violence detected"
+    when   or(contains(lower(message), "spam"),
+              contains(lower(message), "hate"),
+              contains(lower(message), "violence"))
+    belief("unsafe", 0.90)
+  cand
+    intent "safe — approved or verified signal"
+    when   or(contains(lower(message), "approved"),
+              contains(lower(message), "verified"))
+    belief("safe", 0.90)
+  cand
+    intent "uncertain — no strong signal"
+    belief("uncertain", 0.75)
+
+def moderate
+  intent "refuse classification when confidence is too low"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    result <- classify_content(message)
+    believe result
+      ge(conf(result), 0.70) => result
+      else                   => bottom
+
+def main_unsafe
+  intent "test the unsafe path — spam message should return unsafe"
+  sig    () -> Label
+  effects {}
+  cand
+    moderate("this message contains spam")
+
+def main_refuse
+  intent "test the low-confidence path — hello world returns uncertain (0.75 clears gate)"
+  sig    () -> Label
+  effects {}
+  cand
+    moderate("hello world")

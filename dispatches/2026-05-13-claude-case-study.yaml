@@ -1,0 +1,64 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "Claude baseline content-moderation case study — T1-4"
+  initiative: agent-adoption
+  track: "1"
+  task: T1-4
+  model: "Claude Sonnet 4.6"
+  capability_hash: "sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d"
+  programs_completed: 5
+  first_attempt_successes: 4
+  results:
+    - program: 1
+      status: pass
+      first_attempt: pass
+      notes: "lower() used correctly; case-sensitive matching avoided"
+    - program: 2
+      status: pass
+      first_attempt: pass
+      notes: "believe block correct; predicted main_refuse behavior before running"
+    - program: 3
+      status: pass
+      first_attempt: fail
+      error: "unknown callable: label — bind used before when guard executed"
+      fix: "single cand with bind in body, nested if/then/else for routing"
+    - program: 4
+      status: pass
+      first_attempt: pass
+      notes: "effects {io.stdout} on both run_pipeline and main"
+    - program: 5
+      status: pass
+      first_attempt: pass
+      notes: "used index + from-import pattern; CODIFIDE_RUNTIME=python set correctly"
+  failure_modes:
+    - program: 3
+      error: "unknown callable: label"
+      root_cause: "bind-before-when — guards execute before bodies; bound name not yet in scope"
+      fix: "move bind into body; use if/then/else for routing"
+  new_findings:
+    - id: "CLO-1"
+      severity: "P2"
+      description: "bind-before-when footgun — syntactically plausible, execution order not documented"
+      error_message: "unknown callable: label (misleading — label is a name, not a callable)"
+      proposed_fix_a: "add hint to error: 'name used in when guard before it is bound — binds execute after guards'"
+      proposed_fix_b: "add bind-before-when to surface rules section of AGENT_QUICKREF"
+  three_model_comparison:
+    program_3_routing:
+      gpt4o: "believe block on string values (anticipated BottomPropagationError, self-corrected)"
+      gemini: "nested if/then/else with is_bottom() (dead code but correct structure)"
+      claude: "bind-before-when (real error, fixed to nested if/then/else)"
+    program_5:
+      gpt4o: "individual imports (failed, fixed with index)"
+      gemini: "individual imports (failed, fixed with index)"
+      claude: "index + from-import (first attempt pass)"
+    lower_usage:
+      gpt4o: "yes"
+      gemini: "no (latent bug)"
+      claude: "yes"
+  unknowns:
+    - question: "Is bind-before-when a parser limitation or deliberate design?"
+      why_unknown: "Behavior is consistent but undocumented; error message is misleading"
+      how_to_resolve: "Check spec and add documentation; consider better error hint"
+  status: complete

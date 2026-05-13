@@ -320,6 +320,28 @@ not yet support `from`-import syntax.
 - **Contracts run pure.** Pre, post, and `when` guards evaluate with
   an empty effect budget. A postcondition cannot call `io.say` even
   if the surrounding function is allowed to.
+- **`when` guards execute before the candidate body.** A bind (`<-`)
+  is part of the body — the bound name does not exist yet when `when`
+  runs. This pattern fails:
+
+  ```codifide
+  cand
+    label <- moderate(message)   # body — runs after guard
+    when   eq(label, "unsafe")   # guard — runs first; label unbound
+    "blocked"
+  ```
+
+  Error: `unknown callable: 'label'`. Fix: move the bind into the body
+  and use `if/then/else` to route on the result:
+
+  ```codifide
+  cand
+    label <- moderate(message)
+    if eq(label, "unsafe") then "blocked"
+    else if eq(label, "safe") then "approved"
+    else "escalate-to-human"
+  ```
+
 - **`bottom` propagates.** A `bottom` that escapes a top-level call
   raises `RefusalError`. Handle it in a `believe` arm or accept the
   refusal. `is_bottom()` cannot catch a propagated `bottom` — see

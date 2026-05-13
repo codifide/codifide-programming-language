@@ -1,0 +1,28 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "post-T1-4 fixes — bind-before-when hint added to runtime and docs"
+  initiative: agent-adoption
+  track: "1"
+  capability_hash: "sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d"
+  fixes_applied:
+    - finding: "CLO-1 (P2) — bind-before-when footgun"
+      files:
+        - "codifide/runtime/interpreter.py"
+        - "docs/AGENT_QUICKREF.md"
+        - "docs/GPT4O_PROMPT.md"
+      changes:
+        - "_unbound_name_message: appends bind-before-when hint for plain identifiers"
+        - "_unknown_callable_message: appends bind-before-when hint for plain identifiers"
+        - "AGENT_QUICKREF: added broken example, error, and fix to surface rules section"
+        - "GPT4O_PROMPT: same rule added"
+  test_results:
+    python_tests: 289
+    failures: 0
+    regressions: 0
+  unknowns:
+    - question: "Are there other guard-vs-body execution order surprises?"
+      why_unknown: "Only bind-before-when tested; other guard-side state dependencies not audited"
+      how_to_resolve: "Sable audit of guard evaluation model in T1-6"
+  status: complete
