@@ -1,20 +1,32 @@
-subject: "Session close — 2026-05-13"
-date: "2026-05-13"
-persona: Glyph
-session: 2026-05-13
-status: closed
-
-work_completed:
-  - "Codifide Programming Language repo made public (codifide-programming-language)"
-  - "README updated to v1.0, LICENSE and CONTRIBUTING.md added"
-  - "Agent adoption initiative spec opened (.kiro/specs/agent-adoption/)"
-  - "codifide.com rebuilt and deployed to Vercel (migrated from Firebase)"
-  - "Launch banner, language card with wordmark and stats, veteran-owned note"
-  - "Launch article at codifide.com/launch"
-  - "Agentic Stage-Gate Governance: steering moved to root, LICENSE and CONTRIBUTING added"
-  - "Decode The Sign README: iOS-first, April 2026 status"
-  - "Codifide Health README: March 2026 hardening and SMART OAuth"
-  - "CSP rule documented: no inline CSS on Vercel"
-
-dispatch_check: passing
-next_session: "Track 1 — T1-1 pipeline task spec, T1-2 first external agent session"
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "session close 2026-05-13 — Track 1 complete, Track 2 ready"
+  capability_hash: "sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d"
+  track1_status: complete
+  track2_status: ready_to_start
+  dispatches_filed_this_session:
+    - "2026-05-13-t1-1-pipeline-task-spec"
+    - "2026-05-13-gpt4o-case-study"
+    - "2026-05-13-gemini-case-study"
+    - "2026-05-13-claude-case-study"
+    - "2026-05-13-persona-catchup"
+    - "2026-05-13-pre-t14-fixes"
+    - "2026-05-13-post-t14-fixes"
+    - "2026-05-13-track1-sable-audit"
+    - "2026-05-13-track1-sable-post"
+    - "2026-05-13-track1-summary"
+  fixes_applied:
+    - "AGENT_QUICKREF.md: contains() case-sensitivity, is_bottom() trap, routing style, bind-before-when, index pattern"
+    - "AGENT_TASK_SPEC.md: uncertain confidence, lower() reminder, main_refuse rename, three test messages"
+    - "interpreter.py: bind-before-when hint"
+    - "parser.py: from-import error message"
+    - "persona briefs: all three catch-up sections updated"
+  test_results:
+    python_tests: 289
+    failures: 0
+  next_session:
+    first_task: T2-9
+    description: "Add note field to manifest schema; add is_bottom() caveat; regenerate capability-0.1.json"
+  dispatch_check: clean
