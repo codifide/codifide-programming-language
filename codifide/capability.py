@@ -157,9 +157,17 @@ def _ast_kinds() -> Dict[str, Any]:
                 "First-class refusal. Callers must handle it in a "
                 "``believe`` arm or at a call site; an unhandled "
                 "``bottom`` propagating to the top-level caller "
-                "raises ``RefusalError``."
+                "raises ``RefusalError``. The optional ``reason`` "
+                "field (V3-3) carries a human-readable explanation "
+                "of why the refusal occurred; it is propagated "
+                "through ``RefusalError`` for diagnostics but does "
+                "not affect dispatch or canonical identity. Bare "
+                "``bottom`` (no reason) is backward-compatible — "
+                "its canonical bytes are unchanged."
             ),
-            "fields": [],
+            "fields": [
+                {"name": "reason", "type": "string", "optional": True},
+            ],
         },
         "concat": {
             "description": (

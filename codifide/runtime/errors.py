@@ -105,14 +105,21 @@ class DispatchError(CodifideError):
 
 
 class RefusalError(CodifideError):
-    """Raised when bottom escapes a context that did not choose to handle it."""
+    """Raised when bottom escapes a context that did not choose to handle it.
 
-    def __init__(self, fn: str) -> None:
+    The optional ``reason`` field (V3-3) carries the string payload from
+    ``bottom "reason"`` when one was provided. It is ``None`` for bare
+    ``bottom`` nodes.
+    """
+
+    def __init__(self, fn: str, reason: Optional[str] = None) -> None:
         self.fn = fn
+        self.reason = reason
+        reason_suffix = f" Reason: {reason!r}" if reason is not None else ""
         super().__init__(
             f"'{fn}' returned ⊥ (refusal) and no caller chose to handle it. "
             f"Refusal is first-class in Codifide; handle it in a `believe` arm "
-            f"or at the call site."
+            f"or at the call site.{reason_suffix}"
         )
 
 

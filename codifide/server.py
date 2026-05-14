@@ -104,8 +104,9 @@ def _read_body(handler: http.server.BaseHTTPRequestHandler) -> Optional[bytes]:
 class _Handler(http.server.BaseHTTPRequestHandler):
     """Request handler for the Codifide RPC API."""
 
-    # The store is injected by the server factory below.
+    # The store and read_only flag are injected by the server factory below.
     store: SymbolStore
+    read_only: bool = False
 
     def log_message(self, fmt: str, *args) -> None:  # type: ignore[override]
         # Suppress the default per-request log to stderr; the server
@@ -149,6 +150,12 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         path = self.path.split("?")[0].rstrip("/")
 
         if path == "/symbols":
+            if self.read_only:
+                _json_response(self, 405, {
+                    "error": "method_not_allowed",
+                    "detail": "this registry is read-only; POST /symbols is disabled",
+                })
+                return
             self._post_symbol()
             return
 
@@ -327,7 +334,8 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         })
 
 
-def make_server(store: SymbolStore, host: str = "127.0.0.1", port: int = 7777):
+def make_server(store: SymbolStore, host: str = "127.0.0.1", port: int = 7777,
+                read_only: bool = False):
     """Create a ThreadingHTTPServer bound to host:port, backed by store.
 
     Uses ThreadingHTTPServer so concurrent POSTs are handled correctly.
@@ -335,10 +343,16 @@ def make_server(store: SymbolStore, host: str = "127.0.0.1", port: int = 7777):
 
     A 30-second socket timeout is set to prevent slow-loris style
     resource exhaustion (AUD-RPC-02).
+
+    ``read_only=True`` disables POST /symbols — used for the public
+    registry deployment where writes are not accepted (V3-2).
     """
-    # Inject the store into the handler class via a subclass so each
-    # request handler can access it without a global.
-    handler_class = type("_BoundHandler", (_Handler,), {"store": store})
+    # Inject the store and read_only flag into the handler class via a
+    # subclass so each request handler can access them without a global.
+    handler_class = type("_BoundHandler", (_Handler,), {
+        "store": store,
+        "read_only": read_only,
+    })
 
     server = http.server.ThreadingHTTPServer((host, port), handler_class)
     # Note: settimeout on the listening socket does NOT bound per-request
@@ -351,12 +365,18 @@ def make_server(store: SymbolStore, host: str = "127.0.0.1", port: int = 7777):
     return server
 
 
-def serve(store: SymbolStore, host: str = "127.0.0.1", port: int = 7777) -> None:
+def serve(store: SymbolStore, host: str = "127.0.0.1", port: int = 7777,
+          read_only: bool = False) -> None:
     """Start the server and block until interrupted."""
-    server = make_server(store, host, port)
-    print(f"codifide serve: listening on http://{host}:{port}")
+    server = make_server(store, host, port, read_only=read_only)
+    mode = " [read-only]" if read_only else ""
+    print(f"codifide serve: listening on http://{host}:{port}{mode}")
     print(f"  store: {store.root}")
-    print(f"  endpoints: POST /symbols  GET /symbols/<hash>  GET /symbols/<hash>/imports")
+    if read_only:
+        print(f"  endpoints: GET /symbols/<hash>  GET /symbols/<hash>/imports  GET /health")
+        print(f"  POST /symbols is disabled (read-only mode)")
+    else:
+        print(f"  endpoints: POST /symbols  GET /symbols/<hash>  GET /symbols/<hash>/imports")
     print(f"  stop: Ctrl-C")
     try:
         server.serve_forever()

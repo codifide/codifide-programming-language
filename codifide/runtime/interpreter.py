@@ -28,6 +28,7 @@ from ..core.types import (
     Bind,
     BottomExpr,
     Bottom,
+    BottomWithReason,
     Call,
     Candidate,
     Concat,
@@ -39,6 +40,7 @@ from ..core.types import (
     Ref,
     Seq,
     Value,
+    _BottomType,
 )
 from .errors import (
     ContractViolation,
@@ -369,7 +371,7 @@ class Interpreter:
 
             # Postconditions (skipped on refusal — a function that chose to abstain
             # does not have to deliver on downstream guarantees).
-            if result is not Bottom:
+            if not isinstance(result, _BottomType):
                 for clause in defn.post:
                     frame.locals["result"] = _as_value(result)
                     post_frame = _with_pure_budget(frame)
@@ -388,9 +390,10 @@ class Interpreter:
                     # Callers of `run` may legitimately expect the value. We raise
                     # a dedicated error so a host can distinguish refusal from
                     # other errors.
-                    raise RefusalError(defn.name)
+                    reason = result.reason if isinstance(result, BottomWithReason) else None
+                    raise RefusalError(defn.name, reason=reason)
 
-            return _unwrap(result) if result is not Bottom else Bottom
+            return _unwrap(result) if not isinstance(result, _BottomType) else result
         finally:
             self._intent_chain.pop()
             self._pop_depth()
@@ -505,6 +508,8 @@ class Interpreter:
                 provenance=("concat",),
             )
         if isinstance(expr, BottomExpr):
+            if expr.reason is not None:
+                return BottomWithReason(expr.reason)
             return Bottom
         if isinstance(expr, If):
             # Short-circuit conditional — evaluate cond, then exactly
@@ -571,7 +576,7 @@ class Interpreter:
         # value must handle it explicitly in a `believe` arm. Without this
         # check, arithmetic on ⊥ surfaces as a host TypeError.
         for a in args:
-            if a is Bottom:
+            if isinstance(a, _BottomType):
                 raise BottomPropagationError(fn=name)
         try:
             result = spec.fn(*args)
@@ -630,7 +635,7 @@ class Interpreter:
                         intent_chain=list(self._intent_chain),
                     )
             result = self._dispatch(defn, frame)
-            if result is not Bottom:
+            if not isinstance(result, _BottomType):
                 for clause in defn.post:
                     frame.locals["result"] = _as_value(result)
                     post_frame = _with_pure_budget(frame)
@@ -648,7 +653,7 @@ class Interpreter:
     # -- small utility ---------------------------------------------------
 
     def _truthy(self, v: Any) -> bool:
-        if v is Bottom:
+        if isinstance(v, _BottomType):
             return False
         return bool(_unwrap(v))
 
@@ -701,6 +706,8 @@ def _describe(expr: Expr) -> str:
     if isinstance(expr, Lit):
         return repr(expr.value)
     if isinstance(expr, BottomExpr):
+        if expr.reason is not None:
+            return f"bottom {expr.reason!r}"
         return "bottom"
     if isinstance(expr, Concat):
         return " ++ ".join(_describe(p) for p in expr.parts)

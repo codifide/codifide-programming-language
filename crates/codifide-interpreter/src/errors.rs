@@ -27,7 +27,10 @@ pub enum Error {
     /// No candidate guard matched during dispatch.
     Dispatch { fn_: String },
     /// Bottom escaped a context that did not handle it.
-    Refusal { fn_: String },
+    ///
+    /// The optional ``reason`` field (V3-3) carries the string payload from
+    /// ``bottom "reason"`` when one was provided.
+    Refusal { fn_: String, reason: Option<String> },
     /// Call depth exceeded the interpreter's limit.
     RecursionLimit { depth: usize },
     /// Bottom reached a primitive that cannot consume it.
@@ -67,12 +70,16 @@ impl fmt::Display for Error {
                      (one with no `when` guard) to guarantee dispatch."
                 )
             }
-            Error::Refusal { fn_ } => {
+            Error::Refusal { fn_, reason } => {
+                let reason_suffix = match reason {
+                    Some(r) => format!(" Reason: {r:?}"),
+                    None => String::new(),
+                };
                 write!(
                     f,
                     "'{fn_}' returned ⊥ (refusal) and no caller chose to handle it. \
                      Refusal is first-class in Codifide; handle it in a `believe` arm \
-                     or at the call site."
+                     or at the call site.{reason_suffix}"
                 )
             }
             Error::RecursionLimit { depth } => {

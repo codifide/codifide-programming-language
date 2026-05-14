@@ -90,7 +90,16 @@ class Believe:
 
 @dataclass(frozen=True)
 class BottomExpr:
-    """First-class refusal. Callers must handle; it is not an exception."""
+    """First-class refusal. Callers must handle; it is not an exception.
+
+    The optional ``reason`` field (added V3-3) carries a human-readable
+    explanation of why the refusal occurred. It is purely informational:
+    the runtime propagates it through ``RefusalError`` so callers can
+    surface it in diagnostics, but it does not affect dispatch or
+    canonical identity. Bare ``bottom`` (no reason) is backward-compatible
+    — its canonical bytes are unchanged.
+    """
+    reason: Optional[str] = None
     kind: str = field(default="bottom", init=False)
 
 
@@ -314,3 +323,27 @@ class _BottomType:
 
 
 Bottom = _BottomType()
+
+
+class BottomWithReason(_BottomType):
+    """A refusal value carrying a human-readable reason string (V3-3).
+
+    Subclasses ``_BottomType`` so that ``isinstance(x, _BottomType)``
+    catches both bare ``Bottom`` and reasoned refusals. The ``reason``
+    field is purely informational — it does not affect dispatch, canonical
+    identity, or truthiness.
+    """
+
+    def __new__(cls, reason: str) -> "BottomWithReason":
+        # Do NOT use the singleton pattern from _BottomType; each
+        # BottomWithReason is a distinct instance carrying its own reason.
+        return object.__new__(cls)
+
+    def __init__(self, reason: str) -> None:
+        self.reason = reason
+
+    def __repr__(self) -> str:
+        return f"⊥({self.reason!r})"
+
+    def __bool__(self) -> bool:
+        return False

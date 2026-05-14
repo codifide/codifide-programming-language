@@ -520,12 +520,27 @@ fn parse_believe(lines: &[Line], i: usize) -> Result<(Expr, usize), ParseError> 
         let split_pos = text.find(op).unwrap();
         let left = text[..split_pos].trim();
         let right = text[split_pos + op.len()..].trim();
-        if left == "else" {
-            otherwise = Some(safe_parse_expr(right, line.lineno)?);
+
+        // If the right-hand side is empty, the value is on the next line.
+        let (right_expr, new_i) = if right.is_empty() {
+            if i + 1 >= lines.len() || lines[i + 1].indent <= base_indent {
+                return Err(parse_err(
+                    "believe arm has no value after `=>`. Put the value on the same line as `=>` or on the next indented line.",
+                    Some(line.lineno),
+                ));
+            }
+            let (text, ni) = gather_expr(lines, i + 1, &lines[i + 1].text.clone())?;
+            (safe_parse_expr(&text, line.lineno)?, ni)
         } else {
-            arms.push((safe_parse_expr(left, line.lineno)?, safe_parse_expr(right, line.lineno)?));
+            (safe_parse_expr(right, line.lineno)?, i + 1)
+        };
+
+        if left == "else" {
+            otherwise = Some(right_expr);
+        } else {
+            arms.push((safe_parse_expr(left, line.lineno)?, right_expr));
         }
-        i += 1;
+        i = new_i;
     }
 
     let otherwise = otherwise.ok_or_else(|| parse_err(

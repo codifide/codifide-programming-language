@@ -423,7 +423,7 @@ pub fn build_default_registry() -> PrimitiveRegistry {
         let inner = match &a[0] {
             Value::Concrete(cv) => cv.clone(),
             Value::Belief(b) => b.about.clone(),
-            Value::Bottom => return Err(Error::BottomPropagation { fn_: "belief".to_string() }),
+            Value::Bottom { .. } => return Err(Error::BottomPropagation { fn_: "belief".to_string() }),
         };
         Ok(Value::Belief(Box::new(Belief { about: inner, conf: c })))
     });

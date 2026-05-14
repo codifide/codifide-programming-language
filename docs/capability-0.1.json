@@ -48,8 +48,14 @@
       ]
     },
     "bottom": {
-      "description": "First-class refusal. Callers must handle it in a ``believe`` arm or at a call site; an unhandled ``bottom`` propagating to the top-level caller raises ``RefusalError``.",
-      "fields": []
+      "description": "First-class refusal. Callers must handle it in a ``believe`` arm or at a call site; an unhandled ``bottom`` propagating to the top-level caller raises ``RefusalError``. The optional ``reason`` field (V3-3) carries a human-readable explanation of why the refusal occurred; it is propagated through ``RefusalError`` for diagnostics but does not affect dispatch or canonical identity. Bare ``bottom`` (no reason) is backward-compatible \u2014 its canonical bytes are unchanged.",
+      "fields": [
+        {
+          "name": "reason",
+          "optional": true,
+          "type": "string"
+        }
+      ]
     },
     "call": {
       "description": "A call to a named function or primitive. User functions resolve against the module's symbols and imports; unresolved names fall through to the primitive registry.",
@@ -191,7 +197,7 @@
       "when": "\u22a5 reached a primitive that cannot consume it."
     }
   ],
-  "generator": "codifide-python-1.0.0",
+  "generator": "codifide-python-3.0.0",
   "literal_types": [
     "Any",
     "Bool",
@@ -329,7 +335,7 @@
     {
       "effect": null,
       "name": "is_bottom",
-      "note": "Value inspector only. Returns true when passed a literal `bottom` value. Cannot catch a `bottom` that propagated through a bind \u2014 `bottom` raises BottomPropagationError before this primitive sees it. To handle propagated refusals, use a `believe` arm with `else => bottom`.",
+      "note": "Value inspector only. Returns true when passed a literal `bottom` value (with or without a reason string). Cannot catch a `bottom` that propagated through a bind \u2014 `bottom` raises BottomPropagationError before this primitive sees it. To handle propagated refusals, use a `believe` arm with `else => bottom`.",
       "returns": "Bool"
     },
     {

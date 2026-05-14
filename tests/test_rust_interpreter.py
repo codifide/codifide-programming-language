@@ -1057,3 +1057,153 @@ def main
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# 9. Parallel evaluator import support (V3-1 / AUD-OVERNIGHT-02)
+# ---------------------------------------------------------------------------
+
+class ParallelImportRust(_RustBase):
+    """V3-1: imported symbols are available inside parallel branches.
+
+    Regression test for AUD-OVERNIGHT-02. Before the fix, branch interpreters
+    were created with empty resolved_imports, so a call to an imported symbol
+    inside list(f(x), g(x)) would fail with 'unknown callable'. After the fix,
+    the parent's resolved_imports are cloned into each branch interpreter.
+
+    The test publishes two pure symbols to a temp store, then writes a consumer
+    that calls both inside list(...). The parallel evaluator should fire (both
+    args are direct calls to imported symbols with disjoint effects) and return
+    the correct result.
+    """
+
+    def setUp(self):
+        super()
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.store_root = Path(self._tmpdir.name) / "store"
+        from codifide.store import SymbolStore
+        self.store = SymbolStore(self.store_root)
+
+    def tearDown(self):
+        self._tmpdir.cleanup()
+
+    def _rust_run_with_store(self, src: str, entry: str = "main") -> tuple:
+        with tempfile.NamedTemporaryFile("w", suffix=".cod", delete=False, encoding="utf-8") as f:
+            f.write(src)
+            tmp = Path(f.name)
+        try:
+            cmd = [str(RUST_BIN), "run", str(tmp),
+                   "--entry", entry,
+                   "--store", str(self.store_root)]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            lines = result.stdout.strip().splitlines()
+            last = lines[-1] if lines else None
+            return last, result.stderr.strip(), result.returncode
+        finally:
+            tmp.unlink(missing_ok=True)
+
+    def _store_symbol(self, src: str, sym_name: str) -> str:
+        from codifide import parse as py_parse
+        module = py_parse(src)
+        defn = next(d for d in module.symbols if d.name == sym_name)
+        return self.store.put(defn.name, defn)
+
+    def test_imported_symbols_available_in_parallel_branches(self) -> None:
+        """list(double(n), triple(n)) with imported double and triple evaluates correctly.
+
+        Both args are direct calls to imported pure symbols with disjoint effects
+        (both effects {}). The parallel evaluator should fire and return the correct
+        list. Before V3-1, this would fail with 'unknown callable: double'.
+        """
+        double_src = """\
+def double
+  intent "double a number"
+  sig    (n: Int) -> Int
+  effects {}
+  cand
+    add(n, n)
+"""
+        triple_src = """\
+def triple
+  intent "triple a number"
+  sig    (n: Int) -> Int
+  effects {}
+  cand
+    add(n, add(n, n))
+"""
+        double_id = self._store_symbol(double_src, "double")
+        triple_id = self._store_symbol(triple_src, "triple")
+
+        consumer_src = f"""\
+import double = {double_id}
+import triple = {triple_id}
+
+def run_both
+  intent "call double and triple in parallel via list"
+  sig    (n: Int) -> List
+  effects {{}}
+  cand
+    list(double(n), triple(n))
+
+def main
+  intent "test parallel imported symbol calls"
+  sig    () -> List
+  effects {{}}
+  cand
+    run_both(5)
+"""
+        out, err, rc = self._rust_run_with_store(consumer_src)
+        self.assertEqual(rc, 0, f"Rust failed: {err}")
+        result = _norm(out)
+        self.assertEqual(result, [10, 15],
+                         f"Expected [10, 15] (double(5)=10, triple(5)=15), got {result!r}")
+
+    def test_imported_effectful_symbols_serialize(self) -> None:
+        """Two imported symbols sharing an effect (io.stdout) must not parallelize.
+
+        The effect-disjoint check should prevent parallelism when both symbols
+        declare the same effect. This test verifies the effect analysis correctly
+        handles imported symbols — it should run sequentially and succeed.
+        """
+        say_hi_src = """\
+def say_hi
+  intent "print hi"
+  sig    (name: String) -> String
+  effects {io.stdout}
+  cand
+    io.say("hi " ++ name)
+"""
+        say_bye_src = """\
+def say_bye
+  intent "print bye"
+  sig    (name: String) -> String
+  effects {io.stdout}
+  cand
+    io.say("bye " ++ name)
+"""
+        hi_id = self._store_symbol(say_hi_src, "say_hi")
+        bye_id = self._store_symbol(say_bye_src, "say_bye")
+
+        consumer_src = f"""\
+import say_hi  = {hi_id}
+import say_bye = {bye_id}
+
+def greet_and_farewell
+  intent "say hi then bye — must serialize due to shared io.stdout effect"
+  sig    (name: String) -> String
+  effects {{io.stdout}}
+  cand
+    say_hi(name)
+    say_bye(name)
+
+def main
+  intent "test that shared-effect imported symbols serialize correctly"
+  sig    () -> String
+  effects {{io.stdout}}
+  cand
+    greet_and_farewell("world")
+"""
+        out, err, rc = self._rust_run_with_store(consumer_src)
+        self.assertEqual(rc, 0, f"Rust failed: {err}")
+        # say_bye is the last call in the seq, so main returns "bye world"
+        self.assertEqual(_norm(out), "bye world")

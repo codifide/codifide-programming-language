@@ -135,6 +135,65 @@ def judge
         with self.assertRaises(ParseError):
             parse(src)
 
+    def test_believe_arm_value_on_next_line(self) -> None:
+        """FIND-G1 regression: believe arm value may appear on the next indented line."""
+        src = """
+def route
+  intent "route by label"
+  sig    (label: String) -> String
+  effects {}
+  cand
+    believe label
+      eq(label, "unsafe") =>
+        "blocked"
+      else => "approved"
+"""
+        m = parse(src)
+        body = m.symbols[0].candidates[0].body
+        self.assertIsInstance(body, Believe)
+        self.assertEqual(len(body.arms), 1)
+
+    def test_believe_arm_value_multiline_if_on_next_line(self) -> None:
+        """FIND-G1 regression: multi-line if/then/else as believe arm value after =>."""
+        from codifide.core.types import If
+        src = """
+def route
+  intent "route by label"
+  sig    (label: String) -> String
+  effects {}
+  cand
+    believe label
+      ge(conf(label), 0.0) =>
+        if eq(label, "unsafe") then "blocked"
+        else if eq(label, "safe") then "approved"
+        else "escalate-to-human"
+      else => bottom
+"""
+        m = parse(src)
+        body = m.symbols[0].candidates[0].body
+        self.assertIsInstance(body, Believe)
+        self.assertIsInstance(body.arms[0][1], If)
+
+    def test_believe_else_arm_value_on_next_line(self) -> None:
+        """FIND-G1 regression: else arm value may also appear on the next line."""
+        src = """
+def route
+  intent "route by label"
+  sig    (label: String) -> String
+  effects {}
+  cand
+    believe label
+      eq(label, "safe") => "approved"
+      else =>
+        "escalate-to-human"
+"""
+        m = parse(src)
+        body = m.symbols[0].candidates[0].body
+        self.assertIsInstance(body, Believe)
+        from codifide.core.types import Lit
+        self.assertIsInstance(body.otherwise, Lit)
+        self.assertEqual(body.otherwise.value, "escalate-to-human")
+
 
 if __name__ == "__main__":
     unittest.main()

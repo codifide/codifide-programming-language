@@ -1,6 +1,7 @@
 """Content-addressed symbol store.
 
 See :mod:`codifide.store.symbol_store` for the implementation.
+See :mod:`codifide.store.remote` for the remote fetch-and-cache wrapper.
 
 The primary byte and hash functions (``symbol_bytes``, ``symbol_hash``)
 operate on the CBOR canonical form as of 2026-05-11. The ``_cbor`` and
@@ -19,12 +20,15 @@ from .symbol_store import (
     symbol_hash_cbor,       # alias of symbol_hash for explicit callers
     symbol_hash_json,       # legacy JSON hash, for callers that need it
 )
+from .remote import RemoteStore, DEFAULT_REGISTRY
 
 __all__ = [
     "IntegrityError",
     "NotFound",
     "StoreError",
     "SymbolStore",
+    "RemoteStore",
+    "DEFAULT_REGISTRY",
     "symbol_bytes",
     "symbol_bytes_json",
     "symbol_cbor_bytes",

@@ -105,7 +105,16 @@ pub enum Expr {
         arms: Vec<(Expr, Expr)>,
         otherwise: Box<Expr>,
     },
-    Bottom,
+    /// First-class refusal.
+    ///
+    /// The optional ``reason`` field (V3-3) carries a human-readable
+    /// explanation of why the refusal occurred. It is purely informational
+    /// and does not affect dispatch or canonical identity. Bare ``Bottom``
+    /// (reason = None) produces identical canonical bytes to the pre-V3-3
+    /// form.
+    Bottom {
+        reason: Option<String>,
+    },
     Concat {
         parts: Vec<Expr>,
     },

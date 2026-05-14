@@ -294,7 +294,14 @@ fn expr_to_json(e: &Expr) -> JsonValue {
                 .collect::<Vec<_>>(),
             "else": expr_to_json(otherwise),
         }),
-        Expr::Bottom => json!({"kind": "bottom"}),
+        Expr::Bottom { reason } => {
+            // Only emit ``reason`` when present so bare ``bottom`` nodes
+            // produce identical canonical bytes to the pre-V3-3 form.
+            match reason {
+                Some(r) => json!({"kind": "bottom", "reason": r}),
+                None => json!({"kind": "bottom"}),
+            }
+        }
         Expr::Concat { parts } => json!({
             "kind": "concat",
             "parts": parts.iter().map(expr_to_json).collect::<Vec<_>>(),
@@ -397,7 +404,9 @@ fn expr_from_json(v: &JsonValue) -> Result<Expr, Error> {
                 otherwise,
             })
         }
-        "bottom" => Ok(Expr::Bottom),
+        "bottom" => Ok(Expr::Bottom {
+            reason: obj.get("reason").and_then(|v| v.as_str()).map(|s| s.to_string()),
+        }),
         "concat" => Ok(Expr::Concat {
             parts: array_of_exprs(obj.get("parts"))?,
         }),

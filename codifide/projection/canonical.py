@@ -279,7 +279,12 @@ def _expr_to_json(e: Expr) -> Dict[str, Any]:
             "else": _expr_to_json(e.otherwise),
         }
     if isinstance(e, BottomExpr):
-        return {"kind": "bottom"}
+        obj: Dict[str, Any] = {"kind": "bottom"}
+        # Only emit ``reason`` when present so bare ``bottom`` nodes
+        # produce identical canonical bytes to the pre-V3-3 form.
+        if e.reason is not None:
+            obj["reason"] = e.reason
+        return obj
     if isinstance(e, Concat):
         return {"kind": "concat", "parts": [_expr_to_json(p) for p in e.parts]}
     if isinstance(e, Attr):
@@ -325,7 +330,7 @@ def _expr_from_json(obj: Dict[str, Any]) -> Expr:
             otherwise=_expr_from_json(obj["else"]),
         )
     if k == "bottom":
-        return BottomExpr()
+        return BottomExpr(reason=obj.get("reason"))
     if k == "concat":
         return Concat(parts=tuple(_expr_from_json(p) for p in obj.get("parts", [])))
     if k == "attr":

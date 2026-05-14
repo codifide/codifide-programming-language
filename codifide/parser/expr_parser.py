@@ -256,6 +256,11 @@ class _Parser:
         if tok.kind == "ident":
             if tok.text == "bottom":
                 self.take()
+                # Optional reason string: bottom "reason text"
+                nxt = self.peek()
+                if nxt is not None and nxt.kind == "str":
+                    self.take()
+                    return BottomExpr(reason=nxt.text)
                 return BottomExpr()
             if tok.text == "true":
                 self.take()

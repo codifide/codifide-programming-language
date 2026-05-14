@@ -48,8 +48,8 @@ pub fn run_with_imports(
     check_transitive_effects(module)?;
     let mut interp = Interpreter::new_with_imports(module, DEFAULT_MAX_DEPTH, resolved_imports);
     let result = interp.invoke(entry, args)?;
-    if result.is_bottom() {
-        return Err(Error::Refusal { fn_: entry.to_string() });
+    if let Value::Bottom { reason } = &result {
+        return Err(Error::Refusal { fn_: entry.to_string(), reason: reason.clone() });
     }
     Ok(result)
 }
@@ -77,7 +77,8 @@ fn check_transitive_effects(module: &Module) -> Result<(), Error> {
                         }
                     }
                 }
-                // Primitives are checked at runtime; imports not supported in v2-A initial port.
+                // Primitives are checked at runtime; import effect-checking
+                // is handled by the Python runtime's _check_transitive_effects.
             }
         }
     }
@@ -252,7 +253,7 @@ impl<'m> Interpreter<'m> {
         // Bind parameters.
         let mut locals = HashMap::new();
         for (i, p) in defn.signature.params.iter().enumerate() {
-            let v = args.get(i).cloned().unwrap_or(Value::Bottom);
+            let v = args.get(i).cloned().unwrap_or(Value::Bottom { reason: None });
             locals.insert(p.name.clone(), v);
         }
 
@@ -369,7 +370,7 @@ impl<'m> Interpreter<'m> {
             }
 
             Expr::Seq { steps } => {
-                let mut result = Value::Bottom;
+                let mut result = Value::Bottom { reason: None };
                 for step in steps {
                     result = self.eval(step, frame)?;
                 }
@@ -378,9 +379,9 @@ impl<'m> Interpreter<'m> {
 
             Expr::Concat { parts } => {
                 // Parallel path: if parts are effect-disjoint and at least
-                // one contains a user call, evaluate in parallel.
+                // one contains a user call (local or imported), evaluate in parallel.
                 let part_refs: Vec<&Expr> = parts.iter().collect();
-                if parallel::should_parallelize(&part_refs, self.module) {
+                if parallel::should_parallelize(&part_refs, self.module, &self.resolved_imports) {
                     let vals = self.eval_parallel_exprs(&part_refs, frame)?;
                     let mut s = String::new();
                     for v in vals {
@@ -405,7 +406,7 @@ impl<'m> Interpreter<'m> {
                 Ok(Value::with_type(Payload::String(s), "String"))
             }
 
-            Expr::Bottom => Ok(Value::Bottom),
+            Expr::Bottom { reason } => Ok(Value::Bottom { reason: reason.clone() }),
 
             Expr::If { cond, then_, else_ } => {
                 let c = self.eval(cond, frame)?;
@@ -495,6 +496,12 @@ impl<'m> Interpreter<'m> {
         let locals_snapshot = frame.locals.clone();
         let effect_budget = frame.effect_budget.clone();
 
+        // Clone resolved_imports so each branch interpreter has its own copy.
+        // This is the V3-1 fix for AUD-OVERNIGHT-02: imported symbols are now
+        // available inside parallel branches. Clone cost is proportional to the
+        // number of imports; for typical pipelines (2–5 imports) this is negligible.
+        let imports_snapshot = self.resolved_imports.clone();
+
         // Transmit pointers as usize (which is Send). We reconstruct them
         // inside each closure. Safety: Module, Definition, and Expr are
         // immutable during parallel evaluation and outlive all branches.
@@ -514,6 +521,7 @@ impl<'m> Interpreter<'m> {
                     as *mut Option<(Result<Value, Error>, EffectTrace)> as usize;
                 let locals = locals_snapshot.clone();
                 let budget = effect_budget.clone();
+                let imports = imports_snapshot.clone();
 
                 s.spawn(move |_| {
                     let module: &Module = unsafe { &*(module_addr as *const Module) };
@@ -526,13 +534,9 @@ impl<'m> Interpreter<'m> {
                         depth: current_depth,
                         prims: build_default_registry(),
                         trace: EffectTrace::fresh(),
-                        // Note: resolved_imports is not passed to branch interpreters.
-                        // Imported symbols are not available in parallel branches.
-                        // This is a known limitation (AUD-OVERNIGHT-02). If a parallel
-                        // branch calls an imported symbol, it will fail with
-                        // unknown_callable. Fix: pass resolved_imports here when the
-                        // parallel evaluator gains full import support.
-                        resolved_imports: HashMap::new(),
+                        // V3-1 (AUD-OVERNIGHT-02 fix): pass parent's resolved_imports
+                        // so imported symbols are available in parallel branches.
+                        resolved_imports: imports,
                     };
                     let branch_frame = Frame { defn, locals, effect_budget: budget };
                     let result = branch_interp.eval(expr, &branch_frame);
@@ -642,7 +646,7 @@ fn describe(expr: &Expr) -> String {
         Expr::Ref { name } => name.clone(),
         Expr::Attr { target, name } => format!("{}.{}", describe(target), name),
         Expr::Lit { value, .. } => value.to_string(),
-        Expr::Bottom => "bottom".to_string(),
+        Expr::Bottom { .. } => "bottom".to_string(),
         Expr::Concat { parts } => parts.iter().map(describe).collect::<Vec<_>>().join(" ++ "),
         Expr::If { cond, then_, else_ } => {
             format!("if {} then {} else {}", describe(cond), describe(then_), describe(else_))

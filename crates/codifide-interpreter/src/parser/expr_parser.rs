@@ -233,7 +233,21 @@ impl Parser {
             TokenKind::Ident => {
                 let text = tok.text.clone();
                 match text.as_str() {
-                    "bottom" => { self.take(); Ok(Expr::Bottom) }
+                    "bottom" => {
+                        self.take();
+                        // Optional reason string: bottom "reason text"
+                        let reason = if let Some(next) = self.peek() {
+                            if next.kind == TokenKind::Str {
+                                let r = self.take().text.clone();
+                                Some(r)
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        };
+                        Ok(Expr::Bottom { reason })
+                    }
                     "true"   => { self.take(); Ok(Expr::Lit { value: serde_json::json!(true),  type_: "Bool".into(), conf: 1.0, provenance: "literal".into() }) }
                     "false"  => { self.take(); Ok(Expr::Lit { value: serde_json::json!(false), type_: "Bool".into(), conf: 1.0, provenance: "literal".into() }) }
                     "if" => {

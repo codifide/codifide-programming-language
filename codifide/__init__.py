@@ -15,6 +15,7 @@ from .core.types import (
     Value,
     Belief,
     Bottom,
+    BottomWithReason,
     EffectSet,
 )
 from .parser.parser import parse
@@ -50,7 +51,7 @@ from .runtime.errors import (
     BottomPropagationError,
 )
 
-__version__ = "1.0.0"
+__version__ = "3.0.0"
 
 __all__ = [
     "Module",
@@ -61,6 +62,7 @@ __all__ = [
     "Value",
     "Belief",
     "Bottom",
+    "BottomWithReason",
     "EffectSet",
     "parse",
     "run",

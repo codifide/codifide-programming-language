@@ -18,7 +18,7 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from ..core.types import Belief, Bottom, Value
+from ..core.types import Belief, Bottom, BottomWithReason, Value, _BottomType
 
 
 @dataclass
@@ -392,11 +392,12 @@ def build_default_registry(trace: EffectTrace) -> PrimitiveRegistry:
     # -- Refusal helpers -----------------------------------------------------
     reg.register(
         "is_bottom",
-        lambda x: x is Bottom,
+        lambda x: isinstance(x, _BottomType),
         returns="Bool",
         note=(
             "Value inspector only. Returns true when passed a literal `bottom` "
-            "value. Cannot catch a `bottom` that propagated through a bind — "
+            "value (with or without a reason string). Cannot catch a `bottom` "
+            "that propagated through a bind — "
             "`bottom` raises BottomPropagationError before this primitive sees it. "
             "To handle propagated refusals, use a `believe` arm with `else => bottom`."
         ),

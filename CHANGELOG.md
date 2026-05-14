@@ -3,10 +3,37 @@
 All notable changes to Codifide are recorded here. Releases follow semver once we
 reach v1.0; until then, the canonical form may change between minor versions.
 
-# Codifide Changelog
+## [3.0.0] — 2026-05-14
 
-All notable changes to Codifide are recorded here. Releases follow semver once we
-reach v1.0; until then, the canonical form may change between minor versions.
+Three requirements shipped (V3-1, V3-2, V3-3). V3-4 (time-indexed types) deferred
+— no adoption evidence emerged from V3-1 through V3-3. 383 tests passing, 0 skipped.
+
+### Added — V3-3: Refusal reasons (`bottom "reason"`)
+
+`bottom` gains an optional string payload. `bottom "confidence below threshold"`
+parses, evaluates, and propagates the reason through `RefusalError`. Bare `bottom`
+is unchanged — its canonical bytes are identical to the pre-V3-3 form.
+
+- **`BottomExpr(reason=...)`** — AST node gains optional `reason` field
+- **`BottomWithReason`** — runtime value subclassing `_BottomType`; falsy, passes `isinstance` checks
+- **`RefusalError.reason`** — carries the string payload; included in the error message
+- **Canonical JSON/CBOR** — `"reason"` key emitted only when present; additive, no existing hash invalidated
+- **Capability manifest** — `bottom` AST kind documents the optional `reason` field
+- **Rust** — `Expr::Bottom { reason }`, `Value::Bottom { reason }`, `Error::Refusal { reason }` all updated
+- 24 new tests in `tests/test_bottom_reason.py`
+
+### Added — V3-2: Remote symbol resolution (shipped previous session)
+
+`RemoteStore` with fetch-and-cache and hash-verification. `codifide serve --read-only`
+for public registry deployments. `codifide store push` and `codifide run --registry`.
+See `docs/RPC_API.md` §V3-2.
+
+### Added — V3-1: Parallel evaluator full import support (shipped previous session)
+
+Branch interpreters now receive `resolved_imports`. Imported-symbol calls are
+eligible for parallel evaluation. AUD-OVERNIGHT-02 fix.
+
+---
 
 ## [2.0.0] — 2026-05-14
 

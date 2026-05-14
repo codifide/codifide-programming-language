@@ -20,7 +20,11 @@ use serde_json::Value as JsonValue;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     /// First-class refusal (⊥). Not an error; must be handled by callers.
-    Bottom,
+    ///
+    /// The optional ``reason`` field (V3-3) carries a human-readable
+    /// explanation of why the refusal occurred. It is purely informational
+    /// and does not affect dispatch or truthiness.
+    Bottom { reason: Option<String> },
     /// A concrete value with metadata.
     Concrete(Concrete),
     /// A value wrapped with an explicit belief score.
@@ -29,7 +33,7 @@ pub enum Value {
 
 impl Value {
     pub fn is_bottom(&self) -> bool {
-        matches!(self, Value::Bottom)
+        matches!(self, Value::Bottom { .. })
     }
 
     /// Unwrap to the inner payload for primitive operations.
@@ -38,14 +42,14 @@ impl Value {
         match self {
             Value::Concrete(c) => Some(&c.payload),
             Value::Belief(b) => Some(&b.about.payload),
-            Value::Bottom => None,
+            Value::Bottom { .. } => None,
         }
     }
 
     /// Truthiness: Bottom is false; everything else delegates to the payload.
     pub fn is_truthy(&self) -> bool {
         match self {
-            Value::Bottom => false,
+            Value::Bottom { .. } => false,
             Value::Concrete(c) => c.payload.is_truthy(),
             Value::Belief(b) => b.about.payload.is_truthy(),
         }
@@ -54,7 +58,7 @@ impl Value {
     /// Confidence: Belief carries its own; Concrete defaults to 1.0; Bottom is 0.0.
     pub fn conf(&self) -> f64 {
         match self {
-            Value::Bottom => 0.0,
+            Value::Bottom { .. } => 0.0,
             Value::Concrete(c) => c.conf,
             Value::Belief(b) => b.conf,
         }
@@ -193,7 +197,7 @@ impl Value {
     /// Serialize to JSON for the conformance bridge.
     pub fn to_json(&self) -> JsonValue {
         match self {
-            Value::Bottom => JsonValue::String("⊥".to_string()),
+            Value::Bottom { .. } => JsonValue::String("⊥".to_string()),
             Value::Concrete(c) => c.payload.to_json(),
             Value::Belief(b) => b.about.payload.to_json(),
         }

@@ -139,6 +139,8 @@ def _cmd_run_rust(args: argparse.Namespace) -> int:
 
 def _cmd_run_python(args: argparse.Namespace) -> int:
     """Original Python tree-walking interpreter."""
+    from .store.remote import RemoteStore
+
     try:
         src = _read(args.file)
         store: Optional[SymbolStore] = None
@@ -149,8 +151,18 @@ def _cmd_run_python(args: argparse.Namespace) -> int:
             module = parse(src, store=store)
         if store is None and module.imports:
             store = SymbolStore(_store_root(args))
+
+        # Wrap with RemoteStore if --registry is set (V3-2).
+        effective_store = store
+        registry = getattr(args, "registry", None)
+        if registry and store is not None:
+            effective_store = RemoteStore(store, registry=registry)
+        elif registry and module.imports:
+            local = SymbolStore(_store_root(args))
+            effective_store = RemoteStore(local, registry=registry)
+
         entry = args.entry or _default_entry(module)
-        result = run(module, entry, store=store)
+        result = run(module, entry, store=effective_store)
         if result is not None:
             print(result)
         return 0
@@ -468,6 +480,90 @@ def cmd_store_verify(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_store_push(args: argparse.Namespace) -> int:
+    """Push a locally-stored symbol to a remote registry.
+
+    Reads the symbol bytes from the local store, POSTs them to the
+    registry's POST /symbols endpoint, and verifies the returned
+    identity matches. Idempotent: a second push of the same symbol
+    returns 200 with the existing identity.
+
+    The registry URL defaults to https://codifide.com. Agents running
+    private registries pass --registry https://my-registry.example.com.
+    """
+    import urllib.error
+    import urllib.request
+
+    registry = (args.registry or "https://codifide.com").rstrip("/")
+    identity = args.identity
+
+    # Validate identity shape before touching the store.
+    if not (identity.startswith("sha256:") and len(identity) == 71):
+        print(
+            f"codifide: invalid identity {identity!r}; "
+            f"expected sha256: followed by 64 hex chars",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        store = SymbolStore(_store_root(args))
+        data = store.get_bytes(identity)
+    except StoreError as e:
+        print(f"codifide: {e}", file=sys.stderr)
+        return 1
+
+    url = f"{registry}/symbols"
+    req = urllib.request.Request(
+        url,
+        data=data,
+        method="POST",
+        headers={"Content-Type": "application/cbor"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            body = resp.read(1024 * 1024)
+    except urllib.error.HTTPError as exc:
+        body = exc.read(4096)
+        try:
+            import json as _json
+            err = _json.loads(body)
+            detail = err.get("detail", err.get("error", str(exc)))
+        except Exception:
+            detail = body.decode("utf-8", errors="replace")
+        print(
+            f"codifide: registry {url} returned HTTP {exc.code}: {detail}",
+            file=sys.stderr,
+        )
+        return 1
+    except urllib.error.URLError as exc:
+        print(
+            f"codifide: cannot reach registry {registry}: {exc.reason}",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        import json as _json
+        result = _json.loads(body)
+    except Exception as exc:
+        print(f"codifide: cannot parse registry response: {exc}", file=sys.stderr)
+        return 1
+
+    returned_identity = result.get("identity", "")
+    if returned_identity != identity:
+        print(
+            f"codifide: registry returned identity {returned_identity!r} "
+            f"but expected {identity!r}; refusing to accept",
+            file=sys.stderr,
+        )
+        return 1
+
+    name = result.get("name", "?")
+    print(f"{identity}\t{name}")
+    return 0
+
+
 def cmd_store_gc(args: argparse.Namespace) -> int:
     """Report or delete unreachable identities.
 
@@ -644,11 +740,15 @@ def cmd_serve(args: argparse.Namespace) -> int:
     Thin HTTP wrapper over the symbol store. See ``docs/RPC_API.md``.
     Binds to 127.0.0.1 by default — not safe to expose over a network
     without a reverse proxy with TLS and auth.
+
+    Pass ``--read-only`` to disable POST /symbols for public registry
+    deployments (V3-2).
     """
     from .server import serve
 
     store = SymbolStore(_store_root(args))
-    serve(store, host=args.host, port=args.port)
+    read_only = getattr(args, "read_only", False)
+    serve(store, host=args.host, port=args.port, read_only=read_only)
     return 0
 
 
@@ -820,6 +920,13 @@ def main(argv=None) -> int:
         "--store",
         help="store root for import resolution (default: $CODIFIDE_STORE or ~/.codifide/store)",
     )
+    p_run.add_argument(
+        "--registry",
+        default=None,
+        help="remote registry URL for resolving imports on cache miss "
+             "(e.g. https://codifide.com). Opt-in: without this flag, "
+             "only the local store is used.",
+    )
     p_run.set_defaults(func=cmd_run)
 
     p_can = sub.add_parser("canonical", help="print canonical JSON or CBOR")
@@ -940,12 +1047,27 @@ def main(argv=None) -> int:
     )
     p_index.set_defaults(func=cmd_store_index)
 
-    p_verify = store_sub.add_parser(
+    p_verify_store = store_sub.add_parser(
         "verify",
         help="verify a stored module's imports resolve in the store",
     )
-    p_verify.add_argument("hash", help="identity of the module to verify")
-    p_verify.set_defaults(func=cmd_store_verify)
+    p_verify_store.add_argument("hash", help="identity of the module to verify")
+    p_verify_store.set_defaults(func=cmd_store_verify)
+
+    p_push = store_sub.add_parser(
+        "push",
+        help="push a locally-stored symbol to a remote registry",
+    )
+    p_push.add_argument(
+        "identity",
+        help="sha256:<hex> identity of the symbol to push",
+    )
+    p_push.add_argument(
+        "--registry",
+        default=None,
+        help="registry URL (default: https://codifide.com)",
+    )
+    p_push.set_defaults(func=cmd_store_push)
 
     # -- Garbage collection (2026-05-11 design dispatch) --------------
     p_gc = store_sub.add_parser(
@@ -1002,6 +1124,12 @@ def main(argv=None) -> int:
     p_serve.add_argument(
         "--store",
         help="store root directory (default: $CODIFIDE_STORE or ~/.codifide/store)",
+    )
+    p_serve.add_argument(
+        "--read-only",
+        action="store_true",
+        dest="read_only",
+        help="disable POST /symbols — for public registry deployments (V3-2)",
     )
     p_serve.set_defaults(func=cmd_serve)
 

@@ -673,19 +673,40 @@ def _parse_believe(lines: List[_Line], i: int) -> Tuple[Expr, int]:
         if text.startswith("else") and ("=>" in text or "⇒" in text):
             op = "=>" if "=>" in text else "⇒"
             _, right = text.split(op, 1)
-            otherwise = _safe_parse_expr(right.strip(), line.lineno)
-            i += 1
+            right = right.strip()
+            if right:
+                otherwise = _safe_parse_expr(right, line.lineno)
+                i += 1
+            else:
+                # Value is on the next line — gather it.
+                if i + 1 >= len(lines) or lines[i + 1].indent <= base_indent:
+                    raise ParseError(
+                        "believe `else =>` arm has no value. "
+                        "Put the value on the same line as `=>` or on the next indented line.",
+                        line=line.lineno,
+                    )
+                right_text, i = _gather_expr(lines, i + 1, lines[i + 1].text)
+                otherwise = _safe_parse_expr(right_text, line.lineno)
             continue
         if "=>" in text or "⇒" in text:
             op = "=>" if "=>" in text else "⇒"
             left, right = text.split(op, 1)
-            arms.append(
-                (
-                    _safe_parse_expr(left.strip(), line.lineno),
-                    _safe_parse_expr(right.strip(), line.lineno),
-                )
-            )
-            i += 1
+            right = right.strip()
+            left_expr = _safe_parse_expr(left.strip(), line.lineno)
+            if right:
+                right_expr = _safe_parse_expr(right, line.lineno)
+                i += 1
+            else:
+                # Value is on the next line — gather it.
+                if i + 1 >= len(lines) or lines[i + 1].indent <= base_indent:
+                    raise ParseError(
+                        "believe arm has no value after `=>`. "
+                        "Put the value on the same line as `=>` or on the next indented line.",
+                        line=line.lineno,
+                    )
+                right_text, i = _gather_expr(lines, i + 1, lines[i + 1].text)
+                right_expr = _safe_parse_expr(right_text, line.lineno)
+            arms.append((left_expr, right_expr))
             continue
         raise ParseError(
             f"unexpected line in believe block: {line.raw!r}", line=line.lineno
