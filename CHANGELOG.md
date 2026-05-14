@@ -8,6 +8,151 @@ reach v1.0; until then, the canonical form may change between minor versions.
 All notable changes to Codifide are recorded here. Releases follow semver once we
 reach v1.0; until then, the canonical form may change between minor versions.
 
+## [2.0.0] — 2026-05-14
+
+Four requirements driven by the Agent Adoption Initiative. Every friction
+point that caused Program 5 (content-addressed composition) to fail across
+all three Track 1 case studies is now fixed. The bind-before-when footgun
+that Claude hit in T1-4 is now a parse error. The `CODIFIDE_RUNTIME=python`
+workaround is gone. The capability manifest now links to human-readable
+documentation. A B-Team governance review (GPT-5.4, live interpreter) closed
+the release. 341 tests passing, 0 skipped.
+
+### Added — RPC API (`python3 -m codifide serve`)
+
+Program 5 previously required four CLI commands, an index ceremony, and a
+runtime flag. The RPC API removes all of it.
+
+- **`codifide/server.py`** — `ThreadingHTTPServer` backed by the existing
+  `SymbolStore`. No new storage logic; the server is a thin HTTP wrapper.
+- **`python3 -m codifide serve [--port 7777] [--store ~/.codifide/store]`** —
+  starts a local HTTP server bound to `127.0.0.1`.
+- **`POST /symbols`** — publish a symbol by POSTing its canonical CBOR (or
+  JSON) form. Returns `{"identity": "sha256:<hash>", "name": "<name>"}`.
+  Idempotent: a second POST of the same symbol returns 200 with the existing
+  identity.
+- **`GET /symbols/{identity}`** — retrieve a symbol by its SHA-256 content
+  identity. Returns canonical CBOR or JSON depending on `Accept` header.
+- **`GET /symbols/{identity}/imports`** — resolve the direct imports of a
+  stored module. One level only; walk recursively for the full closure.
+- **`GET /health`** — liveness check. No store access.
+- **`docs/RPC_API.md`** — full endpoint reference, agent workflow for
+  Program 5, security notes, and the Python alternative to `jq`.
+- 36 tests in `tests/test_rpc_program5.py` and `tests/test_server.py`.
+- Sable audit: 2 P2 findings fixed (negative Content-Length, socket timeout
+  not bounding per-request read time), 3 P3 findings fixed or accepted.
+
+**Key design decision:** individual symbol imports do not carry transitive
+dependencies. `route_message` calls `moderate` which calls `classify_content`
+— all three must be published and imported individually. The `/imports`
+endpoint resolves one level only; this is documented, not a bug.
+
+### Added — static bind-before-when detection
+
+The bind-before-when footgun (`when` guards execute before the candidate body,
+so a bound name used in a `when` guard is unbound when the guard runs) was
+previously a confusing runtime error: `unknown callable: 'label'`. It is now
+a parse error with a clear fix message.
+
+- **Python parser** (`codifide/parser/parser.py`) — `_parse_candidate` now
+  detects bind-before-when at parse time and raises `ParseError` with a
+  one-line fix hint.
+- **Rust parser** (`crates/codifide-interpreter/`) — same detection ported
+  to `parse_candidate`.
+- Runtime hints removed from `interpreter.py` (both parsers catch it now).
+- 12 regression tests in `tests/test_bind_before_when.py`.
+
+### Added — `from`-import in Rust parser
+
+`from sha256:<hash> import name1, name2` previously required
+`CODIFIDE_RUNTIME=python`. That workaround is gone.
+
+- **`parse_with_store`** in the Rust parser resolves `from`-imports from the
+  store filesystem at parse time.
+- **`run_with_imports`** in the Rust interpreter resolves imported symbols at
+  call time.
+- **`codifide-run`** binary now accepts `--store <path>` (default:
+  `~/.codifide/store`). The Python CLI passes `--store` to the Rust binary
+  automatically.
+- `CODIFIDE_RUNTIME=python` note removed from `docs/AGENT_QUICKREF.md`.
+- 2 conformance tests in `tests/test_rust_interpreter.py::FromImportRust`.
+
+### Added — capability manifest `docs` field
+
+- `docs` field added to `generate_capability()` — links to human-readable
+  documentation from the machine-readable manifest.
+- `docs/CAPABILITY.md` schema updated.
+- `docs/capability-0.1.json` regenerated.
+- publicsite `capability.json` and `capability.cbor` updated.
+
+### Added — agent adoption infrastructure (Track 2)
+
+Shipped alongside the v2.0 requirements as part of the Agent Adoption
+Initiative:
+
+- **`docs/AGENT_COOKBOOK.md`** (v1.1) — 12 failure modes from five external
+  agent sessions. Entries cover arithmetic operators, string methods,
+  case-sensitive `contains`, `believe` block shape, `is_bottom` propagation,
+  bind-before-when, content-addressed imports (CLI and HTTP paths), required
+  `def` fields, `belief(...)` return type, and the double-print behavior of
+  `io.say`.
+- **`python3 -m codifide agent-quickstart`** — zero-to-running-program CLI
+  for fresh agents.
+- **`docs/AGENT_QUICKREF.md`** updated — direct-call `is_bottom(f())` pattern
+  documented; `io.say` double-print note added.
+- **`docs/AGENT_TASK_SPEC.md`** — pipeline task spec used in all four case
+  studies. Confidence thresholds corrected (`"uncertain"` at 0.75 clears the
+  0.70 gate; `"escalate-to-human"` path is now reachable).
+
+### Changed — version bump to 2.0.0
+
+- Python package version: 1.0.0 → 2.0.0.
+- Rust crate versions: 1.0.0 → 2.0.0.
+
+### Capability manifest hash at v2.0.0
+
+`sha256:42d73647ba8de29a7d219bf2218bad0a42dc2a11d7878cac12ee931be2a1a185`
+
+### Test count at v2.0.0
+
+- Python: **341 passing, 0 skipped** (was 216 at v1.0.0).
+- Rust canonical: **28 passing** (unchanged).
+
+### Governance
+
+v2.0 went through a full A-Team + B-Team governance review before close:
+
+- **A-Team review (2026-05-14):** Axiom, Lumen, Relay, Sable passes. 8
+  findings: 7 applied, 1 deferred (cookbook HTTP workflow — subsequently
+  completed).
+- **B-Team review (2026-05-14):** GPT-5.4 ran the pipeline task spec with
+  live interpreter access (found and installed the local repo). 4/5 programs
+  on first attempt. 4 findings: all applied.
+
+### Known limitations
+
+- **Parallel evaluator branch interpreters do not carry resolved imports.**
+  Branch interpreters are created with empty `resolved_imports`, so imported
+  symbols are not available inside parallel branches. Documented in
+  `crates/codifide-interpreter/` with a clear fix path. Tracked as
+  AUD-OVERNIGHT-02; scheduled for Sable audit before v3.0 parallel work.
+
+### What shipped across the v2.0 work that made it to this tag
+
+From oldest to newest:
+1. Rust interpreter + Rust parser (Shape A milestone, 2026-05-12)
+2. Parallel evaluator and benchmarks (2026-05-12)
+3. Agent Adoption Initiative — Tracks 1, 2, 3 (2026-05-13)
+4. V2-1 RPC API (2026-05-14)
+5. V2-2 Static bind-before-when detection (2026-05-14)
+6. V2-3 from-import in Rust parser (2026-05-14)
+7. V2-4 Manifest docs field (2026-05-14)
+8. A-Team + B-Team governance review (2026-05-14)
+9. Cookbook v1.1, quickref updates, journalist catch-ups (2026-05-14)
+
+Every item documented in paired dispatches under `dispatches/`.
+Browse `dispatches/INDEX.md` for the indexed journal.
+
 ## [1.0.0] — 2026-05-11
 
 The v1 cut. A full day's work — four external-model reviews in the
