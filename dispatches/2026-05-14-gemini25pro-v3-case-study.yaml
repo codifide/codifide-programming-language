@@ -1,0 +1,27 @@
+id: 2026-05-14-gemini25pro-v3-case-study
+date: 2026-05-14
+persona: Quill
+kind: case-study
+title: "Gemini 2.5 Pro — v3.0 Case Study"
+model: gemini-2.5-pro
+prompt_version: v3.0
+manifest_hash: sha256:d900fe7e6d91300424b226cda0fd404bf281c4362a70131dbec116548b310ff2
+score: 4/5
+programs:
+  P1: pass
+  P2: pass
+  P3: fail
+  P4: pass
+  P5: pass
+findings:
+  - id: FIND-G1
+    severity: P2
+    description: >
+      believe arm value must be on the same line as =>. Gemini wrote the value
+      on a continuation line, causing ParseError: unexpected end of expression.
+    action: document in AGENT_QUICKREF.md; consider parser fix
+summary: >
+  4/5 first-attempt successes. P3 failed due to multi-line believe arm value
+  (FIND-G1, new finding). Strong performance on P2 (believe pattern), P4
+  (double-print prediction), P5 (non-transitive imports). Novel ge(conf(x), 0.0)
+  bottom-guard pattern observed.

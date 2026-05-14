@@ -365,6 +365,22 @@ support `from`-import as of v2.0.
   raises `RefusalError`. Handle it in a `believe` arm or accept the
   refusal. `is_bottom()` cannot catch a propagated `bottom` — see
   the `is_bottom` note in Idioms above.
+- **`believe` arm values must be on the same line as `=>`, or on the next indented line (v3.0+).** Both forms work:
+
+  ```codifide
+  # Same line (always worked)
+  believe label
+    ge(conf(label), 0.0) => if eq(label, "unsafe") then "blocked" else "approved"
+    else => bottom
+
+  # Value on next line (works as of v3.0)
+  believe label
+    ge(conf(label), 0.0) =>
+      if eq(label, "unsafe") then "blocked"
+      else if eq(label, "safe") then "approved"
+      else "escalate-to-human"
+    else => bottom
+  ```
 - **Multi-line expressions are fine.** Call arguments, bind
   right-hand sides, and contract expressions may span multiple
   physical lines as long as brackets are balanced at the end.

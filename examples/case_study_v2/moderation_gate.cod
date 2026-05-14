@@ -1,0 +1,49 @@
+def classify_content
+  intent "classify a message as safe, unsafe, or uncertain by keyword"
+  sig    (message: String) -> Label
+  effects {}
+
+  cand
+    intent "unsafe when message contains a harmful keyword"
+    when   or(
+             contains(lower(message), "spam"),
+             contains(lower(message), "hate"),
+             contains(lower(message), "violence")
+           )
+    belief("unsafe", 0.90)
+
+  cand
+    intent "safe when message contains an approval keyword"
+    when   or(
+             contains(lower(message), "approved"),
+             contains(lower(message), "verified")
+           )
+    belief("safe", 0.90)
+
+  cand
+    intent "uncertain when no keyword matches"
+    belief("uncertain", 0.75)
+
+def moderate
+  intent "gate classification on confidence — refuse when below threshold"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    result <- classify_content(message)
+    believe result
+      ge(conf(result), 0.70) => result
+      else                   => bottom
+
+def main_unsafe
+  intent "test the unsafe path"
+  sig    () -> Label
+  effects {}
+  cand
+    moderate("this message contains spam")
+
+def main_uncertain
+  intent "test the uncertain path — hello world has no keywords, returns uncertain"
+  sig    () -> Label
+  effects {}
+  cand
+    moderate("hello world")

@@ -1,0 +1,18 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-14"
+  persona: Glyph
+  subject: "V3-1 — parallel evaluator full import support (AUD-OVERNIGHT-02 fix)"
+  capability_hash: "sha256:42d73647ba8de29a7d219bf2218bad0a42dc2a11d7878cac12ee931be2a1a185"
+  requirement: "V3-1"
+  closes: "AUD-OVERNIGHT-02"
+  files_changed:
+    - "crates/codifide-interpreter/src/parallel.rs"
+    - "crates/codifide-interpreter/src/interpreter.rs"
+    - "tests/test_rust_interpreter.py"
+  fix: "clone resolved_imports into branch interpreters; pass to should_parallelize"
+  tests_added: 2
+  tests_total: 343
+  tests_failed: 0
+  regression_test: "test_imported_symbols_available_in_parallel_branches — list(double(n), triple(n)) with imported symbols returns [10, 15]"
+  assessment: "Parallel evaluator now supports imported symbols; AUD-OVERNIGHT-02 closed."

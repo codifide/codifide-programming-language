@@ -1,0 +1,20 @@
+id: 2026-05-14-v3-complete-session-close
+date: 2026-05-14
+persona: Quill
+kind: session-close
+title: "Session Close — v3.0 complete"
+status: closed
+tests: 383
+skipped: 0
+manifest_hash: sha256:7a006b2c13646a82fbff2dc3ad9aa5643aa08e4228701b863d0636495b997b8a
+dispatch_check: exits 0
+v3_status:
+  V3-1: shipped
+  V3-2: shipped
+  V3-3: shipped
+  V3-4: deferred (no adoption evidence)
+items_this_session:
+  - V3-3 refusal reasons (24 new tests)
+  - v3.0 close (ROADMAP, CHANGELOG updated)
+  - V3-4 deferred with documented reason
+open_items: none

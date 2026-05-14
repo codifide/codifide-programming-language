@@ -1,0 +1,15 @@
+id: 2026-05-14-gemini-v3-session-close
+date: 2026-05-14
+persona: Quill
+kind: session-close
+title: "Session Close — Gemini v3.0 case study"
+status: closed
+tests: 386
+skipped: 0
+dispatch_check: exits 0
+items_this_session:
+  - B-Team prompt update for v3.0 (__version__ bump, manifest hash, bottom reason, V3-2)
+  - Gemini 2.5 Pro v3.0 case study (4/5)
+  - FIND-G1 fix: believe arm value on continuation line (Python + Rust parsers, 3 tests)
+  - AGENT_QUICKREF.md and GPT4O_PROMPT.md updated
+open_items: none

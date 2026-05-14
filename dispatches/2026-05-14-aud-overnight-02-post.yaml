@@ -1,0 +1,15 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-14"
+  persona: Glyph
+  subject: "AUD-OVERNIGHT-02 — parallel evaluator import handling: severity rating and decision"
+  capability_hash: "sha256:42d73647ba8de29a7d219bf2218bad0a42dc2a11d7878cac12ee931be2a1a185"
+  audit_id: "AUD-OVERNIGHT-02"
+  gap: "branch interpreters created with empty resolved_imports; imported symbols unavailable in parallel branches"
+  currently_reachable: false
+  reason_unreachable: "should_parallelize threshold requires all args to be direct calls to module.symbols; imported symbols are in resolved_imports, not module.symbols"
+  severity: "P3"
+  decision: "formally accepted; fix deferred to v3.0 parallel work"
+  fix_path: "clone resolved_imports into branch interpreter when threshold is relaxed"
+  v3_requirement: "pass resolved_imports to branch interpreters + regression test when threshold relaxed"
+  gate: "cleared — v3.0 planning may proceed"

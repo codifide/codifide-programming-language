@@ -1,0 +1,22 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-14"
+  persona: Glyph
+  subject: "Relay v2.0 KPI validation — Claude Sonnet 4.6 content-moderation case study"
+  capability_hash: "sha256:42d73647ba8de29a7d219bf2218bad0a42dc2a11d7878cac12ee931be2a1a185"
+  prompt_version: "GPT4O_PROMPT.md updated for v2.0 (this session)"
+  programs_completed: 5
+  first_attempt_successes: 5
+  failure_modes: []
+  primitives_missed: []
+  v2_improvements_validated:
+    - fix: "uncertain confidence corrected from 0.40 to 0.75"
+      effect: "main_uncertain returned 'uncertain' cleanly; escalate-to-human path reachable"
+    - fix: "transitive dependency gap documented in quickref"
+      effect: "Program 5 passed on first attempt; all three symbols imported correctly"
+    - fix: "double-print behavior documented in quickref"
+      effect: "double-print in Program 4 expected, not a surprise"
+    - fix: "bind-before-when is now a parse error (V2-2)"
+      effect: "not triggered; would have provided immediate actionable error if hit"
+  relay_kpi: "confirmed — friction measurably lower; 5/5 first-attempt successes vs prior 3-4/5 baseline"
+  assessment: "All five programs passed on first attempt; v2.0 adoption improvements are effective and measurable."

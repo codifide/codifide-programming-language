@@ -1,0 +1,32 @@
+id: 2026-05-14-v3-3-refusal-reasons
+date: 2026-05-14
+persona: Quill
+kind: implementation
+title: "V3-3 — Refusal Reasons"
+status: shipped
+requirement: V3-3
+tests_before: 359
+tests_after: 383
+files_changed:
+  - codifide/core/types.py
+  - codifide/parser/expr_parser.py
+  - codifide/runtime/errors.py
+  - codifide/runtime/interpreter.py
+  - codifide/runtime/primitives.py
+  - codifide/projection/canonical.py
+  - codifide/capability.py
+  - codifide/__init__.py
+  - crates/codifide-canonical/src/ast.rs
+  - crates/codifide-canonical/src/json.rs
+  - crates/codifide-interpreter/src/parser/expr_parser.rs
+  - crates/codifide-interpreter/src/value.rs
+  - crates/codifide-interpreter/src/errors.rs
+  - crates/codifide-interpreter/src/interpreter.rs
+  - tests/test_bottom_reason.py
+  - docs/capability-0.1.json
+summary: >
+  bottom gains an optional string payload: bottom "reason". BottomExpr(reason=...)
+  in the AST; BottomWithReason at runtime; RefusalError carries the reason.
+  Canonical form: reason key emitted only when present — bare bottom bytes unchanged.
+  24 new tests. Rust and Python parsers, interpreters, and canonical crates all updated.
+backward_compatible: true

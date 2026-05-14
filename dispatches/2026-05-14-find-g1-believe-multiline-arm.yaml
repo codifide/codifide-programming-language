@@ -1,0 +1,21 @@
+id: 2026-05-14-find-g1-believe-multiline-arm
+date: 2026-05-14
+persona: Quill
+kind: bugfix
+title: "FIND-G1 — believe arm value on continuation line"
+status: fixed
+finding: FIND-G1
+severity: P2
+source: Gemini 2.5 Pro v3.0 case study (P3 failure)
+tests_before: 383
+tests_after: 386
+files_changed:
+  - codifide/parser/parser.py
+  - crates/codifide-interpreter/src/parser/mod.rs
+  - docs/AGENT_QUICKREF.md
+  - tests/test_parser.py
+summary: >
+  believe arm values may now appear on the next indented line after =>.
+  Previously, a line ending with => had an empty right-hand side and failed
+  with ParseError. Both Python and Rust parsers fixed. 3 regression tests added.
+backward_compatible: true

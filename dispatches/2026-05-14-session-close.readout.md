@@ -1,86 +1,95 @@
-# Session Close — 2026-05-14
+# Session Close — 2026-05-14 (v3.0 session)
 
 **Date:** 2026-05-14  
-**Persona:** Quill
+**Persona:** Quill  
+**Tests:** 359 passing, 0 skipped, 0 failed  
+**Dispatch check:** exits 0, all pairs complete
+
+---
 
 ## What happened this session
 
-Two workstreams completed: governance infrastructure and the first half of the
-RPC API implementation.
+This session opened from the v2.0 handoff and closed with V3-1 and V3-2 shipped.
+
+### 1. B-Team prompt update (`docs/GPT4O_PROMPT.md`)
+
+Updated for v2.0 before running the new case study:
+- Manifest hash updated to v2.0 (`sha256:42d736...`), generator to `2.0.0`, `docs` field added
+- `"uncertain"` confidence corrected from 0.40 → 0.75 (FIND-B3 consistency fix)
+- `main_refuse` → `main_uncertain` with updated intent and comment
+- RESOURCE 2: direct-call `is_bottom` pattern, double-print note, missing table rows, bind-before-when parse error note, content-addressed imports section with RPC API pointer
+
+### 2. Relay v2.0 case study
+
+5/5 first-attempt successes. Relay's KPI confirmed: adoption friction is measurably lower. The three changes with the most direct impact: confidence threshold fix (Programs 2 and 3), transitive dependency documentation (Program 5), double-print documentation (Program 4). No new findings for the A-Team.
+
+Filed: `2026-05-14-relay-v2-case-study.{readout.md,yaml}`
+
+### 3. AUD-OVERNIGHT-02 — parallel evaluator import handling
+
+Sable audit. Key finding: the gap is currently unreachable by construction — the `should_parallelize` threshold excludes imported-symbol calls. Severity: P3. Decision: formally accepted, fix deferred to V3-1 (which was then implemented immediately).
+
+Filed: `2026-05-14-aud-overnight-02-parallel-imports.md`, `2026-05-14-aud-overnight-02-post.{readout.md,yaml}`
+
+### 4. v3.0 roadmap
+
+Four requirements, evidence-driven. Thesis: v3.0 is the protocol shape — making Codifide a multi-agent language. `docs/ROADMAP.md` updated.
+
+- V3-1 (P1): Parallel evaluator full import support
+- V3-2 (P1): Remote symbol resolution
+- V3-3 (P2): Refusal reasons
+- V3-4 (P3, conditional): Time-indexed types
+
+Filed: `2026-05-14-v3-roadmap.{readout.md,yaml}`
+
+### 5. V3-1 — Parallel evaluator: full import support
+
+AUD-OVERNIGHT-02 fix applied. Branch interpreters now receive the parent's `resolved_imports`. Threshold functions updated to treat imported symbols identically to local symbols. 2 regression tests added.
+
+Files: `crates/codifide-interpreter/src/parallel.rs`, `interpreter.rs`, `tests/test_rust_interpreter.py`  
+Tests: 343 → 345 (then 359 after V3-2)
+
+Filed: `2026-05-14-v3-1-parallel-imports.{readout.md,yaml}`
+
+### 6. V3-2 — Remote symbol resolution
+
+Design dispatch filed first, then implemented in one pass.
+
+- `RemoteStore` — fetch-and-cache with hash-verification (`codifide/store/remote.py`)
+- `codifide serve --read-only` — disables POST /symbols for public registry deployments
+- `codifide store push <identity> [--registry <url>]` — push local symbol to registry
+- `codifide run --registry <url>` — opt-in remote import resolution
+- `docs/RPC_API.md` updated with V3-2 section
+- 16 new tests
+
+Files: `codifide/server.py`, `codifide/store/remote.py`, `codifide/store/__init__.py`, `codifide/__main__.py`, `docs/RPC_API.md`, `tests/test_remote_store.py`  
+Tests: 343 → 359
+
+Filed: `2026-05-14-v3-2-remote-symbols-design.{readout.md,yaml}`, `2026-05-14-v3-2-remote-symbols.{readout.md,yaml}`
 
 ---
 
-## Governance infrastructure
+## State at close
 
-The Stage-Gate governance system was ported from DecodeTheSign and adapted for
-a programming language project. Six steering files added:
+- Tests: **359 passing, 0 skipped**
+- Manifest hash: `sha256:42d73647ba8de29a7d219bf2218bad0a42dc2a11d7878cac12ee931be2a1a185` (unchanged — no language surface changes this session)
+- Dispatch check: exits 0
+- V3-1: shipped
+- V3-2: shipped
+- V3-3: next session — refusal reasons (`bottom "reason"` canonical-form extension)
+- V3-4: conditional on adoption evidence from V3-1 through V3-3
 
-- `00-welcome.md` — entry point and quick-start
-- `01-governance-gates.md` — seven gates with Codifide-specific risk classification
-- `02-personas.md` — full A-Team (14) and B-Team (11) roster with B-Team system prompt
-- `03-coding-standards.md` — coverage targets, conformance rule, security patterns
-- `04-adversarial-review.md` — three-model architecture, Sable vs. B-Team distinction
-- `05-nfr-kpi-mandate.md` — NFR/KPI mandate with current baselines
+## Handoff for next session
 
-Three new personas added to fill gaps the original three-persona system didn't cover:
+**Start with V3-3 — refusal reasons.**
 
-- **Axiom** — agent ergonomics reviewer (first-contact friction mapping)
-- **Lumen** — specification editor (spec consistency and completeness)
-- **Relay** — developer/agent relations (onboarding funnel, adoption KPIs)
+`bottom` gains an optional string payload: `bottom "reason"`. Backward-compatible canonical-form extension. Touches:
+- Python parser: surface syntax `bottom "reason"`
+- Python interpreter: propagate reason through `RefusalError`
+- Rust parser and AST: optional `reason` field on `Bottom` node
+- Canonical JSON/CBOR schema: additive extension, existing hashes unchanged
+- Capability manifest: `bottom` AST kind gains optional `reason` field
+- Tests
 
----
+No design dispatch needed — the design is straightforward. Implement directly.
 
-## RPC API — V2-1-1 through V2-1-5
-
-Design decisions resolved (V2-1-2):
-- HTTP over gRPC — every agent speaks HTTP; no new client dependency
-- CLI extension (`python3 -m codifide serve`) over separate service
-- No auth in v2.0 — local-only, 127.0.0.1 binding
-- CBOR primary, JSON secondary — matches existing store wire format
-
-`docs/RPC_API.md` written (V2-1-1). Three endpoints implemented in
-`codifide/server.py` (V2-1-3, V2-1-4, V2-1-5):
-
-- `POST /symbols` — publish a symbol, get its hash
-- `GET /symbols/<identity>` — retrieve by hash (CBOR or JSON)
-- `GET /symbols/<identity>/imports` — resolve import graph
-- `GET /health` — liveness check
-- `HEAD /symbols/<identity>` — existence check
-
-`python3 -m codifide serve` wired into the CLI.
-
-28 new tests in `tests/test_server.py` — all passing. Three bugs found and
-fixed during the test pass:
-
-1. `from_canonical` received a non-dict from the CBOR decoder on invalid
-   input — added type guard.
-2. Test used inline `cand "foo"` syntax which the parser rejects — fixed
-   test to use proper multi-line form.
-3. Server closed connection before draining oversized body — fixed
-   `_read_body` to drain before returning the 413 sentinel.
-
----
-
-## Test state
-
-317 tests passing, 0 skipped, 0 failed.
-
----
-
-## Dispatch state
-
-`python3 -m codifide dispatch-check` exits 0.
-
----
-
-## Next session
-
-V2-1-6: agent completes Program 5 via HTTP only (acceptance test).
-Then V2-1-7 (dispatch pair) and V2-1-8 (Sable audit of the RPC surface).
-
-After V2-1 closes: V2-2 (static bind-before-when detection in the parser).
-
-What I'm not yet sure of: whether the Program 5 HTTP workflow needs a
-companion task spec variant (`docs/AGENT_TASK_SPEC_RPC.md`) per
-AUD-T3-01, or whether the curl example in `docs/RPC_API.md` is sufficient
-for the acceptance test. Aegis should decide before V2-1-6 starts.

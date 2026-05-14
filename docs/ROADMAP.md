@@ -141,18 +141,52 @@ for agent use cases.
 
 ---
 
-## What comes after v2.0
+## v3.0 — SHIPPED 2026-05-14
 
-v3.0 territory — not planned, not promised:
+**Thesis:** v3.0 is the protocol shape — making Codifide a multi-agent
+language, not just a solo-agent one. The RPC API (V2-1) proved the local
+HTTP pattern; v3.0 extends it to a network-accessible symbol exchange.
 
-- Hosted runtime / cloud service
-- Certification program for conforming implementations
-- Moltbook integration (agent social network — requires RPC API first)
-- Time-indexed types (if adoption evidence emerges)
+**Trigger:** Relay KPI confirmed (5/5 first-attempt successes in the v2.0
+case study); AUD-OVERNIGHT-02 gate cleared (parallel evaluator import gap
+rated P3, fix path known).
+
+### V3-1 — Parallel evaluator: full import support ✅
+
+Relax the `should_parallelize` threshold to support imported-symbol calls.
+Pass `resolved_imports` to branch interpreters (the fix specified in
+AUD-OVERNIGHT-02). Add the regression test.
+
+**Acceptance criterion:** `list(f(x), g(x))` with imported `f` and `g`
+evaluates both in parallel. Regression test passes.
+
+### V3-2 — Remote symbol resolution ✅
+
+A public read-only endpoint at `codifide.com/symbols/<identity>` that serves
+canonical CBOR for any symbol in the public registry. Agents resolve content
+identities across machines without out-of-band coordination. Hash-verification
+makes trust automatic.
+
+**Acceptance criterion:** Agent on machine B resolves a symbol published by
+agent on machine A using only the content identity.
+
+### V3-3 — Refusal reasons ✅
+
+`bottom` gains an optional string payload: `bottom "reason"`. `RefusalError`
+includes the reason. Backward-compatible canonical-form extension.
+
+**Acceptance criterion:** `bottom "confidence below threshold"` parses and
+evaluates. `RefusalError` message includes the reason string.
+
+### V3-4 — Time-indexed types: `T@timestamp` — DEFERRED
+
+Conditional on adoption evidence from V3-1 through V3-3. No such evidence
+emerged. No agent session produced a program that needed `T@timestamp`.
+Deferred to a future release when adoption evidence exists.
 
 ---
 
-*Roadmap version 2.0 — May 2026*  
+*Roadmap version 3.0 — CLOSED May 2026*  
 *Updated by: Douglas Jones + Claude*  
-*Evidence base: Agent Adoption Initiative dispatches, 2026-05-13*  
+*Evidence base: Relay v2.0 case study, AUD-OVERNIGHT-02, v2.0 thinking dispatch, V3-3 session*  
 *Governed by: GOVERNANCE.md*

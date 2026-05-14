@@ -324,5 +324,72 @@ The `serve` CLI subcommand is added to `codifide/__main__.py`.
 
 ---
 
+## Remote symbol resolution (V3-2)
+
+The RPC API is the foundation for cross-machine symbol exchange. V3-2 adds
+three capabilities on top of the local server:
+
+### Public registry
+
+A public read-only registry at `https://codifide.com/symbols/<identity>`
+serves canonical CBOR for any published symbol. The same endpoint shape as
+the local server — any agent that knows the base URL can resolve identities
+against any server.
+
+Start a read-only server (for registry deployments):
+
+```bash
+python3 -m codifide serve --read-only [--host 0.0.0.0] [--port 7777]
+```
+
+`--read-only` disables `POST /symbols` (returns 405). `GET /symbols/<identity>`,
+`GET /symbols/<identity>/imports`, and `GET /health` remain active.
+
+### Push a symbol to a registry
+
+```bash
+python3 -m codifide store push <identity> [--registry https://codifide.com]
+```
+
+Reads the symbol from the local store, POSTs it to the registry's
+`POST /symbols` endpoint, and verifies the returned identity matches.
+Idempotent. The registry URL defaults to `https://codifide.com`.
+
+```bash
+# Store locally first, then push
+python3 -m codifide store put classify.cod
+python3 -m codifide store push sha256:<hash>
+```
+
+### Resolve imports from a registry
+
+```bash
+python3 -m codifide run consumer.cod --registry https://codifide.com
+```
+
+The `--registry` flag enables remote resolution. When an import identity
+is not in the local store, it is fetched from the registry, hash-verified,
+cached locally, and used. Without `--registry`, only the local store is
+used (existing behavior unchanged).
+
+**Trust model:** hash-verification is the only trust mechanism. A fetch
+that returns bytes not matching the requested identity is rejected with
+`IntegrityError` before the bytes are cached. The registry cannot forge
+a symbol without changing its identity.
+
+### Cross-machine workflow
+
+```bash
+# Machine A — publish and push
+python3 -m codifide store put classify.cod
+python3 -m codifide store push sha256:<hash>
+
+# Machine B — resolve from registry (no shared filesystem)
+python3 -m codifide run consumer.cod --registry https://codifide.com
+```
+
+---
+
 *Implemented v0.1 — May 2026*  
+*V3-2 remote resolution — May 2026*  
 *Governed by: GOVERNANCE.md*

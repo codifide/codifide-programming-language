@@ -1,0 +1,17 @@
+import classify_content = sha256:3bf83afb60793ca59818c9f349dc01af6293ac5275c6020bd9fcd7694e54c0ea
+import moderate         = sha256:d367e97754054c4b003d4ae2c3fe2b65cd23e18a9c107b2c1707ac4fb1b608ad
+import route_message    = sha256:cae13aecb2ec8b138a1843d6a790f05fe0894b6c88f96864271fba703e82b896
+
+def composed_pipeline
+  intent "run the full content-addressed moderation pipeline"
+  sig    (message: String) -> String
+  effects {}
+  cand
+    route_message(message)
+
+def main
+  intent "test the composed pipeline with a spam message"
+  sig    () -> String
+  effects {}
+  cand
+    composed_pipeline("buy now — limited spam offer")

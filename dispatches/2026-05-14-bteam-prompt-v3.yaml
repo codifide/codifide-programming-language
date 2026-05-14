@@ -1,0 +1,19 @@
+id: 2026-05-14-bteam-prompt-v3
+date: 2026-05-14
+persona: Quill
+kind: maintenance
+title: "B-Team Prompt Update — v3.0"
+status: complete
+files_changed:
+  - docs/GPT4O_PROMPT.md
+  - codifide/__init__.py
+  - docs/capability-0.1.json
+  - dispatches/INDEX.md
+manifest_hash_before: sha256:42d73647ba8de29a7d219bf2218bad0a42dc2a11d7878cac12ee931be2a1a185
+manifest_hash_after: sha256:d900fe7e6d91300424b226cda0fd404bf281c4362a70131dbec116548b310ff2
+version_before: "1.0.0"
+version_after: "3.0.0"
+summary: >
+  GPT4O_PROMPT.md updated for v3.0: manifest hash, generator string, bottom "reason"
+  syntax, is_bottom note, V3-2 remote resolution section. __version__ bumped to 3.0.0
+  (was never bumped from 1.0.0). Capability manifest and dispatch index regenerated.

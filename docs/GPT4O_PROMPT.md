@@ -1,4 +1,4 @@
-# GPT-4o Session Prompt — T1-2
+# GPT-4o Session Prompt — T1-2 (updated for v3.0)
 # Paste everything below this line as your first message.
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -36,8 +36,22 @@ every primitive (with effects and return types), every typed error, and
 the surface keyword table. One document, content-addressable, generated
 from the implementation so it cannot lie.
 
+The manifest is also available at a stable public URL — no repo clone required:
+
+```bash
+curl https://www.codifide.com/capability.json   # JSON form
+curl https://www.codifide.com/capability.cbor   # CBOR form (RFC 8949)
+```
+
 For a one-page distilled cross-reference of the primitive surface and the
 common-guess pitfalls, read RESOURCE 2 (AGENT_QUICKREF.md).
+
+If you have the interpreter available, run this for a zero-to-running-program
+quickstart:
+
+```bash
+python3 -m codifide agent-quickstart
+```
 
 ## Writing your first Codifide program
 
@@ -85,8 +99,11 @@ feedback the project needs more than anything else.
 | `str.lower(s)` | `lower(s)` | `lower(code)` |
 | `str.split(s, sep)` | `split(s, sep)` | `split("a,b,c", ",")` |
 | `str.replace(s, a, b)` | `replace(s, a, b)` | `replace(text, "fox", "***")` |
+| `list.reverse(xs)` | `reverse(xs)` | same primitive as string reverse |
 | `list.append(xs, x)` | `append(xs, x)` | returns a new list; does not mutate |
 | `list.sum(xs)` | `sum(xs)` | `sum([1,2,3])` → `6` |
+| `clock.hour` | `clock.now.hm` | `clock.now` returns `{hm: "14:05", unix: …}` |
+| `clock.minute` | `clock.now.hm` | split `hm` on `:` if you need a number |
 | inline `if` / `when` statement | multiple `cand` blocks with `when` guards | see idioms below |
 
 The comparison operators `<`, `<=`, `==`, `!=`, `>`, `>=` **do** work
@@ -119,6 +136,11 @@ named primitives.
 
 ### I/O (`{io.stdout}`)
 `io.say(msg)` — print and return the message as a string.
+
+**Double-print note:** `io.say` prints to stdout *and* returns the message as
+a string. If `main` returns that string, the CLI also prints the return value.
+Programs that call `io.say` in `main` will print twice — once from `io.say`
+and once from the CLI. This is expected behavior.
 
 ## Inline conditional
 
@@ -206,7 +228,7 @@ Use `if/then/else` for binary choices inside a single candidate body.
 
 ## `is_bottom` — value inspector only
 
-`is_bottom(x)` works on literal `bottom` values. It **cannot** catch
+`is_bottom(x)` works on literal `bottom` values (with or without a reason string). It **cannot** catch
 a `bottom` that propagated through a bind — that raises
 `BottomPropagationError` before `is_bottom` sees it.
 
@@ -224,6 +246,20 @@ cand
     else              => bottom
 ```
 
+**Direct-call `is_bottom` works.** If you need to check whether a function
+refuses *before* binding its result, call `is_bottom` directly on the call
+expression — no bind needed:
+
+```
+# Works — is_bottom sees the value before any bind propagates it
+cand
+  if is_bottom(moderate(message)) then "refused" else moderate(message)
+```
+
+This short-circuits: if `moderate` refuses, the `else` branch never runs.
+Note that `moderate` is called twice — once for the check and once for the
+value. For expensive functions, prefer the `believe` pattern instead.
+
 ## Surface rules that surprised other agents
 
 - **Every `def` must declare `intent`.** The parser rejects definitions without it.
@@ -239,19 +275,68 @@ cand
   ```
   Error: `unknown callable: 'label'`. Fix: single cand, bind in body, `if/then/else` to route.
 - **`bottom` propagates.** An unhandled `bottom` raises `RefusalError`.
+- **`bottom "reason"` (v3.0).** `bottom` accepts an optional string payload: `bottom "confidence below threshold"`. The reason is propagated through `RefusalError` for diagnostics. Bare `bottom` still works — the reason is optional.
+- **`believe` arm values may be on the same line as `=>` or on the next indented line (v3.0+).** Both forms work.
 - **Multi-line expressions are fine** as long as brackets are balanced.
+- **Bind-before-when is now a parse error (v2.0).** The parser catches it at
+  parse time and emits a `ParseError` with a one-line fix hint. You will not
+  see the confusing runtime error anymore.
+
+## Content-addressed imports
+
+Individual symbol imports do not carry transitive dependencies. If
+`route_message` calls `moderate` internally, you must also import `moderate`
+explicitly — or use an index.
+
+```
+import classify_content = sha256:<hash>
+import moderate         = sha256:<hash>
+import route_message    = sha256:<hash>
+```
+
+Both runtimes support `from`-import as of v2.0:
+
+```
+from sha256:<index-hash> import symbol_a, symbol_b
+```
+
+**RPC API (v2.0+):** You can also publish and retrieve symbols via HTTP instead
+of the CLI ceremony. Start the server with `python3 -m codifide serve`, then
+`POST /symbols` with the canonical form to get back a content identity. See
+`docs/RPC_API.md` for the full workflow.
+
+**Remote symbol resolution (v3.0):** Push a local symbol to a remote registry
+and resolve it from any machine:
+
+```bash
+# Push to a remote registry
+python3 -m codifide store push sha256:<hash> --registry https://registry.example.com
+
+# Run with remote resolution enabled
+python3 -m codifide run pipeline.cod --registry https://registry.example.com
+
+# Start a read-only public registry server
+python3 -m codifide serve --read-only
+```
 
 ---
 
 ## RESOURCE 3 — Capability manifest
 
-Manifest identity: `sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d`
+Manifest identity: `sha256:d900fe7e6d91300424b226cda0fd404bf281c4362a70131dbec116548b310ff2`
 
 ```json
 {
   "codifide_capability": "0.1",
   "codifide_schema": "0.1",
-  "generator": "codifide-python-1.0.0",
+  "generator": "codifide-python-3.0.0",
+  "docs": {
+    "capability": "https://codifide.com/capability.json",
+    "capability_cbor": "https://codifide.com/capability.cbor",
+    "cookbook": "https://codifide.com/docs/AGENT_COOKBOOK.md",
+    "for_agents": "https://codifide.com/docs/FOR_AGENTS.md",
+    "quickref": "https://codifide.com/docs/AGENT_QUICKREF.md"
+  },
   "literal_types": ["Any","Bool","Clock","Float","Image","Int","Label","List","Number","String","Unit"],
   "effects": ["clock.read","io.stdout","model.vision"],
   "errors": [
@@ -290,7 +375,8 @@ Manifest identity: `sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189
     {"name": "host_sorted",    "effect": null,          "returns": "List"},
     {"name": "indexof",        "effect": null,          "returns": "Int"},
     {"name": "io.say",         "effect": "io.stdout",   "returns": "String"},
-    {"name": "is_bottom",      "effect": null,          "returns": "Bool"},
+    {"name": "is_bottom",      "effect": null,          "returns": "Bool",
+     "note": "Returns true for both bare bottom and bottom with a reason string. Cannot catch a bottom that propagated through a bind."},
     {"name": "is_permutation", "effect": null,          "returns": "Bool"},
     {"name": "is_sorted",      "effect": null,          "returns": "Bool"},
     {"name": "join",           "effect": null,          "returns": "String"},
@@ -379,7 +465,7 @@ Write a pure function `classify_content` that:
 - Uses belief dispatch — each candidate returns `belief(label, confidence)`
 - Classifies as `"unsafe"` with confidence ≥ 0.90 when the message contains any of: `"spam"`, `"hate"`, `"violence"` (use `lower()` — `contains` is case-sensitive)
 - Classifies as `"safe"` with confidence ≥ 0.90 when the message contains `"approved"` or `"verified"` (use `lower()` here too)
-- Falls back to `"uncertain"` with confidence 0.40 when no keyword matches
+- Falls back to `"uncertain"` with confidence 0.75 when no keyword matches
 
 Add a `main` function that calls `classify_content` with a test message of your choice.
 
@@ -409,8 +495,8 @@ def main_unsafe
   cand
     moderate("this message contains spam")
 
-def main_refuse
-  intent "test the refusal path"
+def main_uncertain
+  intent "test the uncertain path — hello world has no keywords, returns uncertain"
   sig    () -> Label
   effects {}
   cand
@@ -420,7 +506,9 @@ def main_refuse
 **Run it:**
 ```bash
 python3 -m codifide run moderation_gate.cod --entry main_unsafe
-python3 -m codifide run moderation_gate.cod --entry main_refuse
+
+# Should return "uncertain" (confidence 0.75 clears the 0.70 gate)
+python3 -m codifide run moderation_gate.cod --entry main_uncertain
 ```
 
 ---

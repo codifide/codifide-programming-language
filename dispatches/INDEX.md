@@ -13,9 +13,16 @@ Filename convention:
 
 | slug | subject | readout | yaml | audit |
 |---|---|---|---|---|
+| `aud-overnight-02-parallel-imports` |  | [md](./2026-05-14-aud-overnight-02-parallel-imports.md) |  |  |
+| `aud-overnight-02-post` | AUD-OVERNIGHT-02 — parallel evaluator import handling: severity rating and decision | [md](./2026-05-14-aud-overnight-02-post.readout.md) | [yaml](./2026-05-14-aud-overnight-02-post.yaml) |  |
 | `bteam-findings-applied` | B-Team findings applied — post-GPT-5.4 review | [md](./2026-05-14-bteam-findings-applied.readout.md) | [yaml](./2026-05-14-bteam-findings-applied.yaml) |  |
+| `bteam-prompt-v3` |  | [md](./2026-05-14-bteam-prompt-v3.readout.md) | [yaml](./2026-05-14-bteam-prompt-v3.yaml) |  |
+| `find-g1-believe-multiline-arm` |  | [md](./2026-05-14-find-g1-believe-multiline-arm.readout.md) | [yaml](./2026-05-14-find-g1-believe-multiline-arm.yaml) |  |
+| `gemini-v3-session-close` |  | [md](./2026-05-14-gemini-v3-session-close.readout.md) | [yaml](./2026-05-14-gemini-v3-session-close.yaml) |  |
+| `gemini25pro-v3-case-study` |  | [md](./2026-05-14-gemini25pro-v3-case-study.readout.md) | [yaml](./2026-05-14-gemini25pro-v3-case-study.yaml) |  |
 | `gpt5-case-study` | GPT-5.4 case study — live content moderation pipeline run | [md](./2026-05-14-gpt5-case-study.readout.md) | [yaml](./2026-05-14-gpt5-case-study.yaml) |  |
-| `session-close` | Session close — 2026-05-14 | [md](./2026-05-14-session-close.readout.md) | [yaml](./2026-05-14-session-close.yaml) |  |
+| `relay-v2-case-study` | Relay v2.0 KPI validation — Claude Sonnet 4.6 content-moderation case study | [md](./2026-05-14-relay-v2-case-study.readout.md) | [yaml](./2026-05-14-relay-v2-case-study.yaml) |  |
+| `session-close` | session close — v3.0 session: V3-1 and V3-2 shipped | [md](./2026-05-14-session-close.readout.md) | [yaml](./2026-05-14-session-close.yaml) |  |
 | `v2-1-rpc-api-complete` | RPC API complete — V2-1 gate | [md](./2026-05-14-v2-1-rpc-api-complete.readout.md) | [yaml](./2026-05-14-v2-1-rpc-api-complete.yaml) |  |
 | `v2-1-rpc-api-design` | RPC API design — V2-1-1 and V2-1-2 | [md](./2026-05-14-v2-1-rpc-api-design.readout.md) | [yaml](./2026-05-14-v2-1-rpc-api-design.yaml) |  |
 | `v2-1-rpc-api-sable` |  |  |  | [md](./2026-05-14-v2-1-rpc-api-sable-audit.md) |
@@ -25,6 +32,12 @@ Filename convention:
 | `v2-4-manifest-docs` | Manifest docs field — V2-4 complete | [md](./2026-05-14-v2-4-manifest-docs.readout.md) | [yaml](./2026-05-14-v2-4-manifest-docs.yaml) |  |
 | `v2-ateam-review` | v2.0 A-Team governance review | [md](./2026-05-14-v2-ateam-review.readout.md) | [yaml](./2026-05-14-v2-ateam-review.yaml) |  |
 | `v2-complete-session-close` | v2.0 roadmap complete — session close | [md](./2026-05-14-v2-complete-session-close.readout.md) | [yaml](./2026-05-14-v2-complete-session-close.yaml) |  |
+| `v3-1-parallel-imports` | V3-1 — parallel evaluator full import support (AUD-OVERNIGHT-02 fix) | [md](./2026-05-14-v3-1-parallel-imports.readout.md) | [yaml](./2026-05-14-v3-1-parallel-imports.yaml) |  |
+| `v3-2-remote-symbols` | V3-2 — remote symbol resolution: RemoteStore, store push, --registry, --read-only | [md](./2026-05-14-v3-2-remote-symbols.readout.md) | [yaml](./2026-05-14-v3-2-remote-symbols.yaml) |  |
+| `v3-2-remote-symbols-design` | V3-2 design — remote symbol resolution | [md](./2026-05-14-v3-2-remote-symbols-design.readout.md) | [yaml](./2026-05-14-v3-2-remote-symbols-design.yaml) |  |
+| `v3-3-refusal-reasons` |  | [md](./2026-05-14-v3-3-refusal-reasons.readout.md) | [yaml](./2026-05-14-v3-3-refusal-reasons.yaml) |  |
+| `v3-complete-session-close` |  | [md](./2026-05-14-v3-complete-session-close.readout.md) | [yaml](./2026-05-14-v3-complete-session-close.yaml) |  |
+| `v3-roadmap` | v3.0 roadmap — four requirements, evidence-driven | [md](./2026-05-14-v3-roadmap.readout.md) | [yaml](./2026-05-14-v3-roadmap.yaml) |  |
 
 ## 2026-05-13
 

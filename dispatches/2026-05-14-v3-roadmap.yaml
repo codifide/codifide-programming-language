@@ -1,0 +1,32 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-14"
+  persona: Glyph
+  subject: "v3.0 roadmap — four requirements, evidence-driven"
+  capability_hash: "sha256:42d73647ba8de29a7d219bf2218bad0a42dc2a11d7878cac12ee931be2a1a185"
+  trigger: "Relay KPI confirmed (5/5 first-attempt successes); AUD-OVERNIGHT-02 gate cleared"
+  thesis: "v3.0 is Shape B — the protocol agents actually exchange symbols over"
+  requirements:
+    - id: "V3-1"
+      priority: "P1"
+      title: "Parallel evaluator: full import support"
+      evidence: "AUD-OVERNIGHT-02 — threshold excludes imported-symbol calls; fix path known"
+      acceptance: "list(f(x), g(x)) with imported f and g evaluates in parallel; regression test passes"
+    - id: "V3-2"
+      priority: "P1"
+      title: "Remote symbol resolution"
+      evidence: "v2.0 thinking Shape B; RPC API proved local HTTP pattern"
+      acceptance: "agent on machine B resolves symbol published by agent on machine A by identity alone"
+    - id: "V3-3"
+      priority: "P2"
+      title: "Refusal reasons"
+      evidence: "four case studies — bottom escapes are opaque; debugging pipelines is hard"
+      acceptance: "bottom \"reason\" parses; RefusalError includes reason; backward-compatible"
+    - id: "V3-4"
+      priority: "P3"
+      title: "Time-indexed types (T@timestamp)"
+      evidence: "roadmap item; no direct adoption evidence — conditional on V3-1 through V3-3"
+      acceptance: "Price@now rejects Price@yesterday at typed call site"
+  sequencing: ["V3-1", "V3-2", "V3-3", "V3-4"]
+  deferred: ["hosted runtime", "certification", "Moltbook integration", "cost as expression", "structural diff", "effect inference"]
+  assessment: "v3.0 proves Codifide is a multi-agent protocol; V3-2 is the proof-of-concept item"

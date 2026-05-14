@@ -1,0 +1,20 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-14"
+  persona: Glyph
+  subject: "V3-2 — remote symbol resolution: RemoteStore, store push, --registry, --read-only"
+  capability_hash: "sha256:42d73647ba8de29a7d219bf2218bad0a42dc2a11d7878cac12ee931be2a1a185"
+  requirement: "V3-2"
+  files_changed:
+    - "codifide/server.py"
+    - "codifide/store/remote.py"
+    - "codifide/store/__init__.py"
+    - "codifide/__main__.py"
+    - "docs/RPC_API.md"
+    - "tests/test_remote_store.py"
+  tests_added: 16
+  tests_total: 359
+  tests_failed: 0
+  acceptance: "met — test_run_resolves_import_from_registry exercises the cross-machine workflow"
+  trust_model: "hash-verification — IntegrityError on mismatch before caching"
+  opt_in: "true — --registry flag required; without it behavior is unchanged"
