@@ -635,6 +635,20 @@ def cmd_dispatch_check(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_serve(args: argparse.Namespace) -> int:
+    """Start the Codifide RPC API server.
+
+    Thin HTTP wrapper over the symbol store. See ``docs/RPC_API.md``.
+    Binds to 127.0.0.1 by default — not safe to expose over a network
+    without a reverse proxy with TLS and auth.
+    """
+    from .server import serve
+
+    store = SymbolStore(_store_root(args))
+    serve(store, host=args.host, port=args.port)
+    return 0
+
+
 def cmd_agent_quickstart(args: argparse.Namespace) -> int:
     """Bootstrap a fresh agent environment and write a hello-world program.
 
@@ -966,6 +980,27 @@ def main(argv=None) -> int:
         help="bootstrap a fresh agent environment and write a hello-world program",
     )
     p_quickstart.set_defaults(func=cmd_agent_quickstart)
+
+    p_serve = sub.add_parser(
+        "serve",
+        help="start the RPC API server (HTTP wrapper over the symbol store)",
+    )
+    p_serve.add_argument(
+        "--port",
+        type=int,
+        default=7777,
+        help="port to listen on (default: 7777)",
+    )
+    p_serve.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="host to bind to (default: 127.0.0.1 — local only)",
+    )
+    p_serve.add_argument(
+        "--store",
+        help="store root directory (default: $CODIFIDE_STORE or ~/.codifide/store)",
+    )
+    p_serve.set_defaults(func=cmd_serve)
 
     args = parser.parse_args(argv)
     return args.func(args)

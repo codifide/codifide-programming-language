@@ -9,6 +9,13 @@ Filename convention:
 - `<date>-<slug>.md`         — standalone dispatch (rare)
 
 
+## 2026-05-14
+
+| slug | subject | readout | yaml | audit |
+|---|---|---|---|---|
+| `session-close` | Session close — 2026-05-14 | [md](./2026-05-14-session-close.readout.md) | [yaml](./2026-05-14-session-close.yaml) |  |
+| `v2-1-rpc-api-design` | RPC API design — V2-1-1 and V2-1-2 | [md](./2026-05-14-v2-1-rpc-api-design.readout.md) | [yaml](./2026-05-14-v2-1-rpc-api-design.yaml) |  |
+
 ## 2026-05-13
 
 | slug | subject | readout | yaml | audit |

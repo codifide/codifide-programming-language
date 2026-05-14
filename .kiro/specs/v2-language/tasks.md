@@ -2,11 +2,11 @@
 
 ## REQ-V2-1: RPC API (P1)
 
-- [ ] **V2-1-1** Write `docs/RPC_API.md` — spec for the HTTP/gRPC interface
-- [ ] **V2-1-2** Design dispatch: endpoint shape, auth model, error responses
-- [ ] **V2-1-3** Implement POST `/symbols` — accept canonical CBOR, store, return hash
-- [ ] **V2-1-4** Implement GET `/symbols/<hash>` — return canonical CBOR by hash
-- [ ] **V2-1-5** Implement GET `/symbols/<hash>/imports` — resolve import graph
+- [x] **V2-1-1** Write `docs/RPC_API.md` — spec for the HTTP/gRPC interface
+- [x] **V2-1-2** Design dispatch: endpoint shape, auth model, error responses
+- [x] **V2-1-3** Implement POST `/symbols` — accept canonical CBOR, store, return hash
+- [x] **V2-1-4** Implement GET `/symbols/<hash>` — return canonical CBOR by hash
+- [x] **V2-1-5** Implement GET `/symbols/<hash>/imports` — resolve import graph
 - [ ] **V2-1-6** Test: agent completes Program 5 via HTTP only
 - [ ] **V2-1-7** File Quill/Glyph dispatch for RPC API completion
 - [ ] **V2-1-8** Sable audit of RPC API surface

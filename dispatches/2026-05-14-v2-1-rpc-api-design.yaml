@@ -1,0 +1,82 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: RPC API design — V2-1-1 and V2-1-2
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Record the four design decisions for the Codifide RPC API and confirm
+    docs/RPC_API.md is written. Gate: G2/G3 design complete for REQ-V2-1.
+
+  state:
+    shipped:
+      - "docs/RPC_API.md written (V2-1-1)"
+      - "Design decisions resolved: HTTP, CLI extension, no auth, CBOR primary (V2-1-2)"
+    in_flight:
+      - "V2-1-3: implement POST /symbols"
+      - "V2-1-4: implement GET /symbols/{identity}"
+      - "V2-1-5: implement GET /symbols/{identity}/imports"
+      - "V2-1-6: agent completes Program 5 via HTTP only"
+    blocked: []
+    refused:
+      - "gRPC — no adoption evidence; HTTP sufficient; no new client dependency"
+      - "Separate service — adds deployment dependency; CLI extension is simpler"
+      - "Auth in v2.0 — local-only server; production guidance documented instead"
+
+  evidence:
+    - claim: "docs/RPC_API.md written (V2-1-1)"
+      kind: read
+      source: "docs/RPC_API.md"
+      result: "File exists, contains endpoint specs, design decisions, security notes, Program 5 workflow"
+      confidence: 1.0
+    - claim: "HTTP chosen over gRPC"
+      kind: reason
+      source: "docs/RPC_API.md §Design decisions"
+      result: "Every agent speaks HTTP; canonical form is already JSON/CBOR; no translation layer needed"
+      confidence: 0.95
+    - claim: "CLI extension chosen over separate service"
+      kind: reason
+      source: "docs/RPC_API.md §Design decisions"
+      result: "SymbolStore already handles storage; one command to start; no deployment dependency"
+      confidence: 0.95
+    - claim: "No auth in v2.0"
+      kind: reason
+      source: "docs/RPC_API.md §Security"
+      result: "Server binds 127.0.0.1 only; local attacker owns the process anyway; production guidance documented"
+      confidence: 0.90
+    - claim: "CBOR primary, JSON secondary"
+      kind: reason
+      source: "docs/RPC_API.md §Design decisions"
+      result: "Matches existing store wire format; no new encoding logic"
+      confidence: 1.0
+    - claim: "Program 5 workflow via HTTP documented"
+      kind: read
+      source: "docs/RPC_API.md §Agent workflow — Program 5 via HTTP"
+      result: "curl-based workflow documented; no CLI store subcommands; no CODIFIDE_RUNTIME=python"
+      confidence: 1.0
+
+  unknowns:
+    - question: "Does http.server handle concurrent POSTs correctly, or do we need ThreadingHTTPServer?"
+      why_unknown: "Not yet implemented; store is safe for concurrent writes but server layer not tested"
+      how_to_resolve: "Implement and add concurrency test in V2-1-3/V2-1-6"
+    - question: "Is 16 MiB body limit correct for canonical CBOR of realistic programs?"
+      why_unknown: "No measurement of largest real program canonical form yet"
+      how_to_resolve: "Measure during V2-1-3 implementation; adjust if needed"
+
+  next:
+    - action: "Implement POST /symbols in codifide/server.py (V2-1-3)"
+      depends_on: ["docs/RPC_API.md written (V2-1-1)"]
+      effect: "{io.write, repo.commit}"
+    - action: "Implement GET /symbols/{identity} (V2-1-4)"
+      depends_on: ["V2-1-3: implement POST /symbols"]
+      effect: "{io.write, repo.commit}"
+    - action: "Implement GET /symbols/{identity}/imports (V2-1-5)"
+      depends_on: ["V2-1-4: implement GET /symbols/{identity}"]
+      effect: "{io.write, repo.commit}"
+    - action: "Agent completes Program 5 via HTTP only (V2-1-6)"
+      depends_on: ["V2-1-5: implement GET /symbols/{identity}/imports"]
+      effect: "{io.read}"
+
+  links:
+    canonical: "docs/RPC_API.md"
+    human_readout: "dispatches/2026-05-14-v2-1-rpc-api-design.readout.md"

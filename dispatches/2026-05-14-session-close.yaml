@@ -1,0 +1,86 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: Session close — 2026-05-14
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Record session state at close. Governance infrastructure complete.
+    RPC API V2-1-1 through V2-1-5 complete. 317 tests passing.
+
+  state:
+    shipped:
+      - "Stage-Gate governance steering files (00–05)"
+      - "Personas: Axiom, Lumen, Relay added to roster and briefs"
+      - "docs/RPC_API.md (V2-1-1)"
+      - "RPC API design decisions resolved (V2-1-2)"
+      - "codifide/server.py — POST /symbols, GET /symbols/<id>, GET /symbols/<id>/imports, GET /health, HEAD /symbols/<id> (V2-1-3, V2-1-4, V2-1-5)"
+      - "python3 -m codifide serve CLI subcommand"
+      - "tests/test_server.py — 28 tests, all passing"
+      - "317 total tests passing, 0 skipped"
+    in_flight:
+      - "V2-1-6: agent completes Program 5 via HTTP only"
+      - "V2-1-7: Quill/Glyph dispatch for RPC API completion"
+      - "V2-1-8: Sable audit of RPC API surface"
+    blocked: []
+    refused: []
+
+  evidence:
+    - claim: "317 total tests passing, 0 skipped"
+      kind: run
+      source: "python3 -m pytest --tb=short -q"
+      result: "317 passed in 15.56s"
+      confidence: 1.0
+    - claim: "dispatch-check exits 0"
+      kind: run
+      source: "python3 -m codifide dispatch-check"
+      result: "codifide dispatch-check: all dispatch pairs complete."
+      confidence: 1.0
+    - claim: "codifide/server.py implements all three endpoints"
+      kind: read
+      source: "codifide/server.py"
+      result: "POST /symbols, GET /symbols/<id>, GET /symbols/<id>/imports, GET /health, HEAD /symbols/<id> all implemented"
+      confidence: 1.0
+    - claim: "28 server tests all passing"
+      kind: run
+      source: "python3 -m pytest tests/test_server.py -v"
+      result: "28 passed in 14.38s"
+      confidence: 1.0
+    - claim: "docs/RPC_API.md written"
+      kind: read
+      source: "docs/RPC_API.md"
+      result: "File exists with endpoint specs, design decisions, security notes, Program 5 workflow"
+      confidence: 1.0
+    - claim: "Governance steering files in place"
+      kind: read
+      source: ".kiro/steering/"
+      result: "00-welcome.md, 01-governance-gates.md, 02-personas.md, 03-coding-standards.md, 04-adversarial-review.md, 05-nfr-kpi-mandate.md all present"
+      confidence: 1.0
+    - claim: "Axiom, Lumen, Relay persona briefs written"
+      kind: read
+      source: ".kiro/steering/personas/"
+      result: "axiom.md, lumen.md, relay.md all present with catch-up sections"
+      confidence: 1.0
+
+  unknowns:
+    - question: "Does V2-1-6 need a companion AGENT_TASK_SPEC_RPC.md or is the curl example in RPC_API.md sufficient?"
+      why_unknown: "AUD-T3-01 flagged this; not yet decided"
+      how_to_resolve: "Aegis decides before V2-1-6 starts"
+    - question: "Does the 16 MiB body limit need adjustment for large real-world programs?"
+      why_unknown: "No measurement of largest real program canonical form yet"
+      how_to_resolve: "Measure during V2-1-6 acceptance test"
+
+  next:
+    - action: "V2-1-6: write acceptance test — agent completes Program 5 via HTTP only"
+      depends_on: ["codifide/server.py implements all three endpoints"]
+      effect: "{io.write, repo.commit}"
+    - action: "V2-1-7: file Quill/Glyph dispatch for RPC API completion"
+      depends_on: ["V2-1-6: agent completes Program 5 via HTTP only"]
+      effect: "{io.write, repo.commit}"
+    - action: "V2-1-8: Sable audit of RPC API surface"
+      depends_on: ["V2-1-7: file Quill/Glyph dispatch for RPC API completion"]
+      effect: "{io.write}"
+
+  links:
+    canonical: "dispatches/2026-05-14-session-close.yaml"
+    human_readout: "dispatches/2026-05-14-session-close.readout.md"

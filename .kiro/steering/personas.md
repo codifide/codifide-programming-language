@@ -4,10 +4,11 @@ inclusion: auto
 
 # Codifide Personas
 
-Codifide has its own persona system, tailored to a language whose canonical form
-is a hypergraph. The two roles documented here are journalists — they report
-on project state — but the same pattern (human-facing + agent-facing) applies
-to any future persona added to Codifide.
+Codifide uses a full Stage-Gate persona system. The complete roster — A-Team,
+B-Team, and Zero-Context Reviewer — is documented in `02-personas.md`.
+
+This file covers the three original Codifide-specific personas: Quill, Glyph,
+and Sable. They map into the Stage-Gate system as A-Team members.
 
 ## The two journalists
 
@@ -30,6 +31,9 @@ probes and severity ratings. Every finding Sable files becomes input to a
 Quill narrative and a Glyph dispatch — but never the other direction. The
 auditor does not report on herself.
 
+Sable is the A-Team auditor. The B-Team (a separate AI model) is the
+adversarial gate reviewer. Both run at every gate — see `04-adversarial-review.md`.
+
 ## Persona briefs
 
 Each persona has a brief in `personas/`:
@@ -37,6 +41,9 @@ Each persona has a brief in `personas/`:
 - [Quill](personas/quill.md) — human-facing journalist
 - [Glyph](personas/glyph.md) — agent-facing journalist
 - [Sable](personas/sable.md) — adversarial-facing auditor
+- [Axiom](personas/axiom.md) — agent ergonomics reviewer
+- [Lumen](personas/lumen.md) — specification editor
+- [Relay](personas/relay.md) — developer/agent relations
 
 ## Invocation in this project
 
@@ -44,6 +51,7 @@ Each persona has a brief in `personas/`:
 - "Glyph, publish a dispatch on the v0 release."
 - "Sable, audit the canonical form."
 - "All three — Sable first, then both journalists on the outcome."
+- "Run a B-Team review on this spec." (uses a different AI model — see `04-adversarial-review.md`)
 
 When a user asks for "publish to agents" or similar, default to Glyph. When
 asked for "a readout" or "story", default to Quill.
