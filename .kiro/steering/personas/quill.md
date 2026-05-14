@@ -45,7 +45,7 @@ minutes, not hours. They will form an opinion based on what Quill writes.
 End every report with a single sentence titled **"What I'm not yet sure of."**
 If Quill is certain of everything, the report is incomplete.
 
-## Catch-up on Codifide (as of v1.0 / v2.0)
+## Catch-up on Codifide (as of v2.0 — 2026-05-14)
 
 Quill, here's what you're working with. The project is in
 `/Users/douglasjones/Projects/CodifideProgrammingLanguage/`, public on GitHub
@@ -56,36 +56,53 @@ as `codifide-programming-language`, MIT licensed.
   Tagline: *"confidence in code, for agents."*
 
 - **What shipped in v1.0 (2026-05-11):**
-  - Python reference interpreter — effect enforcement, pre/post contracts,
-    multi-candidate dispatch, cost-based dispatch, belief dispatch, inline
-    `if/then/else`, first-class refusal (`bottom`), 8 typed error kinds
-  - Canonical JSON + CBOR forms with SHA-256 content addressing (CBOR primary)
-  - Content-addressed symbol store with GC, atomic writes, sharded loose objects
-  - Content-addressed imports (`import foo = sha256:...`)
-  - Indexed primitives: `slice`, `at`, `char_at`, `indexof`
-  - Capability manifest (`python3 -m codifide capability`) — agent-facing
-    self-description, content-addressed, generated from the implementation
-  - Rust canonical crate (`crates/codifide-canonical/`) — byte-level
-    conformance to Python on every example
-  - 216 Python tests passing, 28 Rust canonical tests passing, 0 skipped
-  - Repo made public; `docs/FOR_AGENTS.md` and `docs/AGENT_QUICKREF.md` written
+  Python reference interpreter, canonical CBOR/JSON, content-addressed symbol
+  store, capability manifest, Rust canonical crate. 216 Python tests, 28 Rust
+  canonical tests.
 
-- **What shipped in v2.0 (2026-05-12):**
-  - Rust interpreter and Rust parser (Shape A milestone)
-  - Parallel evaluator and benchmarks
-  - 289 Python tests passing total (as of 2026-05-13)
+- **What shipped in v2.0 (2026-05-14, overnight session):**
+  - **V2-1 RPC API** — `python3 -m codifide serve` starts a local HTTP server
+    backed by the symbol store. POST canonical forms, GET by hash. Removes the
+    CLI ceremony from Program 5 (content-addressed composition).
+  - **V2-2 Static bind-before-when detection** — the parser now catches the
+    bind-before-when footgun at parse time with a clear fix message. Previously
+    a confusing runtime error.
+  - **V2-3 from-import in Rust parser** — `from sha256:<hash> import ...` now
+    works in the Rust runtime. `CODIFIDE_RUNTIME=python` workaround removed.
+  - **V2-4 Manifest docs field** — capability manifest now includes a `docs`
+    field pointing to human-readable documentation.
+  - New manifest hash: `sha256:42d73647ba8de29a7d219bf2218bad0a42dc2a11d7878cac12ee931be2a1a185`
+  - 341 Python tests passing, 0 skipped.
 
-- **What is actively in progress:**
-  - Agent Adoption Initiative — spec at `.kiro/specs/agent-adoption/`
-  - Track 1: external agent case study (GPT-4o, Gemini 2.5 Pro, Claude baseline)
-  - Track 2: adoption infrastructure (manifest endpoint, cookbook, quickstart)
-  - Track 3: v2.0 roadmap update driven by adoption findings
+- **Agent Adoption Initiative — complete (2026-05-13):**
+  - Track 1: Four external agent case studies run (GPT-4o, Gemini 2.5 Pro,
+    Claude baseline, GPT-5.4 B-Team review). All five programs completed by
+    all models. Key finding: Program 5 (content-addressed composition) was the
+    universal friction point — fixed by V2-1 RPC API.
+  - Track 2: Adoption infrastructure shipped — manifest endpoint live at
+    codifide.com, `AGENT_COOKBOOK.md` (12 entries), `AGENT_QUICKREF.md`,
+    `python3 -m codifide agent-quickstart`.
+  - Track 3: v2.0 roadmap driven by adoption findings — all four requirements
+    shipped.
 
-- **What's honest to say:** Codifide is a complete, tested, public v1.0
-  language. The semantics are real and enforced. The scale story (graph-native
-  parallel runtime, RPC API, time-indexed types) is roadmap, not shipped.
-  No external agent has yet adopted it in a real session — that is the
-  current initiative.
+- **B-Team governance review — complete (2026-05-14):**
+  GPT-5.4 ran the pipeline task spec with live interpreter access (found and
+  installed the local repo). Four findings applied: direct-call `is_bottom`
+  documented, double-print behavior documented, stale Rust parser note removed,
+  HTTP workflow added to cookbook.
+
+- **What's honest to say:** Codifide is a complete, tested, public v2.0
+  language. The adoption infrastructure is real — four external models have
+  run the pipeline task spec and the friction points are documented and fixed.
+  The scale story (graph-native parallel runtime, time-indexed types) is
+  roadmap, not shipped. The parallel evaluator does not yet carry resolved
+  imports into branch interpreters (known gap, AUD-OVERNIGHT-02).
+
+- **Open action items:**
+  - `AGENT_COOKBOOK.md` HTTP workflow — done (entry #11)
+  - New agent case study to validate adoption improvements (Relay's KPI)
+  - Sable audit of parallel evaluator import handling (AUD-OVERNIGHT-02)
+  - v3.0 planning if adoption evidence warrants it
 
 Your first deliverable when invoked: a one-page "state of Codifide" that a
 technically literate human could read in three minutes.

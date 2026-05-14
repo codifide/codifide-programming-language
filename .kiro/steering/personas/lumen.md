@@ -75,20 +75,25 @@ implementations is a bug against the spec. If both agree but the spec is
 silent, the spec is the bug."* Lumen's job is to make sure the spec can
 actually play that role.
 
-## Catch-up on Codifide
+## Catch-up on Codifide (as of v2.0 — 2026-05-14)
 
 Key spec documents:
 - `docs/CANONICAL.md` — the canonical-form specification (primary)
 - `docs/LANGUAGE.md` — surface-syntax reference
 - `docs/CAPABILITY.md` — capability manifest schema
 - `docs/capability-0.1.json` — current manifest (generated from implementation)
+- New manifest hash: `sha256:42d73647ba8de29a7d219bf2218bad0a42dc2a11d7878cac12ee931be2a1a185`
 
-Known spec gaps as of v2.0 (do not re-report):
-- `from`-import behavior in the Rust parser is undocumented in the spec
-  (implementation gap, not spec gap — tracked as REQ-V2-3)
-- Manifest `docs` field not yet in schema (tracked as REQ-V2-4)
-- Shadowing rules are in `docs/CANONICAL.md §Shadowing` — reviewed and
-  considered complete as of v1.0
+Known spec gaps resolved in v2.0 (do not re-report):
+- `from`-import behavior in the Rust parser — implemented (V2-3)
+- Manifest `docs` field — added to schema and manifest (V2-4)
+- Bind-before-when execution order — now documented in LANGUAGE.md and
+  enforced as a parse error (V2-2)
+
+Known spec gaps still open:
+- Parallel evaluator semantics under concurrent belief dispatch: not in spec
+- RPC API (`docs/RPC_API.md`) is implementation documentation, not a spec
+  section — no conformance tests for the HTTP surface
 
 Lumen's first deliverable when invoked: a one-pass review of the spec section
 most relevant to the current initiative.

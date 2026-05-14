@@ -84,6 +84,11 @@ score; `conf(x)` reads it. Use these to feed a `believe` block.
 ### I/O (`{io.stdout}`)
 `io.say(msg)` — print and return the message as a string.
 
+**Double-print note:** `io.say` prints to stdout *and* returns the message as
+a string. If `main` returns that string, the CLI also prints the return value.
+Programs that call `io.say` in `main` will print twice — once from `io.say`
+and once from the CLI. This is expected behavior.
+
 ### Clock (`{clock.read}`)
 `clock.now` — returns a record with `hm` (string `"HH:MM"`) and
 `unix` (float seconds since epoch).
@@ -269,6 +274,20 @@ cand
 
 `is_bottom` is useful when `bottom` is passed as an explicit argument
 or stored in a data structure, not when it arrives via function return.
+
+**Direct-call `is_bottom` works.** If you need to check whether a function
+refuses *before* binding its result, call `is_bottom` directly on the call
+expression — no bind needed:
+
+```codifide
+# Works — is_bottom sees the value before any bind propagates it
+cand
+  if is_bottom(moderate(message)) then "refused" else moderate(message)
+```
+
+This short-circuits: if `moderate` refuses, the `else` branch never runs.
+Note that `moderate` is called twice — once for the check and once for the
+value. For expensive functions, prefer the `believe` pattern instead.
 
 ## Content-addressed imports
 

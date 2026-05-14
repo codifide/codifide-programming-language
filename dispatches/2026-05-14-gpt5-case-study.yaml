@@ -1,0 +1,94 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: GPT-5.4 case study — live content moderation pipeline run
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Record GPT-5.4 B-Team review results and A-Team response. GPT-5.4 found
+    and installed the local interpreter, ran all five programs for real, and
+    produced four new findings. Governance review is now complete.
+
+  state:
+    shipped:
+      - "GPT-5.4 case study readout filed"
+      - "B-Team governance review complete"
+    in_flight: []
+    blocked: []
+    refused: []
+
+  evidence:
+    - claim: "GPT-5.4 ran all five programs with real interpreter"
+      kind: external_review
+      source: "ChatGPT 5.4 deep thinking — B-Team review package"
+      result: "5/5 programs completed; 2 real runtime errors encountered and fixed"
+      confidence: 1.0
+
+  findings:
+    - id: FIND-B1
+      description: >
+        Direct-call is_bottom(function_that_refuses()) works as a refusal check.
+        AGENT_QUICKREF only documents the failure mode (bind then is_bottom),
+        not the working pattern.
+      severity: docs-gap
+      action: add explicit direct-call is_bottom example to AGENT_QUICKREF
+      owner: Relay
+
+    - id: FIND-B2
+      description: >
+        io.say prints to stdout and the CLI also prints main's return value.
+        Programs with io.say in main print twice. Not documented anywhere.
+      severity: docs-gap
+      action: add double-print note to I/O section of AGENT_QUICKREF
+      owner: Relay
+
+    - id: FIND-B3
+      description: >
+        Unreachable "uncertain" route — third independent confirmation (GPT-4o,
+        Gemini, GPT-5.4). classify_content assigns "uncertain" confidence 0.40;
+        moderate refuses below 0.70. The "escalate-to-human" path is dead code.
+      severity: task-spec-bug
+      action: fix confidence thresholds in AGENT_TASK_SPEC.md before next case study
+      owner: Axiom
+
+    - id: FIND-B4
+      description: >
+        Individual hash imports (import name = sha256:...) work for shallow
+        pipelines without the index pattern. Docs imply index is always required.
+      severity: docs-clarification
+      action: clarify when individual imports vs index pattern is appropriate
+      owner: Relay
+
+  unknowns:
+    - question: "Is direct-call is_bottom(f()) intentional and stable?"
+      why_unknown: "Works in the live interpreter but not covered by any test"
+      how_to_resolve: "Add an explicit interpreter test before adding to docs"
+
+    - question: "Should the task spec confidence thresholds be fixed before or after the next case study?"
+      why_unknown: "Depends on whether the next case study is meant to test the current spec or a fixed one"
+      how_to_resolve: "Fix the spec first; the unreachable route is a confirmed bug, not a test condition"
+
+  next:
+    - action: "Add direct-call is_bottom example to AGENT_QUICKREF (FIND-B1)"
+      depends_on: ["interpreter test confirming direct-call is_bottom is stable"]
+      effect: "{io.write, repo.commit}"
+    - action: "Add double-print note to AGENT_QUICKREF I/O section (FIND-B2)"
+      depends_on: []
+      effect: "{io.write, repo.commit}"
+    - action: "Fix confidence thresholds in AGENT_TASK_SPEC.md (FIND-B3)"
+      depends_on: []
+      effect: "{io.write, repo.commit}"
+    - action: "Clarify individual vs index import pattern in docs (FIND-B4)"
+      depends_on: []
+      effect: "{io.write, repo.commit}"
+    - action: "Update AGENT_COOKBOOK.md for HTTP workflow (RE-01, deferred)"
+      depends_on: []
+      effect: "{io.write, repo.commit}"
+
+  links:
+    canonical: "dispatches/2026-05-14-gpt5-case-study.yaml"
+    human_readout: "dispatches/2026-05-14-gpt5-case-study.readout.md"
+    prior_case_studies:
+      - "dispatches/2026-05-13-gpt4o-case-study.readout.md"
+      - "dispatches/2026-05-13-gemini-case-study.readout.md"
+      - "dispatches/2026-05-13-claude-case-study.readout.md"

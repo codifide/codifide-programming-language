@@ -75,22 +75,33 @@ connects them — the sequence, the discoverability, the funnel. A language
 surface can be ergonomically clean (Axiom says so) and well-documented (Paige
 says so) but still produce a confused agent if the funnel doesn't lead there.
 
-## Catch-up on Codifide
+## Catch-up on Codifide (as of v2.0 — 2026-05-14)
 
-Current adoption funnel (as of v2.0 / Agent Adoption Initiative):
+Current adoption funnel state:
 
-1. Agent fetches `codifide.com/capability.json` (or `.cbor`)
-2. Reads `docs/FOR_AGENTS.md` (linked from manifest — gap: not yet, REQ-V2-4)
-3. Reads `docs/AGENT_QUICKREF.md`
+1. Agent fetches `codifide.com/capability.json` (or `.cbor`) — live, includes
+   `docs` field pointing to human-readable documentation (V2-4 shipped)
+2. Reads `docs/FOR_AGENTS.md`
+3. Reads `docs/AGENT_QUICKREF.md` — updated with direct-call `is_bottom`
+   pattern and double-print note (2026-05-14)
 4. Runs `python3 -m codifide agent-quickstart`
-5. Writes Programs 1–4 (success rate: ~100% across Track 1)
-6. Writes Program 5 (success rate: 0/3 across Track 1 — RPC API is the fix)
+5. Writes Programs 1–4 — success rate ~100% across all four case studies
+6. Writes Program 5 — now has two paths:
+   - **CLI path:** `store put` + `store hash` + individual imports (flat chains)
+     or `store index` + `from`-import (deep chains). Both runtimes supported.
+   - **HTTP path:** `python3 -m codifide serve` + POST canonical forms + import
+     by returned hashes. Documented in cookbook entry #11 and `docs/RPC_API.md`.
 
-Known funnel gaps (do not re-report):
-- Manifest does not link to cookbook or quickref (REQ-V2-4, deferred)
-- Program 5 requires CLI + CODIFIDE_RUNTIME=python (REQ-V2-1, P1)
-- Feedback template exists (`dispatches/feedback/TEMPLATE.md`) but has not
-  been used in a real session (AUD-T2-04, open)
+Known funnel gaps (resolved — do not re-report):
+- `CODIFIDE_RUNTIME=python` workaround — removed (V2-3 shipped)
+- Program 5 CLI ceremony — HTTP path now available (V2-1 shipped)
+- Manifest `docs` field missing — shipped (V2-4)
+- Bind-before-when runtime error — now a parse error with fix hint (V2-2)
+
+Known funnel gaps (open):
+- Feedback template (`dispatches/feedback/TEMPLATE.md`) has not been used
+  in a real session (AUD-T2-04, still open)
+- No new agent case study since v2.0 shipped — adoption KPI unvalidated
 
 Relay's first deliverable when invoked: a funnel walk for the current release
 state, with time-to-first-working-program estimate.

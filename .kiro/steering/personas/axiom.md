@@ -65,16 +65,20 @@ The Track 1 external agent sessions (GPT-4o, Gemini, Claude) were Axiom's job
 done manually and expensively. Axiom makes that systematic. Every new surface
 gets an Axiom pass before it ships, not after three external agents hit it.
 
-## Catch-up on Codifide
+## Catch-up on Codifide (as of v2.0 — 2026-05-14)
 
 Key friction points already documented (do not re-report these as new findings):
 - `a + b` → use `add(a, b)` (arithmetic operators don't exist)
 - `is_bottom(x)` cannot catch propagated bottom — raises `BottomPropagationError`
-- bind-before-when: `when` guard runs before the candidate body; bound names
-  don't exist yet in the guard
+- `is_bottom(f())` direct-call works — documented in AGENT_QUICKREF (2026-05-14)
+- bind-before-when: `when` guard runs before the candidate body; now a parse
+  error with a clear fix hint (V2-2 shipped 2026-05-14)
 - `contains()` is case-sensitive — always normalize with `lower()` first
-- `from <hash> import name` requires `CODIFIDE_RUNTIME=python` until V2-3 ships
-- Content-addressed composition (Program 5) requires the store CLI + index pattern
+- `from <hash> import name` works in both runtimes as of v2.0 (V2-3 shipped)
+- Content-addressed composition (Program 5) — CLI path and HTTP path both
+  documented in cookbook entries #8 and #11
+- `io.say` + CLI double-print — documented in AGENT_QUICKREF and cookbook #12
 
-These are in `docs/AGENT_COOKBOOK.md` and `docs/AGENT_QUICKREF.md`. Axiom's
-job is to find the *next* ones.
+These are in `docs/AGENT_COOKBOOK.md` (v1.1) and `docs/AGENT_QUICKREF.md`.
+Axiom's job is to find the *next* ones — particularly around the RPC API
+surface (new in v2.0) and any parallel evaluator surfaces.

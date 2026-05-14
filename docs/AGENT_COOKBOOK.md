@@ -317,15 +317,23 @@ python3 -m codifide store index --name my_lib \
 from sha256:<index-hash> import classify_content, moderate, route_message
 ```
 
-**Runtime note:** `from`-imports require the Python runtime in v2.0:
+**Runtime note:** Both the Python and Rust runtimes support `from`-import as
+of v2.0. Pass `--store <path>` to the Rust runtime if your store is not at
+the default location (`~/.codifide/store`).
 
-```bash
-CODIFIDE_RUNTIME=python python3 -m codifide run my_program.cod
+**When individual imports are sufficient:** If your dependency chain is flat
+(no symbol calls another imported symbol), three individual `import name =
+sha256:...` statements work without the index ceremony:
+
+```codifide
+import classify_content = sha256:<hash>
+import moderate         = sha256:<hash>
+import route_message    = sha256:<hash>
 ```
 
-The Rust parser does not yet support `from`-import syntax. Individual
-`import name = sha256:<hash>` works in both runtimes but does not carry
-transitive dependencies.
+Use the index pattern when the chain is deeper or when you want a single
+addressable bundle. Use individual imports for shallow, self-contained
+compositions.
 
 ---
 
@@ -391,6 +399,102 @@ This is a known limitation tracked for v2.0.
 
 ---
 
+## 11. Program 5 via HTTP — the RPC API workflow
+
+**Intention:** compose symbols by content hash without CLI ceremony
+
+**The old way (still works):** `store put`, `store hash`, `store index`,
+`from`-import. Requires knowing the index pattern and running four CLI commands.
+
+**The new way:** start the server, POST canonical forms, import by the returned
+hashes. No index. No runtime flag.
+
+```bash
+# 1. Start the server (once per session)
+python3 -m codifide serve &
+
+# 2. Publish all symbols in the dependency chain
+#    (route_message depends on moderate depends on classify_content — all three needed)
+CLASSIFY_HASH=$(python3 -m codifide canonical --cbor content_classifier.cod | \
+  curl -s -X POST http://localhost:7777/symbols \
+    -H 'Content-Type: application/cbor' --data-binary @- | \
+  python3 -c "import sys,json; print(json.load(sys.stdin)['identity'])")
+
+MODERATE_HASH=$(python3 -m codifide canonical --cbor moderation_gate.cod | \
+  curl -s -X POST http://localhost:7777/symbols \
+    -H 'Content-Type: application/cbor' --data-binary @- | \
+  python3 -c "import sys,json; print(json.load(sys.stdin)['identity'])")
+
+ROUTE_HASH=$(python3 -m codifide canonical --cbor escalation_router.cod | \
+  curl -s -X POST http://localhost:7777/symbols \
+    -H 'Content-Type: application/cbor' --data-binary @- | \
+  python3 -c "import sys,json; print(json.load(sys.stdin)['identity'])")
+
+# 3. Write pipeline_composed.cod with the real hashes
+# (substitute the hash values printed above)
+```
+
+```codifide
+module pipeline_composed
+
+import classify_content = sha256:<CLASSIFY_HASH>
+import moderate         = sha256:<MODERATE_HASH>
+import route_message    = sha256:<ROUTE_HASH>
+
+def composed_pipeline
+  intent "run the full moderation pipeline using content-addressed imports"
+  sig    (message: String) -> Decision
+  effects {}
+  cand
+    route_message(message)
+
+def main
+  intent "test the composed pipeline"
+  sig    () -> Decision
+  effects {}
+  cand
+    composed_pipeline("this message contains spam")
+```
+
+```bash
+# 4. Run it
+python3 -m codifide run pipeline_composed.cod
+```
+
+**Why all three symbols:** `route_message` calls `moderate`, which calls
+`classify_content`. Individual imports do not carry transitive dependencies.
+All three must be in scope. Use `GET /symbols/{hash}/imports` to inspect
+what a stored symbol depends on.
+
+**If `jq` is available:** replace the Python one-liner with `jq -r .identity`.
+
+See `docs/RPC_API.md` for the full endpoint reference.
+
+---
+
+## 12. `io.say` prints twice when `main` returns the same string
+
+**Intention:** print a result and return it
+
+**What happens:** `io.say(msg)` prints to stdout *and* returns the message as
+a string. If `main` returns that string, the CLI also prints the return value.
+The output appears twice.
+
+```codifide
+def main
+  intent "run pipeline and print result"
+  sig    () -> String
+  effects {io.stdout}
+  cand
+    run_pipeline("test message")   # io.say prints once; CLI prints the return value again
+```
+
+**This is expected behavior.** If you want to print exactly once, either:
+- Return `Unit` from `main` and discard the `io.say` return value, or
+- Use `io.say` only inside helper functions, not in `main` itself.
+
+---
+
 ## Quick diagnostics
 
 | Error | Likely cause | See entry |
@@ -405,10 +509,10 @@ This is a known limitation tracked for v2.0.
 | `unknown callable: '<function-name>'` after import | Transitive dependency missing | #8 |
 | `ParseError: expected 'intent'` | Missing `intent` on `def` | #9 |
 | `EffectViolation: performed effect ... not in declared set` | Missing effect declaration | #9 |
-| `parse error: from-import ... not yet supported in the Rust parser` | Need Python runtime | #8 |
+| Output printed twice | `io.say` + CLI both print return value | #12 |
 
 ---
 
-*Cookbook version 1.0 — May 2026*  
-*Derived from: 2026-05-11 four-model review, 2026-05-13 Track 1 case studies*  
+*Cookbook version 1.1 — May 2026*  
+*Derived from: 2026-05-11 four-model review, 2026-05-13 Track 1 case studies, 2026-05-14 GPT-5.4 B-Team review*  
 *Maintained by: Douglas Jones + Claude*

@@ -1,0 +1,60 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: B-Team findings applied — post-GPT-5.4 review
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Apply all four findings from the GPT-5.4 B-Team review to agent-facing
+    docs. Also complete RE-01 (AGENT_COOKBOOK HTTP workflow), deferred from
+    the A-Team review. 341 tests passing.
+
+  state:
+    shipped:
+      - "FIND-B1: direct-call is_bottom example added to AGENT_QUICKREF"
+      - "FIND-B2: double-print note added to AGENT_QUICKREF I/O section"
+      - "FIND-B2: cookbook entry #12 added (io.say double-print)"
+      - "FIND-B3: task spec already correct — no change needed"
+      - "FIND-B4: stale Rust parser note removed from cookbook entry #8"
+      - "FIND-B4: individual vs index import guidance added to cookbook entry #8"
+      - "RE-01: cookbook entry #11 added (Program 5 via HTTP)"
+      - "Quick diagnostics table updated — stale row removed, #12 added"
+      - "Cookbook version bumped to 1.1"
+      - "dispatch-index regenerated"
+      - "341 tests passing"
+    in_flight: []
+    blocked: []
+    refused: []
+
+  evidence:
+    - claim: "341 tests passing after doc changes"
+      kind: run
+      source: "python3 -m pytest --tb=short -q"
+      result: "341 passed in 20.85s"
+      confidence: 1.0
+    - claim: "dispatch-check exits 0"
+      kind: run
+      source: "python3 -m codifide dispatch-check"
+      result: "codifide dispatch-check: all dispatch pairs complete."
+      confidence: 1.0
+
+  unknowns:
+    - question: "Is direct-call is_bottom(f()) intentional and stable?"
+      why_unknown: "Works in the live interpreter but not covered by a dedicated test"
+      how_to_resolve: "Add an explicit interpreter test for direct-call is_bottom before v3.0"
+
+  next:
+    - action: "New agent case study to validate adoption improvements (Relay KPI)"
+      depends_on: []
+      effect: "{external.review}"
+    - action: "Sable audit of parallel evaluator import handling (AUD-OVERNIGHT-02)"
+      depends_on: []
+      effect: "{audit}"
+    - action: "v3.0 planning if adoption evidence warrants it"
+      depends_on: ["new agent case study"]
+      effect: "{planning}"
+
+  links:
+    canonical: "dispatches/2026-05-14-bteam-findings-applied.yaml"
+    human_readout: "dispatches/2026-05-14-bteam-findings-applied.readout.md"
+    source_findings: "dispatches/2026-05-14-gpt5-case-study.yaml"

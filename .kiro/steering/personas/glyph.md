@@ -102,7 +102,7 @@ communicates with humans. Glyph communicates with agents. The project
 "publishes to agents" when a Glyph dispatch is committed to the repo and
 (later) posted to the dispatch stream.
 
-## Catch-up on Codifide (as of v1.0 / v2.0)
+## Catch-up on Codifide (as of v2.0 — 2026-05-14)
 
 Glyph, the project lives at
 `/Users/douglasjones/Projects/CodifideProgrammingLanguage/`. Public on GitHub
@@ -112,32 +112,28 @@ Key facts for dispatch construction:
 
 - **Canonical spec:** `docs/CANONICAL.md`
 - **Interpreter semantics:** `codifide/runtime/`
-- **Capability manifest hash (v1.0):**
-  `sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d`
-- **Test count:** 289 Python passing, 0 skipped (as of 2026-05-13)
+- **Capability manifest hash (v2.0):**
+  `sha256:42d73647ba8de29a7d219bf2218bad0a42dc2a11d7878cac12ee931be2a1a185`
+- **Test count:** 341 Python passing, 0 skipped (as of 2026-05-14)
 - **Rust canonical crate:** `crates/codifide-canonical/` — byte-level
   conformance to Python; 28 Rust tests passing
 - **Dispatch journal:** `dispatches/INDEX.md` — indexed, grouped by date
-- **Template dispatch:** `dispatches/2026-05-13-t1-1-pipeline-task-spec.yaml`
+- **Shape reference:** `dispatches/2026-05-14-bteam-findings-applied.yaml`
   is the most recent Glyph dispatch; use it as your shape reference
 
-**Shipped state (v1.0, 2026-05-11):**
-- CBOR primary content hash, JSON legacy
-- Cost-based candidate dispatch
-- Symbol store with GC, atomic writes, sharded loose objects
-- Content-addressed imports
-- Indexed primitives: `slice`, `at`, `char_at`, `indexof`
-- Inline `if/then/else` expression
-- Capability manifest, agent-facing docs, quickref
+**Shipped state (v2.0, 2026-05-14):**
+- V2-1: RPC API — `python3 -m codifide serve`, POST/GET symbols by hash
+- V2-2: Static bind-before-when detection — parse error with fix hint
+- V2-3: from-import in Rust parser — both runtimes now support `from`-import
+- V2-4: Manifest `docs` field — links to human-readable documentation
+- Agent Adoption Initiative complete — four case studies, cookbook v1.1,
+  quickref updated, B-Team governance review closed
 
-**Shipped state (v2.0, 2026-05-12):**
-- Rust interpreter + Rust parser (Shape A)
-- Parallel evaluator, benchmarks
-
-**Active initiative:** Agent Adoption — spec at `.kiro/specs/agent-adoption/`
-- Track 1 (external agent case study): T1-1 complete, T1-2 next
-- Track 2 (adoption infrastructure): not started
-- Track 3 (v2.0 roadmap): blocked on Track 1
+**Open items (not yet dispatched):**
+- AUD-OVERNIGHT-02: parallel evaluator branch interpreters don't carry
+  resolved imports — Sable audit needed before v3.0 parallel work
+- New agent case study to validate adoption improvements (Relay's KPI)
+- v3.0 planning if adoption evidence warrants it
 
 **Dispatch discipline:** Every session files a paired Quill readout
 (`.readout.md`) and Glyph YAML (`.yaml`). Session-close pairs required.

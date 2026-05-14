@@ -13,6 +13,8 @@ Filename convention:
 
 | slug | subject | readout | yaml | audit |
 |---|---|---|---|---|
+| `bteam-findings-applied` | B-Team findings applied — post-GPT-5.4 review | [md](./2026-05-14-bteam-findings-applied.readout.md) | [yaml](./2026-05-14-bteam-findings-applied.yaml) |  |
+| `gpt5-case-study` | GPT-5.4 case study — live content moderation pipeline run | [md](./2026-05-14-gpt5-case-study.readout.md) | [yaml](./2026-05-14-gpt5-case-study.yaml) |  |
 | `session-close` | Session close — 2026-05-14 | [md](./2026-05-14-session-close.readout.md) | [yaml](./2026-05-14-session-close.yaml) |  |
 | `v2-1-rpc-api-complete` | RPC API complete — V2-1 gate | [md](./2026-05-14-v2-1-rpc-api-complete.readout.md) | [yaml](./2026-05-14-v2-1-rpc-api-complete.yaml) |  |
 | `v2-1-rpc-api-design` | RPC API design — V2-1-1 and V2-1-2 | [md](./2026-05-14-v2-1-rpc-api-design.readout.md) | [yaml](./2026-05-14-v2-1-rpc-api-design.yaml) |  |
