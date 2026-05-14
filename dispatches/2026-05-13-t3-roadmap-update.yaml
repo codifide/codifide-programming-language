@@ -1,0 +1,44 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "Track 3 — v2.0 roadmap update driven by adoption evidence"
+  initiative: agent-adoption
+  track: "3"
+  tasks: [T3-1, T3-2, T3-3, T3-4]
+  capability_hash: "sha256:713d6f6b3a6cfb747cec3bfba0f25331c61b0052bdd166523c175daa2c1f6756"
+  artifacts:
+    - "docs/ROADMAP.md (complete rewrite)"
+    - ".kiro/specs/v2-language/requirements.md"
+    - ".kiro/specs/v2-language/tasks.md"
+  v2_priorities:
+    - id: REQ-V2-1
+      priority: P1
+      name: "RPC API"
+      evidence: "Program 5 universal failure — all three Track 1 models"
+    - id: REQ-V2-2
+      priority: P2
+      name: "Static bind-before-when detection"
+      evidence: "Claude T1-4 hit it; GPT-4o and Gemini avoided by accident"
+    - id: REQ-V2-3
+      priority: P3
+      name: "from-import in Rust parser"
+      evidence: "All three models needed CODIFIDE_RUNTIME=python for Program 5"
+    - id: REQ-V2-4
+      priority: P3
+      name: "Manifest docs field"
+      evidence: "AUD-T2-03 — manifest doesn't point to cookbook or quickref"
+  deferred_with_reason:
+    - item: "Effect inference"
+      reason: "No adoption evidence — effects are well-understood by all models"
+    - item: "Time-indexed types"
+      reason: "No adoption evidence — no agent attempted time-dependent programs"
+    - item: "Editor integration"
+      reason: "No adoption evidence — manifest and store are the right agent interfaces"
+    - item: "Structural diff and merge"
+      reason: "No adoption evidence"
+    - item: "Graph-native parallel runtime (beyond v2.0 Shape A)"
+      reason: "Deferred until RPC API is in place"
+  unknowns:
+    - question: "Should RPC API be a separate service or CLI extension?"
+      how_to_resolve: "Design dispatch V2-1-2"

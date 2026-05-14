@@ -27,6 +27,8 @@ Filename convention:
 | `t2-4-t2-5-t2-6-quickstart` | T2-4+T2-5+T2-6 — feedback template and agent-quickstart CLI | [md](./2026-05-13-t2-4-t2-5-t2-6-quickstart.readout.md) | [yaml](./2026-05-13-t2-4-t2-5-t2-6-quickstart.yaml) |  |
 | `t2-7-track2-complete` | Track 2 complete — adoption infrastructure shipped | [md](./2026-05-13-t2-7-track2-complete.readout.md) | [yaml](./2026-05-13-t2-7-track2-complete.yaml) |  |
 | `t2-9-manifest-note-field` | T2-9 — capability manifest note field added; is_bottom() caveat live | [md](./2026-05-13-t2-9-manifest-note-field.readout.md) | [yaml](./2026-05-13-t2-9-manifest-note-field.yaml) |  |
+| `t3-roadmap` |  |  |  | [md](./2026-05-13-t3-roadmap-audit.md) |
+| `t3-roadmap-update` | Track 3 — v2.0 roadmap update driven by adoption evidence | [md](./2026-05-13-t3-roadmap-update.readout.md) | [yaml](./2026-05-13-t3-roadmap-update.yaml) |  |
 | `track1-sable` |  |  |  | [md](./2026-05-13-track1-sable-audit.md) |
 | `track1-sable-post` | Track 1 Sable audit post-resolution — T1-6 | [md](./2026-05-13-track1-sable-post.readout.md) | [yaml](./2026-05-13-track1-sable-post.yaml) |  |
 | `track1-summary` | Track 1 case study summary — agent adoption initiative gate dispatch | [md](./2026-05-13-track1-summary.readout.md) | [yaml](./2026-05-13-track1-summary.yaml) |  |
