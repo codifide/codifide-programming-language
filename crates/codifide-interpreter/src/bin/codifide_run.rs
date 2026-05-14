@@ -149,15 +149,32 @@ fn resolve_imports_from_store(
                 std::fs::read(&cbor_path).ok()
                     .and_then(|d| codifide_canonical::decode_canonical_cbor(&d).ok())
             } else {
-                None
+                eprintln!("error: import {:?} = {} not found in store at {}",
+                    local_name, identity, store_root.display());
+                process::exit(1);
             }
         };
 
-        if let Some(obj) = obj {
-            if let Ok(imported_module) = codifide_canonical::from_canonical_json(&obj) {
-                if let Some((_, defn)) = imported_module.symbols.into_iter().next() {
-                    out.insert(local_name.clone(), defn);
+        match obj {
+            Some(obj) => {
+                match codifide_canonical::from_canonical_json(&obj) {
+                    Ok(imported_module) => {
+                        if let Some((_, defn)) = imported_module.symbols.into_iter().next() {
+                            out.insert(local_name.clone(), defn);
+                        } else {
+                            eprintln!("error: import {:?} = {} has no symbols", local_name, identity);
+                            process::exit(1);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("error: cannot decode import {:?} = {}: {}", local_name, identity, e);
+                        process::exit(1);
+                    }
                 }
+            }
+            None => {
+                eprintln!("error: cannot read import {:?} = {} from store", local_name, identity);
+                process::exit(1);
             }
         }
     }

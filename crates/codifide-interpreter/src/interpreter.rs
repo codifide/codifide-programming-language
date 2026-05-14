@@ -224,17 +224,26 @@ impl<'m> Interpreter<'m> {
 
     /// Invoke an owned Definition (from resolved imports).
     /// We box it to get a stable address, then use the same unsafe lifetime
-    /// extension as the borrowed path. The box lives for the duration of the call.
+    /// extension as the borrowed path.
+    ///
+    /// Safety: `boxed` must remain live for the entire duration of
+    /// `invoke_defn_inner`, including any recursive calls it makes.
+    /// We achieve this by calling `drop(boxed)` explicitly AFTER
+    /// `invoke_defn_inner` returns — never before. Do not reorder these
+    /// statements. The Rust drop order for locals would drop `boxed` before
+    /// `result` is returned if we relied on implicit drop, which would be UB.
     fn invoke_defn_owned(&mut self, defn: Definition, args: Vec<Value>) -> Result<Value, Error> {
         let boxed = Box::new(defn);
         let defn_ref: &Definition = &*boxed;
-        // Safety: boxed lives until end of this function; invoke_defn_inner
-        // does not store the reference beyond the call.
+        // Safety: boxed is kept alive (not dropped) until after invoke_defn_inner
+        // returns. The explicit drop(boxed) below enforces this. Do not move
+        // drop(boxed) before the result assignment.
         let defn_ref: &'m Definition = unsafe { &*(defn_ref as *const Definition) };
         self.push_depth()?;
         let result = self.invoke_defn_inner(defn_ref, args);
         self.pop_depth();
-        // Keep boxed alive until after the call.
+        // IMPORTANT: drop(boxed) must come after invoke_defn_inner returns.
+        // Moving this before the call would invalidate defn_ref mid-execution.
         drop(boxed);
         result
     }
@@ -517,6 +526,12 @@ impl<'m> Interpreter<'m> {
                         depth: current_depth,
                         prims: build_default_registry(),
                         trace: EffectTrace::fresh(),
+                        // Note: resolved_imports is not passed to branch interpreters.
+                        // Imported symbols are not available in parallel branches.
+                        // This is a known limitation (AUD-OVERNIGHT-02). If a parallel
+                        // branch calls an imported symbol, it will fail with
+                        // unknown_callable. Fix: pass resolved_imports here when the
+                        // parallel evaluator gains full import support.
                         resolved_imports: HashMap::new(),
                     };
                     let branch_frame = Frame { defn, locals, effect_budget: budget };

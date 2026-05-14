@@ -21,6 +21,7 @@ Filename convention:
 | `v2-2-bind-before-when` | Static bind-before-when detection — V2-2 complete | [md](./2026-05-14-v2-2-bind-before-when.readout.md) | [yaml](./2026-05-14-v2-2-bind-before-when.yaml) |  |
 | `v2-3-from-import-rust` | from-import in Rust parser — V2-3 complete | [md](./2026-05-14-v2-3-from-import-rust.readout.md) | [yaml](./2026-05-14-v2-3-from-import-rust.yaml) |  |
 | `v2-4-manifest-docs` | Manifest docs field — V2-4 complete | [md](./2026-05-14-v2-4-manifest-docs.readout.md) | [yaml](./2026-05-14-v2-4-manifest-docs.yaml) |  |
+| `v2-ateam-review` | v2.0 A-Team governance review | [md](./2026-05-14-v2-ateam-review.readout.md) | [yaml](./2026-05-14-v2-ateam-review.yaml) |  |
 | `v2-complete-session-close` | v2.0 roadmap complete — session close | [md](./2026-05-14-v2-complete-session-close.readout.md) | [yaml](./2026-05-14-v2-complete-session-close.yaml) |  |
 
 ## 2026-05-13

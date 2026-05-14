@@ -1,0 +1,59 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: v2.0 A-Team governance review
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Record A-Team governance review of v2.0 work. Axiom, Lumen, Relay, and
+    Sable passes completed. 8 findings: 7 applied, 1 deferred. 341 tests
+    passing. B-Team package prepared for external review.
+
+  state:
+    shipped:
+      - "AX-01: RPC_API.md Program 5 workflow updated to show all 3 symbols"
+      - "AX-02: jq alternative documented in workflow"
+      - "AX-03: default store path added to AGENT_QUICKREF"
+      - "LU-01: RPC_API.md footer updated to implemented status"
+      - "LU-02: 409 ambiguity resolved"
+      - "LU-03: /imports one-level scope clarified in field name note"
+      - "AUD-OVERNIGHT-01: invoke_defn_owned safety comment added"
+      - "AUD-OVERNIGHT-02: parallel evaluator import limitation documented"
+      - "AUD-OVERNIGHT-03: resolve_imports_from_store fails fast on missing symbols"
+      - "AUD-OVERNIGHT-04: socket timeout limitation documented honestly"
+    in_flight:
+      - "B-Team review (external model — package prepared)"
+    blocked: []
+    refused: []
+
+  evidence:
+    - claim: "341 tests passing after A-Team fixes"
+      kind: run
+      source: "python3 -m pytest --tb=short -q"
+      result: "341 passed in 21.25s"
+      confidence: 1.0
+    - claim: "Rust builds cleanly after safety comment additions"
+      kind: run
+      source: "cargo build --release -p codifide-interpreter"
+      result: "Finished release profile — 1 pre-existing dead_code warning"
+      confidence: 1.0
+
+  unknowns:
+    - question: "What will the B-Team find that the A-Team missed?"
+      why_unknown: "B-Team review not yet run"
+      how_to_resolve: "Paste B-Team package into GPT-4o or Gemini; bring findings back"
+    - question: "When will AGENT_COOKBOOK.md be updated for the HTTP workflow?"
+      why_unknown: "Deferred — Relay owns this, not yet scheduled"
+      how_to_resolve: "Schedule as a separate task before next agent case study"
+
+  next:
+    - action: "Run B-Team review on external model; bring findings back"
+      depends_on: ["B-Team package prepared"]
+      effect: "{external.review}"
+    - action: "Update AGENT_COOKBOOK.md for HTTP workflow (RE-01)"
+      depends_on: []
+      effect: "{io.write, repo.commit}"
+
+  links:
+    canonical: "dispatches/2026-05-14-v2-ateam-review.yaml"
+    human_readout: "dispatches/2026-05-14-v2-ateam-review.readout.md"

@@ -341,8 +341,12 @@ def make_server(store: SymbolStore, host: str = "127.0.0.1", port: int = 7777):
     handler_class = type("_BoundHandler", (_Handler,), {"store": store})
 
     server = http.server.ThreadingHTTPServer((host, port), handler_class)
-    # 30-second timeout per connection. Prevents a slow client from
-    # holding a thread indefinitely.
+    # Note: settimeout on the listening socket does NOT bound per-request
+    # read time on accepted connections (AUD-OVERNIGHT-04). This provides
+    # partial protection only. A full fix requires setting the timeout on
+    # each accepted socket, which http.server does not expose cleanly.
+    # For local-only use this is acceptable; do not expose over a network
+    # without a reverse proxy that enforces request timeouts.
     server.socket.settimeout(30)
     return server
 

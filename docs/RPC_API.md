@@ -109,10 +109,10 @@ multiple symbols.
 }
 ```
 
-**Response 409** — symbol already exists (idempotent write — this is not an
-error; the existing identity is returned with status 200). The store's
-idempotent-write property means a 409 never occurs; this entry is here for
-documentation completeness.
+**Response 409** — symbol already exists. The store's idempotent-write
+property means a 409 never occurs in practice; a second POST of the same
+symbol returns 200 with the existing identity. This entry is omitted from
+the error table below for that reason.
 
 **Example (curl)**
 
@@ -168,9 +168,10 @@ curl -s http://localhost:7777/symbols/sha256:<hash> \
 Resolve the **direct** imports of a stored module. Returns the entries in
 the module's imports table and whether each is present in the store.
 
-Note: this endpoint resolves one level only — it does not walk the
-transitive closure. To resolve the full dependency graph, call this
-endpoint recursively on each returned identity.
+**Note: one level only.** This endpoint does not walk the transitive closure.
+To resolve the full dependency graph, call this endpoint recursively on each
+returned identity. The field is named `imports` (not `direct_imports`) for
+brevity, but the scope is always one level.
 
 **Request**
 
@@ -213,28 +214,60 @@ Liveness check. Returns 200 with `{"status": "ok"}`. No store access.
 
 This replaces the CLI-based Program 5 workflow entirely.
 
+**Important:** The dependency chain for the content-moderation pipeline is:
+`route_message` → `moderate` → `classify_content`. All three symbols must
+be published and imported individually — the store holds single-symbol units
+and does not carry transitive dependencies automatically.
+
 ```bash
 # 1. Start the server (once per session)
 python3 -m codifide serve &
 
-# 2. Publish classify_content
+# 2. Publish all three symbols in the dependency chain
 CLASSIFY_HASH=$(python3 -m codifide canonical --cbor content_classifier.cod | \
   curl -s -X POST http://localhost:7777/symbols \
     -H 'Content-Type: application/cbor' --data-binary @- | \
   jq -r .identity)
 
-# 3. Publish route_message
+MODERATE_HASH=$(python3 -m codifide canonical --cbor escalation_router.cod | \
+  curl -s -X POST http://localhost:7777/symbols \
+    -H 'Content-Type: application/cbor' --data-binary @- | \
+  jq -r .identity)   # publishes moderate (and classify_content again — idempotent)
+
 ROUTE_HASH=$(python3 -m codifide canonical --cbor escalation_router.cod | \
   curl -s -X POST http://localhost:7777/symbols \
     -H 'Content-Type: application/cbor' --data-binary @- | \
-  jq -r .identity)
+  jq -r .identity)   # publishes route_message
 
-# 4. Write pipeline_composed.cod using the hashes
-# (no CODIFIDE_RUNTIME=python needed — imports resolve via the server)
+# 3. Write pipeline_composed.cod importing all three by hash
+cat > pipeline_composed.cod << EOF
+module pipeline_composed
+
+import classify_content = $CLASSIFY_HASH
+import moderate         = $MODERATE_HASH
+import route_message    = $ROUTE_HASH
+
+def composed_pipeline
+  intent "run the full moderation pipeline using content-addressed imports"
+  sig    (message: String) -> Decision
+  effects {}
+  cand
+    route_message(message)
+
+def main
+  intent "test the composed pipeline"
+  sig    () -> Decision
+  effects {}
+  cand
+    composed_pipeline("this message contains spam")
+EOF
+
+# 4. Run it — no CODIFIDE_RUNTIME=python needed
+python3 -m codifide run pipeline_composed.cod
 ```
 
-An agent that speaks HTTP can complete this workflow without touching the
-CLI store subcommands or the runtime flag.
+Note: `jq` is required for the hash extraction step. If unavailable, use
+`python3 -c "import sys,json; print(json.load(sys.stdin)['identity'])"` instead.
 
 ---
 
@@ -291,6 +324,5 @@ The `serve` CLI subcommand is added to `codifide/__main__.py`.
 
 ---
 
-*Draft v0.1 — May 2026*  
-*Governed by: GOVERNANCE.md*  
-*Next: V2-1-3 (implement POST /symbols)*
+*Implemented v0.1 — May 2026*  
+*Governed by: GOVERNANCE.md*
