@@ -747,17 +747,20 @@ def main
     # so output appears twice — that's correct Codifide behavior (AUD-T2-02).
     print(f"{ok} Ran quickstart.cod → {output.splitlines()[0]!r} (io.say prints + CLI echoes return value)")
 
-    # Step 5 — content hash
-    hash_result = subprocess.run(
-        [_sys.executable, "-m", "codifide", "store", "hash",
+    # Step 5 — publish to the content-addressed store and print hashes
+    # Use `store put` (not `store hash`) so the symbols are actually stored
+    # and can be imported by hash in subsequent programs. (AUD-T2-06)
+    put_result = subprocess.run(
+        [_sys.executable, "-m", "codifide", "store", "put",
          str(quickstart_path)],
         cwd=str(repo_root),
         capture_output=True,
         text=True,
     )
-    if hash_result.returncode == 0:
-        for line in hash_result.stdout.strip().splitlines():
+    if put_result.returncode == 0:
+        for line in put_result.stdout.strip().splitlines():
             print(f"   {line}")
+        print(f"   (symbols stored — importable via `import name = sha256:<hash>`)")
 
     # Step 6
     print(f"\n{ok} You are ready to write Codifide.")

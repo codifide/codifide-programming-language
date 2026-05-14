@@ -32,6 +32,7 @@ Filename convention:
 | `track1-summary` | Track 1 case study summary — agent adoption initiative gate dispatch | [md](./2026-05-13-track1-summary.readout.md) | [yaml](./2026-05-13-track1-summary.yaml) |  |
 | `track2-sable` |  |  |  | [md](./2026-05-13-track2-sable-audit.md) |
 | `track2-sable-post` | Track 2 Sable audit post-resolution — T2-8 | [md](./2026-05-13-track2-sable-post.readout.md) | [yaml](./2026-05-13-track2-sable-post.yaml) |  |
+| `track2-sable-reaudit` | Track 2 Sable re-audit — untested probes run, AUD-T2-06 found and fixed | [md](./2026-05-13-track2-sable-reaudit.readout.md) | [yaml](./2026-05-13-track2-sable-reaudit.yaml) |  |
 
 ## 2026-05-12
 

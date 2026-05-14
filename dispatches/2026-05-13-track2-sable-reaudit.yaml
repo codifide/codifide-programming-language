@@ -1,0 +1,28 @@
+dispatch:
+  version: "1.0"
+  date: "2026-05-13"
+  persona: Glyph
+  subject: "Track 2 Sable re-audit — untested probes run, AUD-T2-06 found and fixed"
+  initiative: agent-adoption
+  track: "2"
+  capability_hash: "sha256:713d6f6b3a6cfb747cec3bfba0f25331c61b0052bdd166523c175daa2c1f6756"
+  probes_run:
+    - probe: "CBOR bytes byte-identical to local generator"
+      result: pass
+    - probe: "Feedback template dispatch-check recognition"
+      result: pass
+    - probe: "CORS headers for cross-origin requests"
+      result: pass
+    - probe: "Content negotiation (Accept: text/html)"
+      result: pass
+  new_finding:
+    id: AUD-T2-06
+    severity: P2
+    description: "quickstart used store hash (no storage) instead of store put — symbols not importable after quickstart"
+    fix: "changed store hash to store put in cmd_agent_quickstart; output explains symbols are stored"
+    file: "codifide/__main__.py"
+    verified: true
+  meta_finding: "original audit listed untested probes but did not run them — discipline gap"
+  test_results:
+    python_tests: 289
+    failures: 0
