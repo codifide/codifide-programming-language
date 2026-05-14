@@ -2,10 +2,12 @@ dispatch:
   version: "1.0"
   date: "2026-05-13"
   persona: Glyph
-  subject: "session close 2026-05-13 — Track 1 complete, Track 2 ready"
-  capability_hash: "sha256:23fdde779caebc2c471ade0e1c407422d044e2e0f1adc7e59a189325deccd27d"
+  subject: "session close 2026-05-13 — Agent Adoption Initiative complete, all three tracks"
+  capability_hash: "sha256:713d6f6b3a6cfb747cec3bfba0f25331c61b0052bdd166523c175daa2c1f6756"
   track1_status: complete
-  track2_status: ready_to_start
+  track2_status: complete
+  track3_status: complete
+  initiative_status: complete
   dispatches_filed_this_session:
     - "2026-05-13-t1-1-pipeline-task-spec"
     - "2026-05-13-gpt4o-case-study"
@@ -17,21 +19,21 @@ dispatch:
     - "2026-05-13-track1-sable-audit"
     - "2026-05-13-track1-sable-post"
     - "2026-05-13-track1-summary"
-  fixes_applied:
-    - "AGENT_QUICKREF.md: contains() case-sensitivity, is_bottom() trap, routing style, bind-before-when, index pattern"
-    - "AGENT_TASK_SPEC.md: uncertain confidence, lower() reminder, main_refuse rename, three test messages"
-    - "interpreter.py: bind-before-when hint"
-    - "parser.py: from-import error message"
-    - "persona briefs: all three catch-up sections updated"
+    - "2026-05-13-t2-9-manifest-note-field"
+    - "2026-05-13-t2-1-t2-2-manifest-endpoint"
+    - "2026-05-13-t2-3-agent-cookbook"
+    - "2026-05-13-t2-4-t2-5-t2-6-quickstart"
+    - "2026-05-13-t2-7-track2-complete"
+    - "2026-05-13-track2-sable-audit"
+    - "2026-05-13-track2-sable-post"
+    - "2026-05-13-track2-sable-reaudit"
+    - "2026-05-13-t3-roadmap-update"
+    - "2026-05-13-t3-roadmap-audit"
   test_results:
     python_tests: 289
     failures: 0
   next_session:
-    completed_since_last_close: [T2-9, T2-1, T2-2, T2-3, T2-4, T2-5, T2-6, T2-7, T2-8, "T2-8-reaudit"]
-    track2_status: complete
-    first_task: T3-1
-    description: "v2.0 roadmap update — T3-1 through T3-5"
-    manifest_endpoint_live: true
-    new_capability_hash: "sha256:713d6f6b3a6cfb747cec3bfba0f25331c61b0052bdd166523c175daa2c1f6756"
-    note: "AUD-T2-06 found in re-audit — quickstart now uses store put not store hash"
+    first_task: V2-1-2
+    description: "RPC API design dispatch — endpoint shape, auth model, service vs CLI"
+    spec: ".kiro/specs/v2-language/"
   dispatch_check: clean

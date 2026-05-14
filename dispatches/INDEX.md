@@ -20,7 +20,7 @@ Filename convention:
 | `persona-catchup` | persona catch-up sections updated from v0 to v1.0/v2.0 state | [md](./2026-05-13-persona-catchup.readout.md) | [yaml](./2026-05-13-persona-catchup.yaml) |  |
 | `post-t14-fixes` | post-T1-4 fixes — bind-before-when hint added to runtime and docs | [md](./2026-05-13-post-t14-fixes.readout.md) | [yaml](./2026-05-13-post-t14-fixes.yaml) |  |
 | `pre-t14-fixes` | pre-T1-4 fixes — three findings from T1-2 and T1-3 applied by consensus | [md](./2026-05-13-pre-t14-fixes.readout.md) | [yaml](./2026-05-13-pre-t14-fixes.yaml) |  |
-| `session-close` | session close 2026-05-13 — Track 1 complete, Track 2 ready | [md](./2026-05-13-session-close.readout.md) | [yaml](./2026-05-13-session-close.yaml) |  |
+| `session-close` | session close 2026-05-13 — Agent Adoption Initiative complete, all three tracks | [md](./2026-05-13-session-close.readout.md) | [yaml](./2026-05-13-session-close.yaml) |  |
 | `t1-1-pipeline-task-spec` | T1-1 pipeline task spec filed — content-moderation pipeline for agent case study | [md](./2026-05-13-t1-1-pipeline-task-spec.readout.md) | [yaml](./2026-05-13-t1-1-pipeline-task-spec.yaml) |  |
 | `t2-1-t2-2-manifest-endpoint` | T2-1 + T2-2 — capability manifest endpoints live at codifide.com | [md](./2026-05-13-t2-1-t2-2-manifest-endpoint.readout.md) | [yaml](./2026-05-13-t2-1-t2-2-manifest-endpoint.yaml) |  |
 | `t2-3-agent-cookbook` | T2-3 — AGENT_COOKBOOK.md filed — 10 failure modes from 5 sessions | [md](./2026-05-13-t2-3-agent-cookbook.readout.md) | [yaml](./2026-05-13-t2-3-agent-cookbook.yaml) |  |
