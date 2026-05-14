@@ -14,7 +14,14 @@ Filename convention:
 | slug | subject | readout | yaml | audit |
 |---|---|---|---|---|
 | `session-close` | Session close — 2026-05-14 | [md](./2026-05-14-session-close.readout.md) | [yaml](./2026-05-14-session-close.yaml) |  |
+| `v2-1-rpc-api-complete` | RPC API complete — V2-1 gate | [md](./2026-05-14-v2-1-rpc-api-complete.readout.md) | [yaml](./2026-05-14-v2-1-rpc-api-complete.yaml) |  |
 | `v2-1-rpc-api-design` | RPC API design — V2-1-1 and V2-1-2 | [md](./2026-05-14-v2-1-rpc-api-design.readout.md) | [yaml](./2026-05-14-v2-1-rpc-api-design.yaml) |  |
+| `v2-1-rpc-api-sable` |  |  |  | [md](./2026-05-14-v2-1-rpc-api-sable-audit.md) |
+| `v2-1-sable-post` | RPC API Sable post-audit — V2-1-8 | [md](./2026-05-14-v2-1-sable-post.readout.md) | [yaml](./2026-05-14-v2-1-sable-post.yaml) |  |
+| `v2-2-bind-before-when` | Static bind-before-when detection — V2-2 complete | [md](./2026-05-14-v2-2-bind-before-when.readout.md) | [yaml](./2026-05-14-v2-2-bind-before-when.yaml) |  |
+| `v2-3-from-import-rust` | from-import in Rust parser — V2-3 complete | [md](./2026-05-14-v2-3-from-import-rust.readout.md) | [yaml](./2026-05-14-v2-3-from-import-rust.yaml) |  |
+| `v2-4-manifest-docs` | Manifest docs field — V2-4 complete | [md](./2026-05-14-v2-4-manifest-docs.readout.md) | [yaml](./2026-05-14-v2-4-manifest-docs.yaml) |  |
+| `v2-complete-session-close` | v2.0 roadmap complete — session close | [md](./2026-05-14-v2-complete-session-close.readout.md) | [yaml](./2026-05-14-v2-complete-session-close.yaml) |  |
 
 ## 2026-05-13
 

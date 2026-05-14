@@ -1,0 +1,53 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: RPC API Sable post-audit — V2-1-8
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Attest that Sable audit findings for the RPC API are resolved.
+    Two P2s fixed. Three P3s fixed or accepted. V2-1 fully closed.
+
+  state:
+    shipped:
+      - "AUD-RPC-01 fixed: negative Content-Length returns None"
+      - "AUD-RPC-02 fixed: 30-second socket timeout on server socket"
+      - "AUD-RPC-03 fixed: unused hashlib and os imports removed"
+      - "AUD-RPC-04 fixed: RPC_API.md updated to say direct imports only"
+      - "AUD-RPC-05 accepted: threading import kept for clarity"
+      - "REQ-V2-1 fully closed"
+    in_flight: []
+    blocked: []
+    refused:
+      - "AUD-RPC-05 fix: threading import kept — used indirectly, removal reduces clarity"
+
+  evidence:
+    - claim: "AUD-RPC-01 fixed and tested"
+      kind: run
+      source: "tests/test_server.py::PostSymbolTests::test_post_negative_content_length_rejected"
+      result: "PASSED"
+      confidence: 1.0
+    - claim: "All server and acceptance tests pass after fixes"
+      kind: run
+      source: "python3 -m pytest tests/test_server.py tests/test_rpc_program5.py -v"
+      result: "37 passed in 19.08s"
+      confidence: 1.0
+    - claim: "RPC_API.md updated to document direct-imports-only behavior"
+      kind: read
+      source: "docs/RPC_API.md §GET /symbols/{identity}/imports"
+      result: "Now says 'direct imports only' with recursion instruction"
+      confidence: 1.0
+
+  unknowns:
+    - question: "Does settimeout on the server socket bound per-request read time under Python 3.9?"
+      why_unknown: "settimeout on listening socket may not propagate to accepted connections"
+      how_to_resolve: "Test with a slow client if server is ever exposed over a network"
+
+  next:
+    - action: "V2-2-1: Add scope tracking to Python parser for bind-before-when detection"
+      depends_on: ["REQ-V2-1 fully closed"]
+      effect: "{io.write, repo.commit}"
+
+  links:
+    canonical: "dispatches/2026-05-14-v2-1-sable-post.yaml"
+    human_readout: "dispatches/2026-05-14-v2-1-sable-post.readout.md"

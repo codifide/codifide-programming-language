@@ -1,0 +1,75 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: RPC API complete — V2-1 gate
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Attest that REQ-V2-1 acceptance criterion is met. All six V2-1 tasks
+    complete. Program 5 via HTTP passes 8 acceptance tests.
+
+  state:
+    shipped:
+      - "V2-1-1: docs/RPC_API.md"
+      - "V2-1-2: design decisions resolved"
+      - "V2-1-3: POST /symbols"
+      - "V2-1-4: GET /symbols/<id>"
+      - "V2-1-5: GET /symbols/<id>/imports"
+      - "V2-1-6: Program 5 via HTTP acceptance test (8 tests passing)"
+      - "V2-1-7: this dispatch pair"
+    in_flight:
+      - "V2-1-8: Sable audit of RPC API surface"
+    blocked: []
+    refused: []
+
+  evidence:
+    - claim: "Program 5 via HTTP acceptance test passes"
+      kind: run
+      source: "python3 -m pytest tests/test_rpc_program5.py -v"
+      result: "8 passed in 4.23s"
+      confidence: 1.0
+    - claim: "Full test suite passes with no regressions"
+      kind: run
+      source: "python3 -m pytest --tb=short -q"
+      result: "325 passed in 20.25s"
+      confidence: 1.0
+    - claim: "Spam message routes to blocked via HTTP-imported symbols"
+      kind: run
+      source: "tests/test_rpc_program5.py::test_program5_unsafe_path"
+      result: "PASSED"
+      confidence: 1.0
+    - claim: "Approved message routes to approved via HTTP-imported symbols"
+      kind: run
+      source: "tests/test_rpc_program5.py::test_program5_safe_path"
+      result: "PASSED"
+      confidence: 1.0
+    - claim: "No-keyword message routes to escalate-to-human via HTTP-imported symbols"
+      kind: run
+      source: "tests/test_rpc_program5.py::test_program5_uncertain_path"
+      result: "PASSED"
+      confidence: 1.0
+    - claim: "Store starts empty — no CLI pre-seeding required"
+      kind: run
+      source: "tests/test_rpc_program5.py::test_no_cli_store_commands_needed"
+      result: "PASSED"
+      confidence: 1.0
+
+  unknowns:
+    - question: "Should /imports resolve transitively or just one level deep?"
+      why_unknown: "Current implementation is one level; transitive resolution not yet needed for Program 5"
+      how_to_resolve: "Sable to flag in V2-1-8 audit if considered a gap"
+    - question: "Should AGENT_COOKBOOK.md be updated to document the transitive dependency pattern?"
+      why_unknown: "Relay owns this; not yet updated"
+      how_to_resolve: "Relay updates cookbook entry on content-addressed composition before V2-1 closes"
+
+  next:
+    - action: "V2-1-8: Sable audit of RPC API surface"
+      depends_on: ["V2-1-6: Program 5 via HTTP acceptance test (8 tests passing)"]
+      effect: "{io.write}"
+    - action: "V2-2-1: Add scope tracking to Python parser for bind-before-when"
+      depends_on: ["V2-1-8: Sable audit of RPC API surface"]
+      effect: "{io.write, repo.commit}"
+
+  links:
+    canonical: "dispatches/2026-05-14-v2-1-rpc-api-complete.yaml"
+    human_readout: "dispatches/2026-05-14-v2-1-rpc-api-complete.readout.md"

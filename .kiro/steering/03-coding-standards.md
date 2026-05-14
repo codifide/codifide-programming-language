@@ -117,5 +117,7 @@ A function declared `effects {}` that calls an effectful primitive must fail at 
 ### Bind-Before-When Is a Parser Responsibility
 The `when` guard executes before the candidate body. A bind (`<-`) is part of the body. The parser should catch bind-before-when statically (REQ-V2-2). Until V2-2 ships, the runtime hint in `_unbound_name_message` must stay in place.
 
-### From-Import Requires Python Runtime Until V2-3 Ships
-`from <hash> import name` is not yet supported in the Rust parser. The error message explains this and instructs the user to set `CODIFIDE_RUNTIME=python`. Do not remove this message until V2-3 is complete.
+### From-Import Requires Store Path
+`from <hash> import name` requires a store to be available at parse time.
+Pass `--store <path>` to the Rust runtime, or use `CODIFIDE_RUNTIME=python`.
+Both runtimes support `from`-import as of v2.0 (REQ-V2-3 complete).

@@ -132,6 +132,13 @@
   },
   "codifide_capability": "0.1",
   "codifide_schema": "0.1",
+  "docs": {
+    "capability": "https://codifide.com/capability.json",
+    "capability_cbor": "https://codifide.com/capability.cbor",
+    "cookbook": "https://codifide.com/docs/AGENT_COOKBOOK.md",
+    "for_agents": "https://codifide.com/docs/FOR_AGENTS.md",
+    "quickref": "https://codifide.com/docs/AGENT_QUICKREF.md"
+  },
   "effects": [
     "clock.read",
     "io.stdout",

@@ -101,6 +101,9 @@ def _cmd_run_rust(args: argparse.Namespace) -> int:
     cmd = [str(rust_bin), "run", args.file]
     if args.entry:
         cmd += ["--entry", args.entry]
+    # Pass store path so the Rust runtime can resolve from-imports.
+    store_root = str(_store_root(args))
+    cmd += ["--store", store_root]
 
     result = subprocess.run(cmd, capture_output=True, text=True)
     # Forward stderr directly.

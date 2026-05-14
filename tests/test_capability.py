@@ -54,6 +54,7 @@ class ManifestShapeTests(unittest.TestCase):
             "codifide_capability",
             "codifide_schema",
             "generator",
+            "docs",
             "ast_kinds",
             "primitives",
             "effects",
@@ -62,6 +63,15 @@ class ManifestShapeTests(unittest.TestCase):
             "surface_keywords",
         ]:
             self.assertIn(key, m)
+
+    def test_docs_field_has_required_keys(self) -> None:
+        """REQ-V2-4: docs field must contain for_agents, quickref, and cookbook."""
+        m = generate_capability()
+        docs = m.get("docs", {})
+        for key in ["for_agents", "quickref", "cookbook"]:
+            self.assertIn(key, docs, f"docs field missing key: {key!r}")
+            self.assertTrue(docs[key].startswith("https://"),
+                            f"docs[{key!r}] must be an https URL")
 
     def test_schema_versions_match(self) -> None:
         m = generate_capability()

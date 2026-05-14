@@ -45,9 +45,11 @@ programs today.
 
 ---
 
-## v2.0 — Evidence-driven priorities
+### v2.0 — Evidence-driven priorities (SHIPPED 2026-05-14)
 
-### P1 — RPC API
+All four v2.0 priorities shipped in a single overnight session.
+
+### P1 — RPC API ✅
 
 **Evidence:** Program 5 (content-addressed composition) was the universal
 failure point across all three Track 1 sessions. Every agent had to manually
@@ -65,7 +67,7 @@ task spec using only HTTP requests — no CLI, no runtime flag.
 
 ---
 
-### P2 — Static bind-before-when detection in the parser
+### P2 — Static bind-before-when detection in the parser ✅
 
 **Evidence:** Claude (T1-4) hit `unbound name: 'label'` when writing a `cand`
 block with a bind followed by a `when` guard. GPT-4o and Gemini avoided it by
@@ -81,7 +83,7 @@ at parse time with a clear message, not at runtime with `unbound name`.
 
 ---
 
-### P3 — Manifest `docs` field
+### P3 — Manifest `docs` field ✅
 
 **Evidence:** AUD-T2-03 (Track 2 Sable audit). An agent that fetches
 `codifide.com/capability.json` has no way to discover the cookbook, quickref,
@@ -96,7 +98,7 @@ URLs for `FOR_AGENTS.md`, `AGENT_COOKBOOK.md`, and `AGENT_QUICKREF.md`.
 
 ---
 
-### P3 — `from`-import support in the Rust parser
+### P3 — `from`-import support in the Rust parser ✅
 
 **Evidence:** All three Track 1 agents needed `CODIFIDE_RUNTIME=python` for
 Program 5. The Rust parser does not support `from`-import syntax. This is a

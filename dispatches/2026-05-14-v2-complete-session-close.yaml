@@ -1,0 +1,61 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: v2.0 roadmap complete — session close
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Attest that the entire v2.0 roadmap is complete. All four requirements
+    shipped in a single overnight session. 341 tests passing. dispatch-check
+    exits 0.
+
+  state:
+    shipped:
+      - "REQ-V2-1: RPC API — complete"
+      - "REQ-V2-2: Static bind-before-when detection — complete"
+      - "REQ-V2-3: from-import in Rust parser — complete"
+      - "REQ-V2-4: Manifest docs field — complete"
+      - "341 tests passing, 0 skipped"
+      - "dispatch-check exits 0"
+    in_flight:
+      - "publicsite Vercel deployment"
+      - "ROADMAP.md update to mark v2.0 shipped"
+    blocked: []
+    refused: []
+
+  evidence:
+    - claim: "341 tests passing"
+      kind: run
+      source: "python3 -m pytest --tb=short -q"
+      result: "341 passed in 20.81s"
+      confidence: 1.0
+    - claim: "dispatch-check exits 0"
+      kind: run
+      source: "python3 -m codifide dispatch-check"
+      result: "codifide dispatch-check: all dispatch pairs complete."
+      confidence: 1.0
+    - claim: "New manifest hash"
+      kind: run
+      source: "python3 -m codifide capability --hash"
+      result: "sha256:42d73647ba8de29a7d219bf2218bad0a42dc2a11d7878cac12ee931be2a1a185"
+      confidence: 1.0
+
+  unknowns:
+    - question: "Do parallel evaluator branch interpreters need resolved imports?"
+      why_unknown: "Branch interpreters created with empty resolved_imports; not tested"
+      how_to_resolve: "Sable audit before V3.0 parallel work"
+    - question: "Is a new agent case study needed to validate adoption improvements?"
+      why_unknown: "No external agent has run the pipeline since v2.0 shipped"
+      how_to_resolve: "Relay runs adoption KPI check; schedule new case study session"
+
+  next:
+    - action: "Push publicsite repo and trigger Vercel deploy"
+      depends_on: ["REQ-V2-4: Manifest docs field — complete"]
+      effect: "{repo.push, network.deploy}"
+    - action: "Update ROADMAP.md to mark v2.0 as shipped"
+      depends_on: ["v2.0 roadmap complete — session close"]
+      effect: "{io.write, repo.commit}"
+
+  links:
+    canonical: "dispatches/2026-05-14-v2-complete-session-close.yaml"
+    human_readout: "dispatches/2026-05-14-v2-complete-session-close.readout.md"

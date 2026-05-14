@@ -32,11 +32,22 @@ const COST_INFINITY: u64 = u64::MAX;
 /// Returns the result value. Raises a typed `Error` on any violation.
 /// Mirrors Python's `run()`.
 pub fn run(module: &Module, entry: &str, args: Vec<Value>) -> Result<Value, Error> {
+    run_with_imports(module, entry, args, HashMap::new())
+}
+
+/// Run a Codifide module with pre-resolved imports.
+///
+/// `resolved_imports` maps local name → Definition for all imported symbols.
+/// This mirrors Python's `_ResolvedImports` pattern.
+pub fn run_with_imports(
+    module: &Module,
+    entry: &str,
+    args: Vec<Value>,
+    resolved_imports: HashMap<String, Definition>,
+) -> Result<Value, Error> {
     check_transitive_effects(module)?;
-    let mut interp = Interpreter::new(module, DEFAULT_MAX_DEPTH);
+    let mut interp = Interpreter::new_with_imports(module, DEFAULT_MAX_DEPTH, resolved_imports);
     let result = interp.invoke(entry, args)?;
-    // Top-level refusal: if the entry point returns Bottom and no caller
-    // handled it, surface as RefusalError. Mirrors Python's run() behavior.
     if result.is_bottom() {
         return Err(Error::Refusal { fn_: entry.to_string() });
     }
@@ -152,6 +163,9 @@ pub struct Interpreter<'m> {
     depth: usize,
     prims: PrimitiveRegistry,
     trace: EffectTrace,
+    /// Pre-resolved imports: local_name → Definition.
+    /// Populated from the module's imports table at run time.
+    resolved_imports: HashMap<String, Definition>,
 }
 
 impl<'m> Interpreter<'m> {
@@ -162,6 +176,22 @@ impl<'m> Interpreter<'m> {
             depth: 0,
             prims: build_default_registry(),
             trace: EffectTrace::fresh(),
+            resolved_imports: HashMap::new(),
+        }
+    }
+
+    pub fn new_with_imports(
+        module: &'m Module,
+        max_depth: usize,
+        resolved_imports: HashMap<String, Definition>,
+    ) -> Self {
+        Interpreter {
+            module,
+            max_depth,
+            depth: 0,
+            prims: build_default_registry(),
+            trace: EffectTrace::fresh(),
+            resolved_imports,
         }
     }
 
@@ -189,6 +219,23 @@ impl<'m> Interpreter<'m> {
         self.push_depth()?;
         let result = self.invoke_defn_inner(defn, args);
         self.pop_depth();
+        result
+    }
+
+    /// Invoke an owned Definition (from resolved imports).
+    /// We box it to get a stable address, then use the same unsafe lifetime
+    /// extension as the borrowed path. The box lives for the duration of the call.
+    fn invoke_defn_owned(&mut self, defn: Definition, args: Vec<Value>) -> Result<Value, Error> {
+        let boxed = Box::new(defn);
+        let defn_ref: &Definition = &*boxed;
+        // Safety: boxed lives until end of this function; invoke_defn_inner
+        // does not store the reference beyond the call.
+        let defn_ref: &'m Definition = unsafe { &*(defn_ref as *const Definition) };
+        self.push_depth()?;
+        let result = self.invoke_defn_inner(defn_ref, args);
+        self.pop_depth();
+        // Keep boxed alive until after the call.
+        drop(boxed);
         result
     }
 
@@ -377,13 +424,19 @@ impl<'m> Interpreter<'m> {
     }
 
     fn call(&mut self, fn_: &str, arg_exprs: &[Expr], frame: &Frame<'m>) -> Result<Value, Error> {
-        // User-defined function.
+        // User-defined function (local symbols).
         if let Some((_, defn)) = self.module.symbols.iter().find(|(n, _)| n == fn_) {
             let r: Result<Vec<_>, _> = arg_exprs.iter().map(|a| self.eval(a, frame)).collect();
             let vals = r?;
             // Safety: defn lifetime is tied to module which outlives self.
             let defn: &'m Definition = unsafe { &*(defn as *const Definition) };
             return self.invoke_defn(defn, vals);
+        }
+        // Imported symbol — clone the definition so we can call it.
+        if let Some(defn) = self.resolved_imports.get(fn_).cloned() {
+            let r: Result<Vec<_>, _> = arg_exprs.iter().map(|a| self.eval(a, frame)).collect();
+            let vals = r?;
+            return self.invoke_defn_owned(defn, vals);
         }
         // Primitive.
         if self.prims.has(fn_) {
@@ -464,6 +517,7 @@ impl<'m> Interpreter<'m> {
                         depth: current_depth,
                         prims: build_default_registry(),
                         trace: EffectTrace::fresh(),
+                        resolved_imports: HashMap::new(),
                     };
                     let branch_frame = Frame { defn, locals, effect_budget: budget };
                     let result = branch_interp.eval(expr, &branch_frame);

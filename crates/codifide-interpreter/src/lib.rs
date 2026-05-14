@@ -11,6 +11,6 @@ pub mod primitives;
 pub mod value;
 
 pub use errors::Error;
-pub use interpreter::{run, Interpreter, DEFAULT_MAX_DEPTH};
-pub use parser::{parse, ParseError};
+pub use interpreter::{run, run_with_imports, Interpreter, DEFAULT_MAX_DEPTH};
+pub use parser::{parse, parse_with_store, ParseError};
 pub use value::{payload_from_json, Payload, Value};

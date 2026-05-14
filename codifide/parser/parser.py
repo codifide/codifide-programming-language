@@ -566,6 +566,10 @@ def _parse_candidate(lines: List[_Line], i: int) -> Tuple[Candidate, int]:
     guard: Optional[Expr] = None
     cost: Optional[int] = None
     steps: List[Expr] = []
+    # Track bind names seen before any `when` guard so we can raise a
+    # static ParseError if a guard references a name that hasn't been
+    # bound yet (REQ-V2-2: bind-before-when detection).
+    bound_names_before_guard: List[Tuple[str, int]] = []  # (name, lineno)
 
     while i < len(lines) and lines[i].indent > base_indent:
         line = lines[i]
@@ -602,6 +606,25 @@ def _parse_candidate(lines: List[_Line], i: int) -> Tuple[Candidate, int]:
             i += 1
             continue
         if head == "when":
+            # REQ-V2-2: Static bind-before-when detection.
+            # `when` guards execute before the candidate body. Any name
+            # bound with `<-` in the body does not exist yet when the
+            # guard runs. Detect this statically and raise ParseError
+            # with a clear message rather than failing at runtime with
+            # a confusing "unknown callable" error.
+            if bound_names_before_guard:
+                names_str = ", ".join(
+                    f"'{n}' (line {ln})" for n, ln in bound_names_before_guard
+                )
+                raise ParseError(
+                    f"bind-before-when: the `when` guard on line {line.lineno} "
+                    f"executes before the candidate body, but {names_str} "
+                    f"{'is' if len(bound_names_before_guard) == 1 else 'are'} "
+                    f"bound in the body with `<-` and will not exist yet. "
+                    f"Fix: move the bind into the body and use `if/then/else` "
+                    f"to route on the result instead of a `when` guard.",
+                    line=line.lineno,
+                )
             text, i = _gather_expr(lines, i, rest)
             guard = _safe_parse_expr(text, line.lineno)
             continue
@@ -613,6 +636,10 @@ def _parse_candidate(lines: List[_Line], i: int) -> Tuple[Candidate, int]:
         if _is_bind(line.text):
             bind_node, i = _parse_bind_multiline(lines, i)
             steps.append(bind_node)
+            # Record the bound name so we can detect bind-before-when
+            # if a `when` guard appears later in this candidate.
+            if isinstance(bind_node, Bind):
+                bound_names_before_guard.append((bind_node.name, line.lineno))
             continue
         # Plain expression line, possibly spanning multiple physical lines
         # while brackets are unbalanced.

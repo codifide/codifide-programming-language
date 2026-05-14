@@ -224,6 +224,25 @@ def bar
         self.assertEqual(status, 413)
         self.assertEqual(resp["error"], "body_too_large")
 
+    def test_post_negative_content_length_rejected(self) -> None:
+        # AUD-RPC-01: negative Content-Length must not cause unbounded read.
+        # urllib refuses to send negative Content-Length, so we test via
+        # the _read_body function directly.
+        import io
+        from codifide.server import _read_body
+
+        class _FakeHandler:
+            class headers:
+                @staticmethod
+                def get(key, default=""):
+                    if key == "Content-Length":
+                        return "-1"
+                    return default
+            rfile = io.BytesIO(b"some data")
+
+        result = _read_body(_FakeHandler())
+        self.assertIsNone(result, "negative Content-Length should return None")
+
 
 # ---------------------------------------------------------------------------
 # GET /symbols/<identity>

@@ -25,10 +25,8 @@ Design decisions:
 """
 from __future__ import annotations
 
-import hashlib
 import http.server
 import json
-import os
 import re
 import threading
 from pathlib import Path
@@ -88,6 +86,8 @@ def _read_body(handler: http.server.BaseHTTPRequestHandler) -> Optional[bytes]:
     try:
         length = int(length_str)
     except ValueError:
+        return None
+    if length < 0:
         return None
     if length > _MAX_BODY_BYTES:
         # Drain the socket in chunks so the client can receive the 413.
@@ -332,12 +332,18 @@ def make_server(store: SymbolStore, host: str = "127.0.0.1", port: int = 7777):
 
     Uses ThreadingHTTPServer so concurrent POSTs are handled correctly.
     The store's atomic-write semantics make concurrent writes safe.
+
+    A 30-second socket timeout is set to prevent slow-loris style
+    resource exhaustion (AUD-RPC-02).
     """
     # Inject the store into the handler class via a subclass so each
     # request handler can access it without a global.
     handler_class = type("_BoundHandler", (_Handler,), {"store": store})
 
     server = http.server.ThreadingHTTPServer((host, port), handler_class)
+    # 30-second timeout per connection. Prevents a slow client from
+    # holding a thread indefinitely.
+    server.socket.settimeout(30)
     return server
 
 

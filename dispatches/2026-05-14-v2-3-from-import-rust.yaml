@@ -1,0 +1,52 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: from-import in Rust parser — V2-3 complete
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Attest that REQ-V2-3 is complete. from-import works in the Rust runtime
+    with --store flag. CODIFIDE_RUNTIME=python no longer required for
+    from-imports. 340 tests passing.
+
+  state:
+    shipped:
+      - "V2-3-1: parse_with_store in Rust parser resolves from-imports from store filesystem"
+      - "V2-3-2: run_with_imports in Rust interpreter resolves imported symbols at call time"
+      - "V2-3-3: 2 conformance tests in test_rust_interpreter.py::FromImportRust"
+      - "V2-3-4: AGENT_QUICKREF.md updated — CODIFIDE_RUNTIME=python note removed"
+      - "V2-3-5: this dispatch pair"
+    in_flight: []
+    blocked: []
+    refused: []
+
+  evidence:
+    - claim: "from-import works in Rust runtime with --store flag"
+      kind: run
+      source: "python3 -m pytest tests/test_rust_interpreter.py::FromImportRust -v"
+      result: "2 passed in 0.39s"
+      confidence: 1.0
+    - claim: "Full test suite passes with no regressions"
+      kind: run
+      source: "python3 -m pytest --tb=short -q"
+      result: "340 passed in 20.89s"
+      confidence: 1.0
+    - claim: "Rust interpreter builds cleanly"
+      kind: run
+      source: "cargo build --release -p codifide-interpreter"
+      result: "Finished release profile — 1 pre-existing dead_code warning only"
+      confidence: 1.0
+
+  unknowns:
+    - question: "Are imported symbols available in parallel evaluator branches?"
+      why_unknown: "Branch interpreters are created with empty resolved_imports; not tested"
+      how_to_resolve: "Sable to audit parallel evaluator import handling in next audit pass"
+
+  next:
+    - action: "V2-4-1: Add docs field to generate_capability() in capability.py"
+      depends_on: ["V2-3-5: this dispatch pair"]
+      effect: "{io.write, repo.commit}"
+
+  links:
+    canonical: "dispatches/2026-05-14-v2-3-from-import-rust.yaml"
+    human_readout: "dispatches/2026-05-14-v2-3-from-import-rust.readout.md"

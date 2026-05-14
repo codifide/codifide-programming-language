@@ -1,7 +1,7 @@
 # Codifide RPC API
 
-**Version:** 0.1 (draft)  
-**Status:** Design — pending implementation  
+**Version:** 0.1  
+**Status:** Implemented — v2.0  
 **Author:** Douglas Jones + Claude (Winston, Lumen)  
 **Evidence:** REQ-V2-1, `dispatches/2026-05-13-track1-summary.*`
 
@@ -165,8 +165,12 @@ curl -s http://localhost:7777/symbols/sha256:<hash> \
 
 ### GET /symbols/{identity}/imports
 
-Resolve the import graph of a stored module. Returns the transitive closure
-of all symbols reachable from the given identity's imports table.
+Resolve the **direct** imports of a stored module. Returns the entries in
+the module's imports table and whether each is present in the store.
+
+Note: this endpoint resolves one level only — it does not walk the
+transitive closure. To resolve the full dependency graph, call this
+endpoint recursively on each returned identity.
 
 **Request**
 

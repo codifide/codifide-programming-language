@@ -63,10 +63,28 @@ fn is_stop_head(s: &str) -> bool {
 }
 
 // ---------------------------------------------------------------------------
-// Public entry point
+// Public entry points
 // ---------------------------------------------------------------------------
 
+/// Parse Codifide source without store access.
+/// `from`-imports will fail with a clear error directing the user to
+/// `parse_with_store` or `CODIFIDE_RUNTIME=python`.
 pub fn parse(source: &str, module_name: &str) -> Result<Module, ParseError> {
+    parse_with_store(source, module_name, None)
+}
+
+/// Parse Codifide source with optional store path for `from`-import resolution.
+///
+/// When `store_root` is `Some(path)`, `from <hash> import name` lines are
+/// resolved by reading the target module's canonical JSON from the store
+/// filesystem and looking up the requested names in its imports table.
+///
+/// This mirrors the Python parser's `parse(source, store=store)` behaviour.
+pub fn parse_with_store(
+    source: &str,
+    module_name: &str,
+    store_root: Option<&std::path::Path>,
+) -> Result<Module, ParseError> {
     let lines = preprocess(source);
     let mut i = 0usize;
     let mut defs: Vec<(String, Definition)> = Vec::new();
@@ -101,12 +119,10 @@ pub fn parse(source: &str, module_name: &str) -> Result<Module, ParseError> {
             continue;
         }
         if line.text.starts_with("from ") {
-            // from-import requires store; not supported in Rust parser v1.
-            return Err(parse_err(
-                "from-import requires a store and is not yet supported in the Rust parser. \
-                 Use `import name = sha256:<hex>` for direct identity binding.",
-                Some(line.lineno),
-            ));
+            let resolved = parse_from_import(line, store_root)?;
+            imports.extend(resolved);
+            i += 1;
+            continue;
         }
         if head == "def" {
             let (defn_name, defn, new_i) = parse_definition(&lines, i)?;
@@ -152,6 +168,129 @@ fn parse_import(line: &Line) -> Result<(String, String), ParseError> {
 
 fn is_valid_identity(s: &str) -> bool {
     s.starts_with("sha256:") && s.len() == 71 && s[7..].chars().all(|c| c.is_ascii_hexdigit() && !c.is_uppercase())
+}
+
+/// Parse `from <identity> import name1, name2` and resolve names against
+/// the target module's imports table in the store.
+///
+/// The store layout is: `<root>/sha256/<XX>/<remaining>.json` or `.cbor`.
+/// We try JSON first (legacy), then CBOR. The target module's `imports`
+/// field maps name → identity; we look up each requested name there.
+fn parse_from_import(
+    line: &Line,
+    store_root: Option<&std::path::Path>,
+) -> Result<Vec<(String, String)>, ParseError> {
+    let payload = line.text["from ".len()..].trim();
+    if !payload.contains(" import ") {
+        return Err(parse_err(
+            "from-import requires `import`: expected `from <identity> import <name>[, <name>]*`",
+            Some(line.lineno),
+        ));
+    }
+    let import_pos = payload.find(" import ").unwrap();
+    let identity = payload[..import_pos].trim();
+    let names_part = payload[import_pos + " import ".len()..].trim();
+
+    if !is_valid_identity(identity) {
+        return Err(parse_err(
+            format!("invalid from-import identity: {:?}. Expected `sha256:<64 lowercase hex>`", identity),
+            Some(line.lineno),
+        ));
+    }
+
+    let requested: Vec<&str> = names_part.split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect();
+    if requested.is_empty() {
+        return Err(parse_err("from-import requires at least one name", Some(line.lineno)));
+    }
+    for n in &requested {
+        if !n.chars().all(|c| c.is_alphanumeric() || c == '_') || n.is_empty() {
+            return Err(parse_err(format!("invalid from-import name: {:?}", n), Some(line.lineno)));
+        }
+    }
+
+    let store = match store_root {
+        Some(p) => p,
+        None => {
+            return Err(parse_err(
+                format!(
+                    "from-import requires a store. Pass --store <path> to the Rust runtime, \
+                     or use `CODIFIDE_RUNTIME=python python3 -m codifide run ...` to enable \
+                     from-imports without a store flag. \
+                     (`import name = sha256:<hex>` only imports a single symbol and does not \
+                     carry transitive dependencies.)"
+                ),
+                Some(line.lineno),
+            ));
+        }
+    };
+
+    // Read the target module from the store.
+    let digest = &identity[7..]; // strip "sha256:"
+    let shard = &digest[..2];
+    let rest = &digest[2..];
+    let base = store.join("sha256").join(shard);
+
+    // Try JSON first, then CBOR.
+    let target_obj: serde_json::Value = {
+        let json_path = base.join(format!("{}.json", rest));
+        let cbor_path = base.join(format!("{}.cbor", rest));
+        if json_path.exists() {
+            let data = std::fs::read(&json_path).map_err(|e| parse_err(
+                format!("cannot read store object {}: {}", identity, e),
+                Some(line.lineno),
+            ))?;
+            serde_json::from_slice(&data).map_err(|e| parse_err(
+                format!("cannot decode store object {}: {}", identity, e),
+                Some(line.lineno),
+            ))?
+        } else if cbor_path.exists() {
+            let data = std::fs::read(&cbor_path).map_err(|e| parse_err(
+                format!("cannot read store object {}: {}", identity, e),
+                Some(line.lineno),
+            ))?;
+            // Decode CBOR using the canonical crate's decoder.
+            codifide_canonical::decode_canonical_cbor(&data).map_err(|e| parse_err(
+                format!("cannot decode CBOR store object {}: {}", identity, e),
+                Some(line.lineno),
+            ))?
+        } else {
+            return Err(parse_err(
+                format!("from-import {}: not found in store at {}", identity, store.display()),
+                Some(line.lineno),
+            ));
+        }
+    };
+
+    // Extract the imports table from the target module.
+    let target_imports = target_obj.get("imports")
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+
+    let mut out = Vec::new();
+    for name in &requested {
+        match target_imports.get(*name) {
+            Some(serde_json::Value::String(target_identity)) => {
+                out.push((name.to_string(), target_identity.clone()));
+            }
+            _ => {
+                let available: Vec<&str> = target_imports.keys().map(|s| s.as_str()).collect();
+                return Err(parse_err(
+                    format!(
+                        "from-import {} does not export {:?}. \
+                         The target module's imports table has: {:?}",
+                        identity, name,
+                        if available.is_empty() { vec!["(none)"] } else { available }
+                    ),
+                    Some(line.lineno),
+                ));
+            }
+        }
+    }
+    Ok(out)
 }
 
 fn is_valid_module_name(s: &str) -> bool {
@@ -256,6 +395,9 @@ fn parse_candidate(lines: &[Line], i: usize) -> Result<(Candidate, usize), Parse
     let mut guard: Option<Expr> = None;
     let mut cost: Option<u64> = None;
     let mut steps: Vec<Expr> = Vec::new();
+    // Track (name, lineno) of binds seen before any `when` guard.
+    // Used for REQ-V2-2: static bind-before-when detection.
+    let mut bound_before_guard: Vec<(String, usize)> = Vec::new();
 
     while i < lines.len() && lines[i].indent > base_indent {
         let line = &lines[i];
@@ -288,6 +430,29 @@ fn parse_candidate(lines: &[Line], i: usize) -> Result<(Candidate, usize), Parse
                 i += 1;
             }
             "when" => {
+                // REQ-V2-2: Static bind-before-when detection.
+                // `when` guards execute before the candidate body. Any name
+                // bound with `<-` in the body does not exist yet when the
+                // guard runs.
+                if !bound_before_guard.is_empty() {
+                    let names: Vec<String> = bound_before_guard
+                        .iter()
+                        .map(|(n, ln)| format!("'{}' (line {})", n, ln))
+                        .collect();
+                    let is_are = if bound_before_guard.len() == 1 { "is" } else { "are" };
+                    return Err(parse_err(
+                        format!(
+                            "bind-before-when: the `when` guard executes before the \
+                             candidate body, but {} {} bound in the body with `<-` and \
+                             will not exist yet. Fix: move the bind into the body and \
+                             use `if/then/else` to route on the result instead of a \
+                             `when` guard.",
+                            names.join(", "),
+                            is_are,
+                        ),
+                        Some(line.lineno),
+                    ));
+                }
                 let (text, new_i) = gather_expr(lines, i, rest.trim())?;
                 guard = Some(safe_parse_expr(&text, line.lineno)?);
                 i = new_i;
@@ -301,6 +466,10 @@ fn parse_candidate(lines: &[Line], i: usize) -> Result<(Candidate, usize), Parse
                 // Bind line?
                 if is_bind(&line.text) {
                     let (bind_node, new_i) = parse_bind_multiline(lines, i)?;
+                    // Record the bound name for bind-before-when detection.
+                    if let Expr::Bind { ref name, .. } = bind_node {
+                        bound_before_guard.push((name.clone(), line.lineno));
+                    }
                     steps.push(bind_node);
                     i = new_i;
                 } else {

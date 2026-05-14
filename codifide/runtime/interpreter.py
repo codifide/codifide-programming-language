@@ -763,18 +763,6 @@ def _unknown_callable_message(fn: str) -> str:
     hint = _CALLABLE_HINTS.get(fn)
     if hint is not None:
         return f"{base}\n  hint: {hint}"
-    # If the name is a plain identifier (no dots, no special chars), it may
-    # be a bound name used in a `when` guard before the bind executes.
-    # Guards run before candidate bodies — a bind in the body is not yet
-    # in scope when the guard is evaluated. This is the most common cause
-    # of "unknown callable: <plain-name>" errors.
-    if fn.isidentifier():
-        return (
-            f"{base}\n  hint: if '{fn}' is a name you bound with `<-`, "
-            f"note that `when` guards execute before the candidate body — "
-            f"the bind has not happened yet. Move the bind into the body "
-            f"and use `if/then/else` to route on the result."
-        )
     return base
 
 
@@ -797,13 +785,4 @@ def _unbound_name_message(name: str) -> str:
     hint = _UNBOUND_HINTS.get(name)
     if hint is not None:
         return f"{base}\n  hint: {hint}"
-    # A plain identifier that is unbound in a guard context is often a
-    # name the author intended to bind with `<-` in the same cand block.
-    # Guards execute before candidate bodies, so a bind in the body is
-    # not yet in scope when the guard runs.
-    return (
-        f"{base}\n  hint: if '{name}' is a name you intended to bind with "
-        f"`<-`, note that `when` guards execute before the candidate body — "
-        f"the bind has not happened yet. Move the bind into the body and "
-        f"use `if/then/else` to route on the result."
-    )
+    return base

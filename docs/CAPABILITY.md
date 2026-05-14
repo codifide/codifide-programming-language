@@ -30,6 +30,7 @@ it can call and what every call will mean.
   "codifide_capability": "0.1",
   "codifide_schema": "0.1",
   "generator": "codifide-python-0.1-dev",
+  "docs": { ... },
   "ast_kinds": { ... },
   "primitives": [ ... ],
   "effects": [ ... ],
@@ -45,6 +46,11 @@ it can call and what every call will mean.
 - `generator` — which implementation produced this manifest. Freeform
   string; used for provenance, not for dispatch. Implementations are
   expected to differ on this field while agreeing on everything else.
+- `docs` — stable URLs for key agent-facing documents. An agent that
+  fetches the manifest can discover the cookbook, quickref, and
+  onboarding guide from this field without reading the README.
+  Keys: `for_agents`, `quickref`, `cookbook`, `capability`,
+  `capability_cbor`.
 - `ast_kinds` — one entry per canonical AST node kind.
 - `primitives` — every primitive the runtime exposes by default, with
   its name, effect label, and return type.
@@ -55,6 +61,22 @@ it can call and what every call will mean.
   carry. Informational; not a closed enum.
 - `surface_keywords` — the keyword table used by the surface parser,
   covering both ASCII and glyph spellings.
+
+## Docs field
+
+```json
+"docs": {
+  "for_agents":      "https://codifide.com/docs/FOR_AGENTS.md",
+  "quickref":        "https://codifide.com/docs/AGENT_QUICKREF.md",
+  "cookbook":        "https://codifide.com/docs/AGENT_COOKBOOK.md",
+  "capability":      "https://codifide.com/capability.json",
+  "capability_cbor": "https://codifide.com/capability.cbor"
+}
+```
+
+All URLs are stable. An agent should fetch `for_agents` first, then
+`quickref` for the primitive surface, then `cookbook` if it hits an
+error.
 
 ## AST kinds
 

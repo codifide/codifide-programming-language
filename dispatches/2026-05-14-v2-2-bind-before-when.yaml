@@ -1,0 +1,58 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: Static bind-before-when detection — V2-2 complete
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Attest that REQ-V2-2 is complete. Bind-before-when is now a ParseError
+    in both Python and Rust parsers. Runtime hints removed. 12 regression
+    tests passing.
+
+  state:
+    shipped:
+      - "V2-2-1: Python parser scope tracking in _parse_candidate"
+      - "V2-2-2: ParseError with clear message naming bound var and fix"
+      - "V2-2-3: 12 regression tests in tests/test_bind_before_when.py"
+      - "V2-2-4: Runtime hints removed from interpreter.py"
+      - "V2-2-5: Rust parser parse_candidate updated with same detection"
+      - "V2-2-6: this dispatch pair"
+    in_flight: []
+    blocked: []
+    refused: []
+
+  evidence:
+    - claim: "Python parser raises ParseError for bind-before-when"
+      kind: run
+      source: "python3 -m pytest tests/test_bind_before_when.py -v"
+      result: "12 passed in 0.09s"
+      confidence: 1.0
+    - claim: "Rust parser raises ParseError for bind-before-when"
+      kind: run
+      source: "python3 -m codifide run examples/claude-case-study/test_bind_before_when_hint.cod --runtime rust"
+      result: "parse error: bind-before-when: ... (line 9) — exit 1"
+      confidence: 1.0
+    - claim: "Full test suite passes with no regressions"
+      kind: run
+      source: "python3 -m pytest --tb=short -q"
+      result: "338 passed in 20.79s"
+      confidence: 1.0
+    - claim: "Rust interpreter builds cleanly"
+      kind: run
+      source: "cargo build --release -p codifide-interpreter"
+      result: "Finished release profile — 1 pre-existing dead_code warning only"
+      confidence: 1.0
+
+  unknowns:
+    - question: "Should AGENT_QUICKREF.md and AGENT_COOKBOOK.md be updated to say ParseError instead of runtime error?"
+      why_unknown: "Relay owns this; not yet updated"
+      how_to_resolve: "Relay updates before V2-2 is considered fully documented"
+
+  next:
+    - action: "V2-3-1: Implement from-import in Rust lexer + parser"
+      depends_on: ["V2-2-6: this dispatch pair"]
+      effect: "{io.write, repo.commit}"
+
+  links:
+    canonical: "dispatches/2026-05-14-v2-2-bind-before-when.yaml"
+    human_readout: "dispatches/2026-05-14-v2-2-bind-before-when.readout.md"

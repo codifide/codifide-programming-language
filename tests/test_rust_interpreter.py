@@ -938,3 +938,122 @@ class AssessmentBattery(_RustBase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# 8. From-import via Rust runtime (V2-3)
+# ---------------------------------------------------------------------------
+
+class FromImportRust(_RustBase):
+    """V2-3: from-import resolved by the Rust parser with --store flag."""
+
+    def setUp(self):
+        super()
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.store_root = Path(self._tmpdir.name) / "store"
+        from codifide.store import SymbolStore
+        self.store = SymbolStore(self.store_root)
+
+    def tearDown(self):
+        self._tmpdir.cleanup()
+
+    def _rust_run_with_store(self, src: str, entry: str = "main") -> tuple:
+        """Run inline source through Rust with --store pointing at our temp store."""
+        with tempfile.NamedTemporaryFile("w", suffix=".cod", delete=False, encoding="utf-8") as f:
+            f.write(src)
+            tmp = Path(f.name)
+        try:
+            cmd = [str(RUST_BIN), "run", str(tmp),
+                   "--entry", entry,
+                   "--store", str(self.store_root)]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            lines = result.stdout.strip().splitlines()
+            last = lines[-1] if lines else None
+            return last, result.stderr.strip(), result.returncode
+        finally:
+            tmp.unlink(missing_ok=True)
+
+    def _store_symbol(self, src: str, sym_name: str) -> str:
+        """Parse src, store sym_name, return its identity."""
+        from codifide import parse as py_parse
+        from codifide.core.types import Module as CodModule
+        from codifide.projection.canonical import to_canonical
+        from codifide.projection.cbor import canonical_cbor
+        module = py_parse(src)
+        defn = next(d for d in module.symbols if d.name == sym_name)
+        single = CodModule(name=module.name, symbols=(defn,), imports=())
+        return self.store.put(defn.name, defn)
+
+    def test_from_import_basic(self) -> None:
+        """from-import resolves a symbol from the store via the Rust parser."""
+        greet_src = """\
+module greet_lib
+
+def greet
+  intent "greet a user"
+  sig    (name: String) -> String
+  effects {}
+  cand
+    "hello, " ++ name
+"""
+        greet_id = self._store_symbol(greet_src, "greet")
+
+        # Build an index module pointing at greet.
+        import hashlib
+        from codifide.core.types import Module as CodModule
+        from codifide.projection.canonical import to_canonical
+        from codifide.projection.cbor import canonical_cbor
+        index = CodModule(
+            name="greet_index",
+            symbols=(),
+            imports=(("greet", greet_id),),
+        )
+        index_cbor = canonical_cbor(to_canonical(index))
+        index_id = f"sha256:{hashlib.sha256(index_cbor).hexdigest()}"
+        self.store._write_atomic(index_id, index_cbor, suffix=".cbor")
+
+        consumer_src = f"""\
+module consumer
+
+from {index_id} import greet
+
+def main
+  intent "use greet from index"
+  sig    () -> String
+  effects {{}}
+  cand
+    greet("world")
+"""
+        out, err, rc = self._rust_run_with_store(consumer_src)
+        self.assertEqual(rc, 0, f"Rust failed: {err}")
+        self.assertEqual(_norm(out), "hello, world")
+
+    def test_from_import_missing_store_gives_clear_error(self) -> None:
+        """from-import without --store gives a clear error message."""
+        src = """\
+module consumer
+
+from sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa import foo
+
+def main
+  intent "test"
+  sig    () -> String
+  effects {}
+  cand
+    foo()
+"""
+        with tempfile.NamedTemporaryFile("w", suffix=".cod", delete=False, encoding="utf-8") as f:
+            f.write(src)
+            tmp = Path(f.name)
+        try:
+            # Run WITHOUT --store flag.
+            cmd = [str(RUST_BIN), "run", str(tmp), "--entry", "main"]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("store", result.stderr.lower())
+        finally:
+            tmp.unlink(missing_ok=True)
+
+
+if __name__ == "__main__":
+    unittest.main()

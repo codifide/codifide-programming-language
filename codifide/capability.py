@@ -34,12 +34,37 @@ def generate_capability() -> Dict[str, Any]:
         "codifide_capability": CAPABILITY_SCHEMA_VERSION,
         "codifide_schema": CODIFIDE_SCHEMA_VERSION,
         "generator": f"codifide-python-{__version__}",
+        "docs": _docs(),
         "ast_kinds": _ast_kinds(),
         "primitives": _primitives(),
         "effects": _effects(),
         "errors": _errors(),
         "literal_types": _literal_types(),
         "surface_keywords": _surface_keywords(),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Docs field (REQ-V2-4)
+# ---------------------------------------------------------------------------
+
+
+def _docs() -> Dict[str, str]:
+    """Stable URLs for key agent-facing documents.
+
+    An agent that fetches the capability manifest can discover the
+    cookbook, quickref, and onboarding guide from this field without
+    reading the README or browsing the repository.
+
+    URLs point to the canonical public location (codifide.com). The
+    manifest drift test verifies these keys are present.
+    """
+    return {
+        "for_agents":    "https://codifide.com/docs/FOR_AGENTS.md",
+        "quickref":      "https://codifide.com/docs/AGENT_QUICKREF.md",
+        "cookbook":      "https://codifide.com/docs/AGENT_COOKBOOK.md",
+        "capability":    "https://codifide.com/capability.json",
+        "capability_cbor": "https://codifide.com/capability.cbor",
     }
 
 

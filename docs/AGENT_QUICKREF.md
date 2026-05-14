@@ -302,10 +302,9 @@ Then from-import the whole bundle:
 from sha256:<index-hash> import symbol_a, symbol_b
 ```
 
-**Runtime note:** `from`-imports require the Python runtime in v2.0.
-Use `CODIFIDE_RUNTIME=python python3 -m codifide run ...` or set
-`export CODIFIDE_RUNTIME=python` in your shell. The Rust parser does
-not yet support `from`-import syntax.
+**Runtime note:** `from`-imports require a store to be available at parse time.
+Pass `--store <path>` to the Rust runtime, or use `CODIFIDE_RUNTIME=python` for
+the Python reference runtime. Both runtimes support `from`-import as of v2.0.
 
 ## Surface rules that surprised other agents
 

@@ -1,0 +1,60 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: Manifest docs field — V2-4 complete
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Attest that REQ-V2-4 is complete. Capability manifest now has a docs
+    field with stable URLs for key agent-facing documents. New manifest
+    hash documented. 341 tests passing.
+
+  state:
+    shipped:
+      - "V2-4-1: docs field added to generate_capability() in capability.py"
+      - "V2-4-2: docs/CAPABILITY.md updated with docs field schema"
+      - "V2-4-3: docs/capability-0.1.json regenerated"
+      - "V2-4-4: publicsite capability.json and capability.cbor updated"
+      - "V2-4-5: this dispatch pair"
+      - "REQ-V2-4 fully closed"
+      - "All four v2.0 requirements complete"
+    in_flight:
+      - "publicsite Vercel deployment (separate step)"
+    blocked: []
+    refused: []
+
+  evidence:
+    - claim: "docs field present in manifest with required keys"
+      kind: run
+      source: "python3 -m pytest tests/test_capability.py::ManifestShapeTests::test_docs_field_has_required_keys"
+      result: "PASSED"
+      confidence: 1.0
+    - claim: "Full test suite passes with no regressions"
+      kind: run
+      source: "python3 -m pytest --tb=short -q"
+      result: "341 passed in 20.81s"
+      confidence: 1.0
+    - claim: "New manifest hash"
+      kind: run
+      source: "python3 -m codifide capability --hash"
+      result: "sha256:42d73647ba8de29a7d219bf2218bad0a42dc2a11d7878cac12ee931be2a1a185"
+      confidence: 1.0
+    - claim: "docs field contains for_agents, quickref, cookbook URLs"
+      kind: run
+      source: "python3 -m codifide capability | python3 -c \"import json,sys; print(list(json.load(sys.stdin)['docs'].keys()))\""
+      result: "['capability', 'capability_cbor', 'cookbook', 'for_agents', 'quickref']"
+      confidence: 1.0
+
+  unknowns:
+    - question: "Is the publicsite Vercel deployment needed before this is considered live?"
+      why_unknown: "Files updated locally; Vercel deploy is a separate step"
+      how_to_resolve: "Push publicsite repo and trigger Vercel deploy"
+
+  next:
+    - action: "Session close — commit and push all v2.0 work"
+      depends_on: ["All four v2.0 requirements complete"]
+      effect: "{repo.commit, repo.push}"
+
+  links:
+    canonical: "dispatches/2026-05-14-v2-4-manifest-docs.yaml"
+    human_readout: "dispatches/2026-05-14-v2-4-manifest-docs.readout.md"
