@@ -1,0 +1,12 @@
+id: 2026-05-14-task-spec-update-session-close
+date: 2026-05-14
+persona: Quill
+kind: session-close
+title: "Session Close — task spec effects reminder"
+status: closed
+tests: 386
+skipped: 0
+dispatch_check: exits 0
+items_this_session:
+  - Task spec effects reminder added to Program 3
+open_items: none

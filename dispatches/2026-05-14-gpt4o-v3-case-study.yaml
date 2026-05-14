@@ -1,0 +1,24 @@
+id: 2026-05-14-gpt4o-v3-case-study
+date: 2026-05-14
+persona: Quill
+kind: case-study
+title: "GPT-4o — v3.0 Case Study"
+model: gpt-4o
+prompt_version: v3.0
+manifest_hash: sha256:d900fe7e6d91300424b226cda0fd404bf281c4362a70131dbec116548b310ff2
+score: 4/5
+programs:
+  P1: pass
+  P2: pass
+  P3: fail
+  P4: pass
+  P5: pass
+findings: []
+p3_failure: >
+  main calls io.say but declares effects {}. EffectViolation at runtime.
+  Known pattern (T1-3, T1-4). No new finding. Fix: effects {io.stdout} on main.
+summary: >
+  4/5 first-attempt successes. P3 failed due to missing effects {io.stdout}
+  on test harness main — known pattern, no new finding. P1 self-corrected
+  nested or to flat or (style, not error). Strong performance on P2 (believe
+  pattern), P4 (double-print noted), P5 (correct import structure).

@@ -528,6 +528,11 @@ Write a function `route_message` that:
 
 Add a `main` that calls `route_message` with two test messages.
 
+**Effects reminder:** Check the `effects` declaration on every `def` you write,
+including `main`. If `main` calls `io.say` for testing, it must declare
+`effects {io.stdout}`. The runtime enforces effect declarations transitively
+and raises `EffectViolation` if one is missing — even on a test harness function.
+
 **Run it:** `python3 -m codifide run escalation_router.cod`
 
 ---

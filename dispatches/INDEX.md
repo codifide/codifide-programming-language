@@ -20,9 +20,13 @@ Filename convention:
 | `find-g1-believe-multiline-arm` |  | [md](./2026-05-14-find-g1-believe-multiline-arm.readout.md) | [yaml](./2026-05-14-find-g1-believe-multiline-arm.yaml) |  |
 | `gemini-v3-session-close` |  | [md](./2026-05-14-gemini-v3-session-close.readout.md) | [yaml](./2026-05-14-gemini-v3-session-close.yaml) |  |
 | `gemini25pro-v3-case-study` |  | [md](./2026-05-14-gemini25pro-v3-case-study.readout.md) | [yaml](./2026-05-14-gemini25pro-v3-case-study.yaml) |  |
+| `gpt4o-v3-case-study` |  | [md](./2026-05-14-gpt4o-v3-case-study.readout.md) | [yaml](./2026-05-14-gpt4o-v3-case-study.yaml) |  |
+| `gpt4o-v3-session-close` |  | [md](./2026-05-14-gpt4o-v3-session-close.readout.md) | [yaml](./2026-05-14-gpt4o-v3-session-close.yaml) |  |
 | `gpt5-case-study` | GPT-5.4 case study — live content moderation pipeline run | [md](./2026-05-14-gpt5-case-study.readout.md) | [yaml](./2026-05-14-gpt5-case-study.yaml) |  |
 | `relay-v2-case-study` | Relay v2.0 KPI validation — Claude Sonnet 4.6 content-moderation case study | [md](./2026-05-14-relay-v2-case-study.readout.md) | [yaml](./2026-05-14-relay-v2-case-study.yaml) |  |
 | `session-close` | session close — v3.0 session: V3-1 and V3-2 shipped | [md](./2026-05-14-session-close.readout.md) | [yaml](./2026-05-14-session-close.yaml) |  |
+| `task-spec-effects-reminder` |  | [md](./2026-05-14-task-spec-effects-reminder.readout.md) | [yaml](./2026-05-14-task-spec-effects-reminder.yaml) |  |
+| `task-spec-update-session-close` |  | [md](./2026-05-14-task-spec-update-session-close.readout.md) | [yaml](./2026-05-14-task-spec-update-session-close.yaml) |  |
 | `v2-1-rpc-api-complete` | RPC API complete — V2-1 gate | [md](./2026-05-14-v2-1-rpc-api-complete.readout.md) | [yaml](./2026-05-14-v2-1-rpc-api-complete.yaml) |  |
 | `v2-1-rpc-api-design` | RPC API design — V2-1-1 and V2-1-2 | [md](./2026-05-14-v2-1-rpc-api-design.readout.md) | [yaml](./2026-05-14-v2-1-rpc-api-design.yaml) |  |
 | `v2-1-rpc-api-sable` |  |  |  | [md](./2026-05-14-v2-1-rpc-api-sable-audit.md) |

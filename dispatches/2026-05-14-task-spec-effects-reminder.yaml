@@ -1,0 +1,13 @@
+id: 2026-05-14-task-spec-effects-reminder
+date: 2026-05-14
+persona: Quill
+kind: maintenance
+title: "Task Spec Update — Effects reminder on Program 3"
+status: complete
+trigger: GPT-4o v3.0 P3 failure; same pattern T1-3, T1-4
+files_changed:
+  - docs/GPT4O_PROMPT.md
+summary: >
+  Added effects reminder to Program 3 of the task spec. Three case studies
+  hit the same EffectViolation on a test harness main that called io.say
+  without declaring effects {io.stdout}. Reminder placed at point of failure.
