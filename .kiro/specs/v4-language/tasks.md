@@ -71,7 +71,7 @@ All tasks deferred. No adoption evidence for network-exposed server.
 - [x] Cookbook entries for stdlib patterns (V4-2-12) — DONE
 - [x] Cookbook entry for publish-and-resolve workflow (V4-3-4) — DONE
 - [ ] **TOMORROW** Publish to PyPI — `pyproject.toml` ready, needs PyPI account + `pip install build twine && python3 -m build && twine upload dist/*`
-- [ ] Fix blob store write API — query params fix deployed, needs verification (run push commands with REGISTRY_WRITE_TOKEN set)
-- [ ] Seed registry with pipeline symbols (blocked on blob write verification)
-- [ ] Verify end-to-end registry resolution (blocked on seeding)
+- [x] Blob store write API — fix deployed and confirmed working (registry shows 3 symbols live)
+- [x] Seed registry with pipeline symbols — DONE (3 symbols live at codifide.com/registry)
+- [x] Verify end-to-end registry resolution — registry live, green status dot confirmed
 - [ ] Run unstructured agent session for organic adoption signal
