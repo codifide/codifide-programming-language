@@ -454,6 +454,41 @@ class RoutingTests(_ServerFixture):
         status, resp = self._get_json("/symbols")
         self.assertEqual(status, 404)
 
+    def test_post_unknown_path_404(self) -> None:
+        # POST to an unknown path must return 404, not 500.
+        status, resp = self._post("/unknown/path", b"{}", "application/json")
+        self.assertEqual(status, 404)
+        self.assertEqual(resp["error"], "not_found")
+
+    def test_head_malformed_identity_404(self) -> None:
+        # HEAD /symbols/not-a-hash — falls through to bare 404.
+        # Regression: must not 500 or hang.
+        status = self._head("/symbols/not-a-hash")
+        self.assertEqual(status, 404)
+
+    def test_head_valid_identity_absent_404(self) -> None:
+        fake = "sha256:" + "e" * 64
+        status = self._head(f"/symbols/{fake}")
+        self.assertEqual(status, 404)
+
+
+# ---------------------------------------------------------------------------
+# Adversarial: corrupt store object in /imports endpoint
+# ---------------------------------------------------------------------------
+
+class CorruptStoreTests(_ServerFixture):
+    def test_imports_corrupt_stored_object_returns_500(self) -> None:
+        """GET /symbols/<id>/imports where the stored object is not a valid module."""
+        import hashlib
+        # Write raw bytes that are valid CBOR but not a valid canonical module.
+        garbage = b"\xa1\x63foo\x63bar"  # {"foo": "bar"} — valid CBOR, invalid module
+        identity = f"sha256:{hashlib.sha256(garbage).hexdigest()}"
+        self.store._write_atomic(identity, garbage, suffix=".cbor")
+
+        status, resp = self._get_json(f"/symbols/{identity}/imports")
+        self.assertEqual(status, 500)
+        self.assertEqual(resp["error"], "store_error")
+
 
 if __name__ == "__main__":
     unittest.main()
