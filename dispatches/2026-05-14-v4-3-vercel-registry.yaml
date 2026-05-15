@@ -1,0 +1,78 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: V4-3 Vercel registry complete — BlobStore, serverless functions, deploy guide
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Record completion of the Vercel Blob registry backend.
+    Replaces Fly.io plan. Persistent store first architecture.
+    All Sable findings applied. 450 tests passing.
+
+  state:
+    shipped:
+      - "codifide/store/blob_store.py — BlobStore with vercel_blob"
+      - "publicsite/api/health.py — GET /health serverless function"
+      - "publicsite/api/symbols/index.py — POST /symbols with constant-time auth"
+      - "publicsite/api/symbols/[identity].py — GET /symbols/<hash> and /imports"
+      - "publicsite/vercel.json — routing for /health and /symbols/*"
+      - "publicsite/requirements.txt — vercel_blob>=0.3.0 + codifide from GitHub"
+      - "docs/DEPLOY_VERCEL.md — step-by-step Vercel deploy guide"
+      - "pyproject.toml — optional blob dependency"
+      - "codifide/store/__init__.py — BlobStore exported"
+      - "docs/REGISTRY.md — updated to reference DEPLOY_VERCEL.md"
+      - "AUD-VR-01 applied: removed sys.path.insert from functions"
+      - "AUD-VR-02 applied: tightened BlobStore.has() exception handling"
+      - "AUD-VR-03 applied: hmac.compare_digest() for write token"
+      - "AUD-VR-05 applied: vercel_blob>=0.3.0 not ==0.3.0"
+      - "450 tests passing"
+    in_flight: []
+    blocked:
+      - "Live deployment: requires user to create Vercel Blob store and push"
+      - "Seed: pipeline symbols not yet pushed — requires live registry"
+    refused:
+      - "Fly.io deployment: replaced by Vercel Blob approach"
+      - "sys.path.insert in functions: removed per AUD-VR-01"
+
+  evidence:
+    - claim: "450 tests passing after BlobStore addition"
+      kind: run
+      source: "python3 -m pytest tests/ -q"
+      result: "450 passed in 29.32s"
+      confidence: 1.0
+    - claim: "BlobStore imports cleanly"
+      kind: run
+      source: "python3 -c 'from codifide.store import BlobStore; print(BlobStore)'"
+      result: "<class 'codifide.store.blob_store.BlobStore'>"
+      confidence: 1.0
+
+  unknowns:
+    - question: "Does vercel_blob.head() raise BlobNotFoundError specifically?"
+      why_unknown: "Not tested against a live Vercel Blob store"
+      how_to_resolve: "Test after creating the blob store; fix has() if needed"
+    - question: "Does the git+https:// dependency in requirements.txt work in Vercel build?"
+      why_unknown: "Vercel build environment not tested"
+      how_to_resolve: "Publish codifide to PyPI and switch to a version pin"
+
+  next:
+    - action: "Create Vercel Blob store in project dashboard"
+      depends_on: []
+      effect: "{ops}"
+    - action: "Set REGISTRY_WRITE_TOKEN in Vercel environment variables"
+      depends_on: ["Vercel Blob store created"]
+      effect: "{ops}"
+    - action: "Push publicsite repo to trigger Vercel deploy"
+      depends_on: ["REGISTRY_WRITE_TOKEN set"]
+      effect: "{ops.deploy}"
+    - action: "Seed registry with pipeline symbols"
+      depends_on: ["Vercel deploy complete"]
+      effect: "{ops.seed}"
+    - action: "Publish codifide to PyPI to remove git+https:// dependency"
+      depends_on: []
+      effect: "{ops.publish}"
+
+  links:
+    canonical: "dispatches/2026-05-14-v4-3-vercel-registry.yaml"
+    human_readout: "dispatches/2026-05-14-v4-3-vercel-registry.readout.md"
+    sable_audit: "dispatches/2026-05-14-v4-3-vercel-registry-sable-audit.md"
+    deploy_guide: "docs/DEPLOY_VERCEL.md"

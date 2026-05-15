@@ -1,0 +1,75 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: Registry deployment — Dockerfile, fly.toml, seed script, deploy guide
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Complete the V4-3 operational step. The server code existed (V3-2);
+    this dispatch covers the deployment artifacts needed to actually run
+    the public registry on Fly.io.
+
+  state:
+    shipped:
+      - "Dockerfile — Python 3.11, codifide serve --read-only, health check"
+      - ".dockerignore — excludes tests/docs/examples/dispatches"
+      - "fly.toml — codifide-registry app, iad, 256mb, 1GB volume, HTTPS"
+      - "scripts/seed_registry.sh — pushes 3 canonical pipeline symbols"
+      - "docs/DEPLOY.md — step-by-step Fly.io deploy guide"
+      - "docs/REGISTRY.md — updated to reference DEPLOY.md"
+      - "Docker build verified: image builds cleanly"
+      - "Smoke test: health endpoint returns {status: ok}"
+      - "Smoke test: POST /symbols returns 405 in read-only mode"
+      - "450 tests passing"
+    in_flight: []
+    blocked:
+      - "DNS: registry.codifide.com CNAME — requires flyctl deploy first"
+      - "Seed: pipeline symbols not yet pushed — requires running server"
+    refused: []
+
+  evidence:
+    - claim: "Docker image builds cleanly"
+      kind: run
+      source: "docker build -t codifide-registry:local ."
+      result: "Successfully built 8b4ba02def42"
+      confidence: 1.0
+    - claim: "Health endpoint responds in container"
+      kind: run
+      source: "curl http://localhost:7778/health"
+      result: '{"status":"ok"}'
+      confidence: 1.0
+    - claim: "POST /symbols rejected in read-only mode"
+      kind: run
+      source: "curl -X POST http://localhost:7778/symbols"
+      result: '{"error":"method_not_allowed",...}'
+      confidence: 1.0
+    - claim: "450 tests passing after adding deployment files"
+      kind: run
+      source: "python3 -m pytest tests/ -q"
+      result: "450 passed in 29.38s"
+      confidence: 1.0
+
+  unknowns:
+    - question: "Will Fly.io free tier cover registry traffic long-term?"
+      why_unknown: "Registry not yet live; traffic volume unknown"
+      how_to_resolve: "Monitor after launch; upgrade to paid tier if needed"
+    - question: "Should the registry accept writes (not just reads)?"
+      why_unknown: "V4-4 (auth) is deferred; writes without auth are unsafe for a public endpoint"
+      how_to_resolve: "Implement V4-4 bearer token auth, then enable writes"
+
+  next:
+    - action: "Run flyctl deploy (7 steps in docs/DEPLOY.md)"
+      depends_on: []
+      effect: "{ops.deploy}"
+    - action: "Run scripts/seed_registry.sh after deploy"
+      depends_on: ["flyctl deploy"]
+      effect: "{ops.seed}"
+    - action: "Add DNS CNAME registry.codifide.com → codifide-registry.fly.dev"
+      depends_on: ["flyctl deploy"]
+      effect: "{ops.dns}"
+
+  links:
+    canonical: "dispatches/2026-05-14-registry-deploy.yaml"
+    human_readout: "dispatches/2026-05-14-registry-deploy.readout.md"
+    deploy_guide: "docs/DEPLOY.md"
+    registry_docs: "docs/REGISTRY.md"

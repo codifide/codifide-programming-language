@@ -147,7 +147,10 @@
   },
   "effects": [
     "clock.read",
+    "http.fetch",
+    "io.read",
     "io.stdout",
+    "io.write",
     "model.vision"
   ],
   "errors": [
@@ -195,9 +198,14 @@
       "fatal": true,
       "name": "BottomPropagationError",
       "when": "\u22a5 reached a primitive that cannot consume it."
+    },
+    {
+      "fatal": true,
+      "name": "TypeViolation",
+      "when": "A value does not match the declared type in a sig parameter or return."
     }
   ],
-  "generator": "codifide-python-3.0.0",
+  "generator": "codifide-python-4.0.0",
   "literal_types": [
     "Any",
     "Bool",
@@ -253,9 +261,29 @@
       "returns": "String"
     },
     {
+      "effect": null,
+      "name": "clock.add_days",
+      "returns": "Int"
+    },
+    {
+      "effect": null,
+      "name": "clock.format",
+      "returns": "String"
+    },
+    {
       "effect": "clock.read",
       "name": "clock.now",
       "returns": "Clock"
+    },
+    {
+      "effect": null,
+      "name": "clock.parse",
+      "returns": "Int"
+    },
+    {
+      "effect": "clock.read",
+      "name": "clock.today",
+      "returns": "String"
     },
     {
       "effect": null,
@@ -323,14 +351,39 @@
       "returns": "List"
     },
     {
+      "effect": "http.fetch",
+      "name": "http.get",
+      "returns": "String"
+    },
+    {
+      "effect": "http.fetch",
+      "name": "http.post",
+      "returns": "String"
+    },
+    {
       "effect": null,
       "name": "indexof",
       "returns": "Int"
     },
     {
+      "effect": "io.read",
+      "name": "io.exists",
+      "returns": "Bool"
+    },
+    {
+      "effect": "io.read",
+      "name": "io.read",
+      "returns": "String"
+    },
+    {
       "effect": "io.stdout",
       "name": "io.say",
       "returns": "String"
+    },
+    {
+      "effect": "io.write",
+      "name": "io.write",
+      "returns": "Unit"
     },
     {
       "effect": null,
@@ -352,6 +405,16 @@
       "effect": null,
       "name": "join",
       "returns": "String"
+    },
+    {
+      "effect": null,
+      "name": "json.encode",
+      "returns": "String"
+    },
+    {
+      "effect": null,
+      "name": "json.parse",
+      "returns": "Any"
     },
     {
       "effect": null,

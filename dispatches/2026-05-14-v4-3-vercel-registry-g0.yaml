@@ -1,0 +1,45 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: V4-3 Vercel registry G0 — Vercel Blob backend approved
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Record G0 approval for the Vercel Blob registry backend.
+    Replaces Fly.io plan. No new accounts. Persistent store first.
+
+  state:
+    shipped:
+      - "G0 problem statement written and approved"
+      - "Architecture decision: Vercel Blob REST API via stdlib urllib"
+      - "Scope defined: BlobStore + 3 serverless functions + vercel.json routing"
+    in_flight:
+      - "G1 requirements"
+      - "Implementation"
+    blocked: []
+    refused:
+      - "Third-party vercel_blob Python package — stdlib urllib is sufficient"
+
+  evidence:
+    - claim: "User approved Vercel Blob approach"
+      kind: reason
+      source: "conversation"
+      result: "User confirmed: no new accounts, Vercel already in use"
+      confidence: 1.0
+
+  unknowns:
+    - question: "Does the publicsite Vercel project need a separate blob store or can it share one?"
+      why_unknown: "Depends on Vercel project structure; will be resolved during setup docs"
+      how_to_resolve: "Document both options in DEPLOY_VERCEL.md"
+
+  next:
+    - action: "Implement BlobStore backend"
+      depends_on: []
+      effect: "{implementation}"
+    - action: "Implement Vercel serverless functions"
+      depends_on: ["BlobStore"]
+      effect: "{implementation}"
+
+  links:
+    canonical: "dispatches/2026-05-14-v4-3-vercel-registry-g0.yaml"
+    human_readout: "dispatches/2026-05-14-v4-3-vercel-registry-g0.readout.md"

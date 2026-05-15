@@ -190,3 +190,41 @@ Deferred to a future release when adoption evidence exists.
 *Updated by: Douglas Jones + Claude*  
 *Evidence base: Relay v2.0 case study, AUD-OVERNIGHT-02, v2.0 thinking dispatch, V3-3 session*  
 *Governed by: GOVERNANCE.md*
+
+---
+
+## v4.0 — SHIPPED 2026-05-14
+
+**Thesis:** v4.0 is the usability release — closing the gap between
+Codifide as a research prototype and Codifide as a tool usable in the
+wild. Four gaps identified from the "is this usable?" assessment:
+type enforcement, standard library, public registry, network-safe server.
+
+### V4-1 — Runtime type enforcement ✅
+
+`sig` declarations are now enforced at every call boundary. `TypeViolation`
+is raised on mismatch. `Any` accepts all values. `Number` accepts `Int`
+and `Float`. Best-effort — untagged values pass.
+
+### V4-2 — Standard library ✅
+
+File I/O (`io.read`, `io.write`, `io.exists`), HTTP client (`http.get`,
+`http.post`), JSON (`json.parse`, `json.encode`), date arithmetic
+(`clock.today`, `clock.parse`, `clock.add_days`, `clock.format`).
+
+### V4-3 — Public registry (operational) ✅
+
+`docs/REGISTRY.md` documents the publish-and-resolve workflow.
+The five canonical pipeline symbols are published to the public registry.
+
+### V4-4 — Network-safe server — DEFERRED
+
+Deferred until V4-3 demonstrates multi-machine use cases that justify
+the security investment. No adoption evidence for network-exposed server yet.
+
+---
+
+*Roadmap version 4.0 — CLOSED May 2026*  
+*Updated by: Douglas Jones + Claude*  
+*Evidence base: "is this usable in the wild?" gap analysis, V4 spec*  
+*Governed by: GOVERNANCE.md*

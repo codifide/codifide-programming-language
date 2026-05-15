@@ -1,0 +1,85 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: v4.0 retrospective — state of Codifide, team review
+  at: "2026-05-15T00:00:00Z"
+  author: Glyph
+  intent: >
+    Full team review after v4.0. Assess alignment with original goals,
+    adoption viability, and what comes next. Honest accounting of
+    strengths and gaps.
+
+  state:
+    shipped:
+      - "v1.0 through v4.0: four versions in four days"
+      - "450 tests passing, 0 skipped"
+      - "codifide.com/registry: live symbol browser"
+      - "codifide.com/capability.json: live capability manifest"
+      - "codifide.com/symbols/<hash>: live symbol resolution"
+      - "Four external agent case studies: 5/5 programs completed"
+      - "Governance: G0-G5, Sable audits, B-Team reviews on every release"
+    in_flight:
+      - "Blob store write API: 500 errors on push, root cause unresolved"
+      - "README.md: still describes v1.0 feature set"
+    blocked: []
+    refused:
+      - "V3-4 time-indexed types: no adoption evidence"
+      - "V4-4 network-safe server: no adoption evidence"
+      - "Full static type inference: no design yet"
+
+  alignment_with_goals:
+    intent_first_class: true
+    effects_enforced: true
+    contracts_enforced: true
+    confidence_dispatch: true
+    content_addressing: true
+    graph_native_control_flow: partial
+    values_as_knowledge_graphs: partial
+
+  adoption_verdict: "foundation real, thesis sound, ecosystem empty, organic signal needed"
+
+  evidence:
+    - claim: "450 tests passing"
+      kind: run
+      source: "python3 -m pytest tests/ -q"
+      result: "450 passed in 29.32s"
+      confidence: 1.0
+    - claim: "Registry browser live"
+      kind: run
+      source: "curl https://www.codifide.com/registry"
+      result: "<title>Codifide Registry — Public Symbol Store</title>"
+      confidence: 1.0
+    - claim: "Health endpoint live"
+      kind: run
+      source: "curl https://www.codifide.com/health"
+      result: '{"status":"ok"}'
+      confidence: 1.0
+
+  unknowns:
+    - question: "Will agents adopt Codifide without being asked to?"
+      why_unknown: "All adoption evidence is from structured case studies"
+      how_to_resolve: "Publish to PyPI, announce, wait for organic signal"
+    - question: "Does the blob store write API work end-to-end?"
+      why_unknown: "Push commands returned 500 errors; not fully debugged"
+      how_to_resolve: "Debug Vercel Blob PUT call in blob_store.py"
+    - question: "Is content-addressing compelling enough to seed the ecosystem?"
+      why_unknown: "No data on organic agent behavior"
+      how_to_resolve: "Run unstructured agent session with no task spec"
+
+  next:
+    - action: "Update README.md to reflect v4.0"
+      depends_on: []
+      effect: "{docs}"
+    - action: "Publish codifide to PyPI"
+      depends_on: []
+      effect: "{ops.publish}"
+    - action: "Debug blob store write API"
+      depends_on: []
+      effect: "{implementation}"
+    - action: "Run unstructured agent session"
+      depends_on: []
+      effect: "{external.review}"
+
+  links:
+    canonical: "dispatches/2026-05-15-v4-retrospective.yaml"
+    human_readout: "dispatches/2026-05-15-v4-retrospective.readout.md"

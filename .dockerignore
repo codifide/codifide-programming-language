@@ -1,0 +1,26 @@
+# Don't include development artifacts in the Docker image
+.git
+.gitignore
+.pytest_cache
+.playwright-mcp
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+dist/
+build/
+target/
+tests/
+examples/
+docs/
+dispatches/
+sessions/
+scripts/
+crates/
+*.cod
+*.png
+*.jpeg
+*.svg
+Cargo.toml
+Cargo.lock
+fly.toml

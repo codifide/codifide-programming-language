@@ -49,9 +49,10 @@ from .runtime.errors import (
     RecursionLimitError,
     PrimitiveError,
     BottomPropagationError,
+    TypeViolation,
 )
 
-__version__ = "3.0.0"
+__version__ = "4.0.0"
 
 __all__ = [
     "Module",
@@ -82,6 +83,7 @@ __all__ = [
     "RecursionLimitError",
     "PrimitiveError",
     "BottomPropagationError",
+    "TypeViolation",
     "SymbolStore",
     "symbol_bytes",
     "symbol_bytes_json",

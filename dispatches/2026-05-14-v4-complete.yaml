@@ -1,0 +1,83 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: v4.0 complete — type enforcement, standard library, registry
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Record the v4.0 release. Three of four requirements shipped.
+    V4-4 (network-safe server) deferred — no adoption evidence.
+    450 tests passing.
+
+  state:
+    shipped:
+      - "V4-1: TypeViolation error class added to errors.py"
+      - "V4-1: _check_type helper in interpreter.py"
+      - "V4-1: type checking at every user-function call boundary (args + return)"
+      - "V4-1: TypeViolation in capability manifest errors list"
+      - "V4-1: 20 new tests in tests/test_type_enforcement.py"
+      - "V4-2a: io.read, io.write, io.exists primitives"
+      - "V4-2b: http.get, http.post primitives (HTTPS-only)"
+      - "V4-2c: json.parse, json.encode primitives (pure)"
+      - "V4-2d: clock.today, clock.parse, clock.add_days, clock.format"
+      - "V4-2: 44 new tests in tests/test_stdlib.py"
+      - "V4-2: capability manifest updated with new primitives and effects"
+      - "V4-2: docs/AGENT_QUICKREF.md updated with new primitive groups"
+      - "V4-3: docs/REGISTRY.md written"
+      - "CHANGELOG.md updated with v4.0.0 entry"
+      - "ROADMAP.md updated — v4.0 closed"
+      - "codifide/__init__.py version bumped to 4.0.0"
+      - "docs/capability-0.1.json regenerated"
+      - "publicsite/capability.json regenerated to codifide-python-4.0.0"
+      - "publicsite/capability.cbor regenerated"
+      - "publicsite/index.html: version stat v4.0, v4.0 announcement section added"
+      - "450 tests passing, 0 skipped"
+    in_flight: []
+    blocked: []
+    refused:
+      - "V4-4 (network-safe server): deferred — no adoption evidence for network-exposed server"
+
+  evidence:
+    - claim: "450 tests passing after V4-1 and V4-2 changes"
+      kind: run
+      source: "python3 -m pytest tests/ -q --tb=short"
+      result: "450 passed in 29.32s"
+      confidence: 1.0
+    - claim: "TypeViolation raised on type mismatch"
+      kind: run
+      source: "tests/test_type_enforcement.py"
+      result: "20 passed"
+      confidence: 1.0
+    - claim: "stdlib primitives work correctly"
+      kind: run
+      source: "tests/test_stdlib.py"
+      result: "44 passed"
+      confidence: 1.0
+    - claim: "publicsite capability.json generator matches live"
+      kind: run
+      source: "python3 -m codifide dispatch-check"
+      result: "all dispatch pairs complete"
+      confidence: 1.0
+
+  unknowns:
+    - question: "Is best-effort type checking the right long-term design?"
+      why_unknown: "Full static type inference would catch more cases but requires a type system design that doesn't exist yet"
+      how_to_resolve: "Gather adoption evidence — do agents hit cases where Any-tagged values cause silent type errors?"
+    - question: "When should V4-4 (network-safe server) be revisited?"
+      why_unknown: "No adoption evidence for multi-machine use cases yet"
+      how_to_resolve: "Wait for V4-3 (public registry) to demonstrate cross-machine symbol exchange in practice"
+
+  next:
+    - action: "Gather adoption evidence for V4-1 type enforcement — do agents hit TypeViolation in practice?"
+      depends_on: []
+      effect: "{external.review}"
+    - action: "Operate the public registry — seed with pipeline symbols, document publish workflow"
+      depends_on: ["V4-3 docs/REGISTRY.md"]
+      effect: "{ops}"
+    - action: "V4-4 network-safe server when adoption evidence warrants it"
+      depends_on: ["V4-3 adoption evidence"]
+      effect: "{implementation}"
+
+  links:
+    canonical: "dispatches/2026-05-14-v4-complete.yaml"
+    human_readout: "dispatches/2026-05-14-v4-complete.readout.md"

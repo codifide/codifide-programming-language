@@ -1,0 +1,31 @@
+module content_classifier
+
+def classify_content
+  intent "classify a message as safe, unsafe, or uncertain based on keyword signals"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    intent "unsafe — contains harmful keyword"
+    when   or(
+             contains(lower(message), "spam"),
+             contains(lower(message), "hate"),
+             contains(lower(message), "violence")
+           )
+    belief("unsafe", 0.90)
+  cand
+    intent "safe — contains approval keyword"
+    when   or(
+             contains(lower(message), "approved"),
+             contains(lower(message), "verified")
+           )
+    belief("safe", 0.90)
+  cand
+    intent "uncertain — no keyword match"
+    belief("uncertain", 0.75)
+
+def main
+  intent "test classify_content with a sample message"
+  sig    () -> Label
+  effects {}
+  cand
+    classify_content("This message contains spam")
