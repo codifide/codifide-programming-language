@@ -324,41 +324,33 @@ cand
 Both patterns are valid. `cand` + `when` is preferred for three or more
 branches; `if/then/else` is preferred for binary choices inside a body.
 
-**`is_bottom` — value inspector, not propagation catcher.**
+**`is_bottom` — value inspector.**
 
-`is_bottom(x)` returns `true` when `x` is a literal `bottom` value.
-It **cannot** catch a `bottom` that propagated through a bind:
+`is_bottom(x)` returns `true` when `x` is a `bottom` value (including `bottom "reason"`).
+Both the direct-call and bind patterns work:
 
 ```codifide
-# WRONG — bottom propagates through the bind before is_bottom sees it
+# Direct-call — is_bottom sees the value before any bind
+cand
+  if is_bottom(function_that_refuses()) then "refused" else "ok"
+
+# Bind pattern — also works; is_bottom receives the bottom value
 cand
   r <- function_that_refuses()
-  if is_bottom(r) then "caught" else r   # raises BottomPropagationError
+  if is_bottom(r) then "refused" else r
+```
 
-# RIGHT — use a believe arm to handle propagated bottom
+For conditional routing on a possibly-refused value, `believe` is usually
+cleaner and more idiomatic:
+
+```codifide
+# Idiomatic — believe handles refusal explicitly
 cand
   r <- function_that_refuses()
   believe r
     ge(conf(r), 0.70) => r
-    else              => bottom          # or handle the refusal here
+    else              => bottom
 ```
-
-`is_bottom` is useful when `bottom` is passed as an explicit argument
-or stored in a data structure, not when it arrives via function return.
-
-**Direct-call `is_bottom` works.** If you need to check whether a function
-refuses *before* binding its result, call `is_bottom` directly on the call
-expression — no bind needed:
-
-```codifide
-# Works — is_bottom sees the value before any bind propagates it
-cand
-  if is_bottom(moderate(message)) then "refused" else moderate(message)
-```
-
-This short-circuits: if `moderate` refuses, the `else` branch never runs.
-Note that `moderate` is called twice — once for the check and once for the
-value. For expensive functions, prefer the `believe` pattern instead.
 
 ## Content-addressed imports
 

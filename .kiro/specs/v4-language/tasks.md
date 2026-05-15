@@ -44,10 +44,10 @@
 ## REQ-V4-3: Public registry
 
 - [x] **V4-3-1** Write `docs/REGISTRY.md`
-- [ ] **V4-3-2** Publish the five canonical pipeline symbols to codifide.com (blob write API pending)
+- [x] **V4-3-2** Publish the five canonical pipeline symbols to codifide.com ✓ all 5 live
 - [x] **V4-3-3** Add `registry` field to capability manifest — deferred (no field defined yet)
 - [x] **V4-3-4** Add cookbook entry for publish-and-resolve workflow
-- [ ] **V4-3-5** Verify `run --registry https://codifide.com` resolves pipeline symbols
+- [x] **V4-3-5** Verify `run --registry https://codifide.com` resolves pipeline symbols ✓ confirmed
 - [x] **V4-3-6** File Quill/Glyph dispatch
 - [x] **V4-3-7** Registry browser at codifide.com/registry
 

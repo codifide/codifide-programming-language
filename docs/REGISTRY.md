@@ -18,6 +18,8 @@ published at the following identities:
 | `classify_content` | `sha256:377099c5bddb8cebe9e8bc6b8499bb00ea99083798d1b064799ac82c55636fae` |
 | `moderate` | `sha256:1bbe69ba7dae84a1fc1a5b335ac2fd9f4be3e4462857db3cc0d38c4af5be4a2a` |
 | `route_message` | `sha256:68c15e1108ac195e211634d2755f58353422db61b077690ec59686ad87d2d964` |
+| `run_pipeline` | `sha256:9315527239ae775f5f61caedd7f589b2d72e621c384511a1663856235d1a764c` |
+| `composed_pipeline` | `sha256:311ba990e2555bba609c230d28072d290bdf1d88b0e1e2d13db553bf34472346` |
 
 These are the symbols from the content-moderation pipeline task spec
 (`docs/AGENT_TASK_SPEC.md`). They are the canonical test case for
