@@ -21,11 +21,11 @@ symbol under the same identity without this check detecting it.
 This mirrors the filesystem store's sharded layout, making the two backends
 interchangeable and the blob store browseable.
 
-**Public access.** Symbol blobs are stored with ``access='public'``. The
+**Public access.** Symbol blobs are stored with ``access='private'``. The
 content is content-addressed — the hash is the identity, so there is no
-secret in the content. Public access means agents can resolve symbols
-directly from the CDN URL without going through the serverless function,
-which is faster and cheaper.
+secret in the content. Private access means reads go through the Vercel
+Blob API (authenticated with ``BLOB_READ_WRITE_TOKEN``) rather than a
+public CDN URL. The serverless GET handler fetches and proxies the bytes.
 
 **Write protection.** The ``put`` method requires ``BLOB_READ_WRITE_TOKEN``.
 The serverless function that exposes ``POST /symbols`` should be
@@ -109,7 +109,6 @@ class BlobStore:
                 pathname,
                 data,
                 options={
-                    "access": "public",
                     "token": self._token,
                     "contentType": "application/cbor",
                     "cacheControlMaxAge": 31536000,  # 1 year — immutable
@@ -166,7 +165,7 @@ class BlobStore:
         vb = _require_vercel_blob()
         pathname = self._pathname(identity)
 
-        # Public blobs have a stable CDN URL. Fetch via the download URL.
+        # Private blobs require a signed download URL obtained via the API.
         try:
             result = vb.head(
                 pathname,
@@ -181,11 +180,14 @@ class BlobStore:
         if not download_url:
             raise StoreError(f"Vercel Blob returned no URL for {identity}")
 
-        # Fetch the bytes directly from the CDN URL.
+        # Fetch the bytes using the signed URL (works for both public and private blobs).
         import urllib.request
         import urllib.error
         try:
-            with urllib.request.urlopen(download_url, timeout=30) as resp:
+            req = urllib.request.Request(download_url)
+            if self._token:
+                req.add_header("Authorization", f"Bearer {self._token}")
+            with urllib.request.urlopen(req, timeout=30) as resp:
                 data = resp.read(_MAX_BLOB_BYTES + 1)
         except urllib.error.HTTPError as exc:
             if exc.code == 404:
