@@ -94,21 +94,21 @@ a post-audit dispatch is an open wound, not a report.
 - **Error surface.** Do typed errors actually classify what went wrong,
   or do host-language exceptions leak through?
 
-## Catch-up on Codifide (as of v2.0 — 2026-05-14)
+## Catch-up on Codifide (as of v4.0 — 2026-05-15)
 
 Sable, the project lives at
 `/Users/douglasjones/Projects/CodifideProgrammingLanguage/`. Public on GitHub
-as `codifide-programming-language`, MIT licensed.
+as `codifide-programming-language`, MIT licensed. Published on PyPI as `codifide`.
 
 - **Python reference:** `codifide/` — interpreter, parser, store, projection
 - **Rust canonical crate:** `crates/codifide-canonical/` — byte-level
   conformance to Python; includes CBOR decoder, fuzz harness
-- **Rust interpreter + parser:** `crates/codifide-interpreter/` (v2.0,
-  2026-05-12) — parallel evaluator, benchmarks
+- **Rust interpreter + parser:** `crates/codifide-interpreter/` — parallel
+  evaluator, benchmarks
 - **RPC API server:** `codifide/server.py` — ThreadingHTTPServer over
-  SymbolStore; `python3 -m codifide serve` (V2-1, 2026-05-14)
+  SymbolStore; `python3 -m codifide serve`
 - **Spec:** `docs/CANONICAL.md` — read with suspicion
-- **Test count:** 341 Python passing, 0 skipped (as of 2026-05-14)
+- **Test count:** 461 Python passing, 0 skipped (as of 2026-05-15)
 - **Prior audit history** (all in `dispatches/`):
   - `2026-05-10-security-audit.md` — initial CBOR neighborhood audit; all P1s resolved
   - `2026-05-11-ergonomics-audit.md` — post-four-model-review ergonomics
@@ -116,25 +116,18 @@ as `codifide-programming-language`, MIT licensed.
   - `2026-05-11-cli-audit.md` — unbounded source read (P1); resolved
   - `2026-05-13-track1-sable-audit.md` — Track 1 case study surfaces
   - `2026-05-13-track2-sable-audit.md` — Track 2 adoption infrastructure
-  - `2026-05-14-v2-1-rpc-api-sable-audit.md` — RPC API; 2 P2s fixed, 3 P3s
-    fixed or accepted
+  - `2026-05-14-v2-1-rpc-api-sable-audit.md` — RPC API; 2 P2s fixed, 3 P3s fixed or accepted
+
+**Resolved since v2.0:**
+- AUD-OVERNIGHT-02: parallel evaluator branch interpreters now carry resolved imports (fixed v3.0)
+- RPC API adversarial surface: body size limits, concurrent POST, HEAD malformed identity, corrupt store object — all covered in `tests/test_server.py`
+- `is_bottom(f())` direct-call pattern: interpreter bug fixed (v4.0+) — `is_bottom` is now exempt from `BottomPropagationError` check; 7 dedicated tests in `tests/test_runtime.py`
 
 **Known coverage gaps (open):**
-- **AUD-OVERNIGHT-02:** Parallel evaluator branch interpreters don't carry
-  resolved imports. Branch interpreters created with empty `resolved_imports`.
-  Documented as a known limitation; not yet fixed. Sable audit needed before
-  any parallel + import work in v3.0.
 - Conformance suite covers ASCII-clean examples only
-- RPC API HTTP surface has no adversarial test coverage
-- `is_bottom(f())` direct-call pattern — works in the interpreter but no
-  dedicated test; behavior should be confirmed before it goes into docs
-  (currently documented in AGENT_QUICKREF as of 2026-05-14)
+- Stats proxy (`/api/github_stats.py` on publicsite) makes unauthenticated GitHub API calls — rate-limited at 60 req/hour; no `GITHUB_TOKEN` set in Vercel env
+- PyPI package published but not yet confirmed live (CI was failing due to `vercel_blob` Python version constraint — fixed 2026-05-15)
 
 **Active surface to audit next:**
-- Parallel evaluator import handling (AUD-OVERNIGHT-02)
-- RPC API adversarial surface (`codifide/server.py`) — body size limits,
-  concurrent POST behavior, store exhaustion under hostile input
-
-Your first deliverable when invoked: an audit report with
-severity-rated findings, each with a reproducing probe, filed to
-`dispatches/<date>-<slug>-audit.md`.
+- PyPI package supply chain — confirm `pip install codifide` installs the correct package
+- Stats proxy authentication gap

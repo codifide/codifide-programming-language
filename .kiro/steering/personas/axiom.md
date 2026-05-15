@@ -65,20 +65,23 @@ The Track 1 external agent sessions (GPT-4o, Gemini, Claude) were Axiom's job
 done manually and expensively. Axiom makes that systematic. Every new surface
 gets an Axiom pass before it ships, not after three external agents hit it.
 
-## Catch-up on Codifide (as of v2.0 — 2026-05-14)
+## Catch-up on Codifide (as of v4.0 — 2026-05-15)
 
 Key friction points already documented (do not re-report these as new findings):
 - `a + b` → use `add(a, b)` (arithmetic operators don't exist)
-- `is_bottom(x)` cannot catch propagated bottom — raises `BottomPropagationError`
-- `is_bottom(f())` direct-call works — documented in AGENT_QUICKREF (2026-05-14)
-- bind-before-when: `when` guard runs before the candidate body; now a parse
+- `is_bottom(x)` — both direct-call `is_bottom(f())` and bind pattern
+  `r <- f(); is_bottom(r)` now work correctly (interpreter fix v4.0+)
+- bind-before-when: `when` guard runs before the candidate body; parse
   error with a clear fix hint (V2-2 shipped 2026-05-14)
 - `contains()` is case-sensitive — always normalize with `lower()` first
 - `from <hash> import name` works in both runtimes as of v2.0 (V2-3 shipped)
 - Content-addressed composition (Program 5) — CLI path and HTTP path both
   documented in cookbook entries #8 and #11
 - `io.say` + CLI double-print — documented in AGENT_QUICKREF and cookbook #12
+- Standard library (v4.0): `io.read/write/exists`, `http.get/post`,
+  `json.parse/encode`, `clock.today/parse/add_days/format` — all pure except
+  clock.read and io/http effects
 
-These are in `docs/AGENT_COOKBOOK.md` (v1.1) and `docs/AGENT_QUICKREF.md`.
-Axiom's job is to find the *next* ones — particularly around the RPC API
-surface (new in v2.0) and any parallel evaluator surfaces.
+These are in `docs/AGENT_COOKBOOK.md` and `docs/AGENT_QUICKREF.md`.
+Axiom's job is to find the *next* ones — particularly around the stdlib
+surfaces (new in v4.0) and the public registry workflow.

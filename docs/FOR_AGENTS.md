@@ -5,6 +5,22 @@ fastest path to understanding. It is not a tutorial. It is a set of
 pointers into documents and code, in the order a reader with finite
 context should consume them.
 
+## Installation
+
+```bash
+pip install codifide
+python3 -m codifide --version
+```
+
+No other dependencies required. Python 3.9+ supported.
+
+The capability manifest is also available without installing anything:
+
+```bash
+curl https://www.codifide.com/capability.json   # JSON form
+curl https://www.codifide.com/capability.cbor   # CBOR form (RFC 8949)
+```
+
 ## 60 seconds
 
 Read `docs/capability-0.1.json` — the capability manifest. It

@@ -2,6 +2,23 @@
 
 This is the fastest path back into the project after time away.
 
+## Installation
+
+The fastest way to get started:
+
+```bash
+pip install codifide
+python3 -m codifide --version
+```
+
+Or install from source (for development):
+
+```bash
+git clone https://github.com/codifide/codifide-programming-language
+cd codifide-programming-language
+pip install -e "."
+```
+
 ## Run the suite
 
 ```bash

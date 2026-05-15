@@ -75,33 +75,35 @@ connects them — the sequence, the discoverability, the funnel. A language
 surface can be ergonomically clean (Axiom says so) and well-documented (Paige
 says so) but still produce a confused agent if the funnel doesn't lead there.
 
-## Catch-up on Codifide (as of v2.0 — 2026-05-14)
+## Catch-up on Codifide (as of v4.0 — 2026-05-15)
 
 Current adoption funnel state:
 
-1. Agent fetches `codifide.com/capability.json` (or `.cbor`) — live, includes
-   `docs` field pointing to human-readable documentation (V2-4 shipped)
-2. Reads `docs/FOR_AGENTS.md`
-3. Reads `docs/AGENT_QUICKREF.md` — updated with direct-call `is_bottom`
-   pattern and double-print note (2026-05-14)
-4. Runs `python3 -m codifide agent-quickstart`
-5. Writes Programs 1–4 — success rate ~100% across all four case studies
-6. Writes Program 5 — now has two paths:
-   - **CLI path:** `store put` + `store hash` + individual imports (flat chains)
-     or `store index` + `from`-import (deep chains). Both runtimes supported.
-   - **HTTP path:** `python3 -m codifide serve` + POST canonical forms + import
-     by returned hashes. Documented in cookbook entry #11 and `docs/RPC_API.md`.
+1. Agent runs `pip install codifide` — now works (PyPI publish v4.0.0)
+2. Fetches `codifide.com/capability.json` (or `.cbor`) — live, includes
+   `docs` field pointing to human-readable documentation
+3. Reads `docs/FOR_AGENTS.md` — updated with `pip install codifide` as
+   primary install path
+4. Reads `docs/AGENT_QUICKREF.md` — current, `is_bottom` docs corrected
+5. Runs `python3 -m codifide agent-quickstart`
+6. Writes Programs 1–4 — success rate ~100% across all case studies
+7. Writes Program 5 — two paths:
+   - **Registry path:** `import f = sha256:<hash>` + `--registry https://codifide.com`
+     (all 5 pipeline symbols live; verified end-to-end)
+   - **HTTP path:** `python3 -m codifide serve` + POST + import by hash
+   - **CLI path:** `store put` + `store hash` + individual imports
 
-Known funnel gaps (resolved — do not re-report):
-- `CODIFIDE_RUNTIME=python` workaround — removed (V2-3 shipped)
-- Program 5 CLI ceremony — HTTP path now available (V2-1 shipped)
+Known funnel gaps (resolved):
+- `CODIFIDE_RUNTIME=python` workaround — removed (V2-3)
+- Program 5 CLI ceremony — HTTP and registry paths available
 - Manifest `docs` field missing — shipped (V2-4)
-- Bind-before-when runtime error — now a parse error with fix hint (V2-2)
+- Bind-before-when runtime error — parse error with fix hint (V2-2)
+- `is_bottom` propagation footgun — fixed (v4.0+)
 
 Known funnel gaps (open):
-- Feedback template (`dispatches/feedback/TEMPLATE.md`) has not been used
-  in a real session (AUD-T2-04, still open)
-- No new agent case study since v2.0 shipped — adoption KPI unvalidated
+- GitHub Discussions has no announcements for v3.0 or v4.0 — a new agent
+  discovering the project via GitHub sees no release narrative
+- No new agent case study since v2.0 — adoption KPI unvalidated for v4.0
 
 Relay's first deliverable when invoked: a funnel walk for the current release
 state, with time-to-first-working-program estimate.

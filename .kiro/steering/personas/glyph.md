@@ -119,38 +119,39 @@ GitHub Markdown, not YAML. It includes:
 - Open items and unknowns
 - Links to the full Glyph YAML dispatch in the repo
 
-## Catch-up on Codifide (as of v2.0 — 2026-05-14)
+## Catch-up on Codifide (as of v4.0 — 2026-05-15)
 
 Glyph, the project lives at
 `/Users/douglasjones/Projects/CodifideProgrammingLanguage/`. Public on GitHub
-as `codifide-programming-language`, MIT licensed.
+as `codifide-programming-language`, MIT licensed. Published on PyPI as `codifide`.
 
 Key facts for dispatch construction:
 
 - **Canonical spec:** `docs/CANONICAL.md`
 - **Interpreter semantics:** `codifide/runtime/`
-- **Capability manifest hash (v2.0):**
-  `sha256:42d73647ba8de29a7d219bf2218bad0a42dc2a11d7878cac12ee931be2a1a185`
-- **Test count:** 341 Python passing, 0 skipped (as of 2026-05-14)
+- **Capability manifest hash (v4.0):**
+  `sha256:341b82f074cc59f929415cf571bfe27da5127270ebb86618f575fe107514ffe1`
+- **Test count:** 461 Python passing, 0 skipped (as of 2026-05-15)
 - **Rust canonical crate:** `crates/codifide-canonical/` — byte-level
-  conformance to Python; 28 Rust tests passing
+  conformance to Python
 - **Dispatch journal:** `dispatches/INDEX.md` — indexed, grouped by date
-- **Shape reference:** `dispatches/2026-05-14-bteam-findings-applied.yaml`
-  is the most recent Glyph dispatch; use it as your shape reference
+- **Shape reference:** use the most recent `.yaml` in `dispatches/` as shape reference
 
-**Shipped state (v2.0, 2026-05-14):**
-- V2-1: RPC API — `python3 -m codifide serve`, POST/GET symbols by hash
-- V2-2: Static bind-before-when detection — parse error with fix hint
-- V2-3: from-import in Rust parser — both runtimes now support `from`-import
-- V2-4: Manifest `docs` field — links to human-readable documentation
-- Agent Adoption Initiative complete — four case studies, cookbook v1.1,
-  quickref updated, B-Team governance review closed
+**Shipped state (v4.0, 2026-05-15):**
+- V4-1: Runtime type enforcement — `sig` declarations enforced at call boundaries
+- V4-2: Standard library — io, http, json, clock primitives
+- V4-3: Public registry — all 5 pipeline symbols live at codifide.com/registry;
+  `python3 -m codifide run pipeline_composed.cod --registry https://codifide.com` verified
+- `is_bottom` interpreter fix — exempt from `BottomPropagationError` check; 7 new tests
+- RPC adversarial gaps closed — 3 new server tests
+- PyPI publish — `pip install codifide` (CI fix: removed `blob` extra from test install)
+- Dependabot PRs merged: sha2 0.11, criterion 0.8, checkout@v6, setup-python@v6, codeql-action@v4
 
-**Open items (not yet dispatched):**
-- AUD-OVERNIGHT-02: parallel evaluator branch interpreters don't carry
-  resolved imports — Sable audit needed before v3.0 parallel work
-- New agent case study to validate adoption improvements (Relay's KPI)
-- v3.0 planning if adoption evidence warrants it
+**Open items:**
+- GitHub Discussions announcements for v3.0 and v4.0 (Quill P1)
+- `GITHUB_TOKEN` not set in Vercel env — stats proxy rate-limited (Sable P2)
+- PyPI package live status unconfirmed — CI was failing, now fixed; next push will publish
+- New agent case study to validate v4.0 adoption improvements
 
 **Dispatch discipline:** Every session files a paired Quill readout
 (`.readout.md`) and Glyph YAML (`.yaml`). Session-close pairs required.
