@@ -21,6 +21,7 @@ from .symbol_store import (
     symbol_hash_json,       # legacy JSON hash, for callers that need it
 )
 from .remote import RemoteStore, DEFAULT_REGISTRY
+from .blob_store import BlobStore
 
 __all__ = [
     "IntegrityError",
@@ -28,6 +29,7 @@ __all__ = [
     "StoreError",
     "SymbolStore",
     "RemoteStore",
+    "BlobStore",
     "DEFAULT_REGISTRY",
     "symbol_bytes",
     "symbol_bytes_json",

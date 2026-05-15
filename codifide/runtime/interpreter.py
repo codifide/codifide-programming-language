@@ -51,6 +51,7 @@ from .errors import (
     PrimitiveError,
     RecursionLimitError,
     RefusalError,
+    TypeViolation,
 )
 from .primitives import (
     EffectTrace,
@@ -350,6 +351,9 @@ class Interpreter:
                 v = args[i] if i < len(args) else None
                 if not isinstance(v, (Value, Belief)):
                     v = Value(payload=v, type=p.type, provenance=("argument",))
+                # V4-1: runtime type check against declared parameter type.
+                if p.type and p.type != "Any":
+                    _check_type(defn.name, p.name, p.type, v)
                 locals_[p.name] = v
 
             frame = _Frame(defn=defn, locals=locals_, trace=trace, prims=prims)
@@ -392,6 +396,15 @@ class Interpreter:
                     # other errors.
                     reason = result.reason if isinstance(result, BottomWithReason) else None
                     raise RefusalError(defn.name, reason=reason)
+
+            # V4-1: check return type against sig declaration.
+            ret_type = defn.signature.returns
+            if (
+                ret_type
+                and ret_type != "Any"
+                and not isinstance(result, _BottomType)
+            ):
+                _check_type(defn.name, "<return>", ret_type, result)
 
             return _unwrap(result) if not isinstance(result, _BottomType) else result
         finally:
@@ -622,6 +635,9 @@ class Interpreter:
                 v = args[i] if i < len(args) else None
                 if not isinstance(v, (Value, Belief)):
                     v = Value(payload=v, type=p.type, provenance=("argument",))
+                # V4-1: runtime type check against declared parameter type.
+                if p.type and p.type != "Any":
+                    _check_type(defn.name, p.name, p.type, v)
                 locals_[p.name] = v
             # New primitive registry bound to the SAME trace so io accumulates.
             prims = build_default_registry(parent_trace)
@@ -645,6 +661,10 @@ class Interpreter:
                             clause=_describe(clause), intent=defn.intent,
                             intent_chain=list(self._intent_chain),
                         )
+                # V4-1: check return type against sig declaration.
+                ret_type = defn.signature.returns
+                if ret_type and ret_type != "Any":
+                    _check_type(defn.name, "<return>", ret_type, result)
             return result
         finally:
             self._intent_chain.pop()
@@ -682,6 +702,90 @@ def _with_pure_budget(frame: _Frame) -> _Frame:
         prims=frame.prims,
         effect_budget=frozenset(),
     )
+
+
+# ---------------------------------------------------------------------------
+# Type checking (V4-1)
+# ---------------------------------------------------------------------------
+
+# Type hierarchy for runtime checking.
+# Number is the supertype of Int and Float.
+# Label is a subtype of String (a Label is a String, but not vice versa).
+# Any accepts everything.
+# Number is also accepted where Int or Float is declared — primitives like
+# add/sub/mul return "Number" and the payload may be an int or float.
+_TYPE_ACCEPTS: Dict[str, frozenset] = {
+    "Any":    frozenset(),          # special: accepts all
+    "Number": frozenset({"Int", "Float", "Number"}),
+    "Int":    frozenset({"Int", "Number"}),    # Number accepted: payload may be int
+    "Float":  frozenset({"Float", "Number"}),  # Number accepted: payload may be float
+    "String": frozenset({"String", "Label"}),
+    "Label":  frozenset({"Label", "String"}),  # Label is a classified String
+    "Bool":   frozenset({"Bool"}),
+    "List":   frozenset({"List"}),
+    "Unit":   frozenset({"Unit"}),
+    "Clock":  frozenset({"Clock"}),
+    "Image":  frozenset({"Image"}),
+}
+
+# Python type → Codifide type tag for values that arrive without a tag.
+_PYTHON_TYPE_MAP = {
+    bool:  "Bool",    # bool before int — bool is a subclass of int in Python
+    int:   "Int",
+    float: "Float",
+    str:   "String",
+    list:  "List",
+    dict:  "Clock",   # clock.now returns a dict; treat as Clock
+    type(None): "Unit",
+}
+
+
+def _actual_type(v: Any) -> str:
+    """Return the Codifide type tag for a runtime value."""
+    if isinstance(v, Value):
+        return v.type or "Any"
+    if isinstance(v, Belief):
+        return _actual_type(v.about)
+    if isinstance(v, _BottomType):
+        return "Bottom"
+    for py_type, tag in _PYTHON_TYPE_MAP.items():
+        if isinstance(v, py_type):
+            return tag
+    return "Any"
+
+
+def _check_type(fn: str, param: str, declared: str, value: Any) -> None:
+    """Raise TypeViolation if ``value`` does not satisfy ``declared`` type.
+
+    ``Any`` declared accepts everything. ``Number`` accepts Int and Float.
+    ``String`` accepts Label (Label is a subtype of String).
+    Unknown declared types are accepted without error — forward
+    compatibility for types added in future versions.
+
+    Importantly: if the actual type is ``Any`` (untagged/unknown), we
+    accept it without error. Type checking is best-effort — we only
+    reject when we *know* the types are incompatible. A value tagged
+    ``Any`` may well be the right type; we cannot tell without a full
+    type inference pass.
+    """
+    if declared == "Any":
+        return
+    accepts = _TYPE_ACCEPTS.get(declared)
+    if accepts is None:
+        # Unknown declared type — accept without error.
+        return
+    actual = _actual_type(value)
+    # "Any" actual type means the value is untagged — accept it.
+    if actual == "Any":
+        return
+    if actual not in accepts:
+        raise TypeViolation(
+            fn=fn,
+            param=param,
+            expected=declared,
+            actual=actual,
+            value_repr=repr(_unwrap(value))[:80],
+        )
 
 
 def _as_value(x: Any) -> Value:

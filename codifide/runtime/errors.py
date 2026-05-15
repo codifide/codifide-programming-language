@@ -174,3 +174,35 @@ class BottomPropagationError(CodifideError):
             f"Handle the refusal in a `believe` arm before calling "
             f"primitives that need a concrete value."
         )
+
+
+class TypeViolation(CodifideError):
+    """Raised when a value does not match a declared type in a ``sig``.
+
+    Type checking is performed at every user-function call boundary —
+    both on arguments (checked against parameter types) and on the
+    return value (checked against the declared return type). This error
+    surfaces the mismatch as a typed Codifide error rather than a silent
+    coercion or a confusing downstream failure.
+
+    ``Number`` is the supertype of ``Int`` and ``Float``. ``Any``
+    accepts all values. ``Label`` is a subtype of ``String``.
+    """
+
+    def __init__(
+        self,
+        fn: str,
+        param: str,
+        expected: str,
+        actual: str,
+        value_repr: str,
+    ) -> None:
+        self.fn = fn
+        self.param = param
+        self.expected = expected
+        self.actual = actual
+        self.value_repr = value_repr
+        super().__init__(
+            f"type error in '{fn}': parameter '{param}' expects {expected} "
+            f"but got {actual} ({value_repr})"
+        )

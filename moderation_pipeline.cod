@@ -1,0 +1,61 @@
+module moderation_pipeline
+
+def classify_content
+  intent "classify a message as safe, unsafe, or uncertain based on keyword signals"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    intent "unsafe — contains harmful keyword"
+    when   or(
+             contains(lower(message), "spam"),
+             contains(lower(message), "hate"),
+             contains(lower(message), "violence")
+           )
+    belief("unsafe", 0.90)
+  cand
+    intent "safe — contains approval keyword"
+    when   or(
+             contains(lower(message), "approved"),
+             contains(lower(message), "verified")
+           )
+    belief("safe", 0.90)
+  cand
+    intent "uncertain — no keyword match"
+    belief("uncertain", 0.75)
+
+def moderate
+  intent "gate classification on confidence — refuse when confidence is too low"
+  sig    (message: String) -> Label
+  effects {}
+  cand
+    result <- classify_content(message)
+    believe result
+      ge(conf(result), 0.70) => result
+      else                   => bottom
+
+def route_message
+  intent "route a message to blocked, approved, escalate-to-human, or refuse"
+  sig    (message: String) -> String
+  effects {}
+  cand
+    label <- moderate(message)
+    believe label
+      eq(label, "unsafe")    => "blocked"
+      eq(label, "safe")      => "approved"
+      eq(label, "uncertain") => "escalate-to-human"
+      else                   => bottom
+
+def run_pipeline
+  intent "run the full moderation pipeline and print the routing decision"
+  sig    (message: String) -> String
+  effects {io.stdout}
+  cand
+    decision <- route_message(message)
+    io.say(decision)
+
+def main
+  intent "entry point — run the pipeline with a test message"
+  sig    () -> String
+  effects {io.stdout}
+  cand
+    run_pipeline("this content is verified and approved")

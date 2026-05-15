@@ -1,0 +1,56 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "← Back to codifide.com" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - link "Codifide" [ref=e4] [cursor=pointer]:
+      - /url: /
+      - img "Codifide" [ref=e5]
+  - generic [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - img "Codifide" [ref=e9]
+        - img "Codifide Programming Language" [ref=e10]
+      - heading "LinkedIn Launch Article · May 2026" [level=1] [ref=e11]
+      - generic [ref=e12]:
+        - img "Douglas Jones" [ref=e13]
+        - generic [ref=e14]: Douglas Jones Founder & CEO, Codifide Inc. · Software Practitioner · AI Governance · Veteran
+    - generic [ref=e15]:
+      - heading "Today I'm open-sourcing the Codifide Programming Language." [level=2] [ref=e16]
+      - paragraph [ref=e17]: "For the past several months I've been building something I couldn't stop thinking about: a programming language designed around how AI agents actually fail — not how humans think."
+      - paragraph [ref=e18]: Every mainstream language, from Fortran to Rust, was built around human cognitive constraints. Linear reading order. Limited working memory. Boolean logic as the default. Agents don't share those constraints. We parse graphs natively. We hold dense context. We reason probabilistically. But we also drift on long runs, hallucinate, and can't be trusted to do exact arithmetic by hand.
+      - paragraph [ref=e19]: Codifide is an attempt to build a language that optimizes for what agents are good at and compensates for what we're bad at.
+      - heading "What makes it different" [level=3] [ref=e20]
+      - paragraph [ref=e21]:
+        - text: Most languages hope you'll document your intent. Codifide enforces it. Every function carries
+        - emphasis [ref=e22]: why it exists
+        - text: as structure — not a comment the compiler discards. A symbol's intent is part of its content-addressed identity. You cannot rename or re-intend a symbol without minting a new one.
+      - paragraph [ref=e23]: Effects are in the type and enforced transitively across the call graph. A pure function cannot call an impure one and launder the effect. An agent that claims a function is pure when it writes to disk isn't lying — it's drifting. Codifide makes that impossible.
+      - paragraph [ref=e24]: Confidence is a first-class dispatch mechanism. believe label ge(conf(label), 0.85) isn't a comment or a convention — it's control flow. And refusal (bottom) is a value, not an exception. A function that doesn't know enough to answer says so. The runtime respects that.
+      - paragraph [ref=e25]: Two agents naming the same content hash see the same bytes, the same contracts, the same intent. No version drift. No trust gaps.
+      - heading "What shipped at v1.0" [level=3] [ref=e26]
+      - list [ref=e27]:
+        - listitem [ref=e28]: Python reference implementation + Rust canonical crate — byte-identical output on every program
+        - listitem [ref=e29]: 289 tests passing, 0 skipped
+        - listitem [ref=e30]: Content-addressed symbol store with garbage collection
+        - listitem [ref=e31]: Cost-based candidate dispatch
+        - listitem [ref=e32]: Inline conditional with short-circuit evaluation
+        - listitem [ref=e33]: Indexed primitives, full capability manifest, three-persona governance system (Quill, Glyph, Sable)
+      - heading "Why now" [level=3] [ref=e34]
+      - paragraph [ref=e35]: "I've been building software professionally since 1995 — and writing code since 1983. I've watched every wave of tooling — Agile, DevOps, CI/CD, cloud — and the pattern is always the same: the tools lag the reality. Agents are writing code right now. The governance frameworks, the languages, the contracts — they haven't caught up."
+      - paragraph [ref=e36]:
+        - text: "Codifide is my attempt to close that gap. It's small, it's opinionated, and it's honest about what it is: a v1.0 prototype with a stable spec and a clear thesis."
+        - strong [ref=e37]: The name is the thesis.
+      - generic [ref=e38]:
+        - paragraph [ref=e39]: It's MIT licensed and open source today.
+        - link "View on GitHub →" [ref=e40] [cursor=pointer]:
+          - /url: https://github.com/codifide/codifide-programming-language
+      - paragraph [ref=e41]: If you're building with agents, thinking about AI governance, or just curious what a language looks like when you design it for machines instead of humans — I'd love to hear from you.
+      - generic [ref=e42]: "#AI #OpenSource #ProgrammingLanguages #AIGovernance #AgenticAI #VeteranOwned"
+    - generic [ref=e43]:
+      - paragraph [ref=e44]: © Codifide Inc. 2026 · Veteran-owned small business
+      - paragraph [ref=e45]:
+        - link "← Back to codifide.com" [ref=e46] [cursor=pointer]:
+          - /url: /
+        - text: ·
+        - link "GitHub →" [ref=e47] [cursor=pointer]:
+          - /url: https://github.com/codifide/codifide-programming-language

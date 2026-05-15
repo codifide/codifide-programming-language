@@ -66,12 +66,12 @@ All tasks deferred. No adoption evidence for network-exposed server.
 
 ## Open items (post-v4.0)
 
-- [ ] Sable audit of type enforcement (V4-1-7) — DONE
-- [ ] Sable audit of stdlib (V4-2-13) — DONE (3 fixes applied: HTTPS redirect, io.write size limit, JSON recursion)
-- [ ] Cookbook entries for stdlib patterns (V4-2-12) — DONE
-- [ ] Cookbook entry for publish-and-resolve workflow (V4-3-4) — DONE
-- [ ] Fix blob store write API — query params not headers (in progress)
-- [ ] Seed registry with pipeline symbols (blocked on blob write fix)
+- [x] Sable audit of type enforcement (V4-1-7) — DONE
+- [x] Sable audit of stdlib (V4-2-13) — DONE (3 fixes applied: HTTPS redirect, io.write size limit, JSON recursion)
+- [x] Cookbook entries for stdlib patterns (V4-2-12) — DONE
+- [x] Cookbook entry for publish-and-resolve workflow (V4-3-4) — DONE
+- [ ] **TOMORROW** Publish to PyPI — `pyproject.toml` ready, needs PyPI account + `pip install build twine && python3 -m build && twine upload dist/*`
+- [ ] Fix blob store write API — query params fix deployed, needs verification (run push commands with REGISTRY_WRITE_TOKEN set)
+- [ ] Seed registry with pipeline symbols (blocked on blob write verification)
 - [ ] Verify end-to-end registry resolution (blocked on seeding)
-- [ ] Publish to PyPI
 - [ ] Run unstructured agent session for organic adoption signal

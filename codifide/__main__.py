@@ -520,6 +520,10 @@ def cmd_store_push(args: argparse.Namespace) -> int:
         method="POST",
         headers={"Content-Type": "application/cbor"},
     )
+    # Add write token if provided (for registries that require auth).
+    write_token = getattr(args, "token", None) or os.environ.get("REGISTRY_WRITE_TOKEN", "")
+    if write_token:
+        req.add_header("Authorization", f"Bearer {write_token}")
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             body = resp.read(1024 * 1024)
@@ -668,6 +672,10 @@ def cmd_dispatch_check(args: argparse.Namespace) -> int:
     Every session date should have a session-close pair.
     Proposals that have a readout but no YAML are flagged.
 
+    Also checks publicsite sync:
+    - publicsite/capability.json generator field must match the live manifest.
+    - index.html version stat must match the live manifest generator version.
+
     Exits 0 if complete, 1 if gaps found. Designed to run as an agentStop
     hook so Quill and Glyph don't fall asleep on the job.
     """
@@ -719,6 +727,11 @@ def cmd_dispatch_check(args: argparse.Namespace) -> int:
             f"dispatches filed today but no session-close pair"
         )
 
+    # ------------------------------------------------------------------
+    # Publicsite sync checks (PS-1, PS-3)
+    # ------------------------------------------------------------------
+    _check_publicsite_sync(repo_root, gaps)
+
     if gaps:
         print("codifide dispatch-check: gaps found:")
         for g in gaps:
@@ -732,6 +745,86 @@ def cmd_dispatch_check(args: argparse.Namespace) -> int:
 
     print("codifide dispatch-check: all dispatch pairs complete.")
     return 0
+
+
+def _check_publicsite_sync(repo_root: "Path", gaps: list) -> None:
+    """Check that publicsite/capability.json and index.html are in sync
+    with the live capability manifest generator version.
+
+    Appends human-readable gap strings to ``gaps`` if anything is stale.
+    Silently skips checks when the publicsite directory is not present
+    (e.g. running from a checkout that doesn't include the publicsite).
+    """
+    import json as _json
+    from pathlib import Path as _Path
+
+    publicsite = repo_root.parent / "publicsite"
+    if not publicsite.exists():
+        return  # publicsite not co-located; skip silently
+
+    # PS-1 — capability.json generator version
+    cap_json = publicsite / "capability.json"
+    if cap_json.exists():
+        try:
+            from .capability import generate_capability
+            live_generator = generate_capability().get("generator", "")
+            published = _json.loads(cap_json.read_text(encoding="utf-8"))
+            published_generator = published.get("generator", "")
+            if published_generator != live_generator:
+                gaps.append(
+                    f"  STALE   publicsite/capability.json: "
+                    f"generator is '{published_generator}' but live is '{live_generator}'. "
+                    f"Regenerate with: python3 -m codifide capability > publicsite/capability.json"
+                )
+        except Exception as exc:
+            gaps.append(
+                f"  ERROR   publicsite/capability.json: could not check sync ({exc})"
+            )
+    else:
+        gaps.append(
+            "  MISSING publicsite/capability.json: "
+            "file not found in publicsite directory"
+        )
+
+    # PS-3 — version stat in index.html
+    index_html = publicsite / "index.html"
+    if index_html.exists():
+        try:
+            from .capability import generate_capability
+            live_generator = generate_capability().get("generator", "")
+            # Extract version number: "codifide-python-3.0.0" -> "v3.0"
+            # Strip patch for the display stat (matches existing "v2.0" pattern).
+            import re as _re
+            m = _re.search(r"codifide-python-(\d+)\.(\d+)", live_generator)
+            if m:
+                expected_stat = f"v{m.group(1)}.{m.group(2)}"
+                html = index_html.read_text(encoding="utf-8")
+                # Match the lang-stat-num span that is immediately followed
+                # by a lang-stat-label containing "released" — that's the
+                # version stat, not the test count or implementation count.
+                stat_m = _re.search(
+                    r'class="lang-stat-num"[^>]*>([^<]+)</span>'
+                    r'<span[^>]*class="lang-stat-label"[^>]*>[^<]*released[^<]*</span>',
+                    html
+                )
+                if stat_m:
+                    actual_stat = stat_m.group(1).strip()
+                    if actual_stat != expected_stat:
+                        gaps.append(
+                            f"  STALE   publicsite/index.html: "
+                            f"version stat shows '{actual_stat}' but current release is '{expected_stat}'. "
+                            f"Update the lang-stat-num span paired with 'released May 20XX' in index.html."
+                        )
+                else:
+                    gaps.append(
+                        "  MISSING publicsite/index.html: "
+                        "could not find version stat span (lang-stat-num paired with 'released') "
+                        "to verify version"
+                    )
+        except Exception as exc:
+            gaps.append(
+                f"  ERROR   publicsite/index.html: could not check version stat ({exc})"
+            )
 
 
 def cmd_serve(args: argparse.Namespace) -> int:
@@ -1066,6 +1159,11 @@ def main(argv=None) -> int:
         "--registry",
         default=None,
         help="registry URL (default: https://codifide.com)",
+    )
+    p_push.add_argument(
+        "--token",
+        default=None,
+        help="write token for the registry (Authorization: Bearer <token>)",
     )
     p_push.set_defaults(func=cmd_store_push)
 
