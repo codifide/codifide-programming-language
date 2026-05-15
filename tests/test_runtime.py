@@ -318,5 +318,156 @@ def inner
         self.assertIn("called from", msg)
 
 
+# ---------------------------------------------------------------------------
+# is_bottom — direct-call pattern and propagation footgun regression
+# (Sable audit note: AUD-OVERNIGHT-02 follow-up)
+# ---------------------------------------------------------------------------
+
+class IsBottomTests(unittest.TestCase):
+    """Tests for the is_bottom(f()) direct-call pattern.
+
+    The quickref documents two idioms:
+      - WRONG: r <- f(); is_bottom(r)  — bottom propagates through bind
+      - RIGHT: is_bottom(f())          — is_bottom sees the value before bind
+
+    These tests confirm both behaviours and cover BottomWithReason.
+    """
+
+    def test_is_bottom_on_literal_bottom_returns_true(self) -> None:
+        src = """
+def main
+  intent "is_bottom on literal bottom"
+  sig    () -> Bool
+  effects {}
+  cand
+    is_bottom(bottom)
+"""
+        self.assertTrue(run(parse(src), "main"))
+
+    def test_is_bottom_on_normal_value_returns_false(self) -> None:
+        src = """
+def main
+  intent "is_bottom on a normal value"
+  sig    () -> Bool
+  effects {}
+  cand
+    is_bottom(42)
+"""
+        self.assertFalse(run(parse(src), "main"))
+
+    def test_is_bottom_direct_call_on_refusing_function(self) -> None:
+        # RIGHT pattern: is_bottom(f()) — sees the bottom before any bind.
+        src = """
+def refuses
+  intent "always refuses"
+  sig    () -> Any
+  effects {}
+  cand
+    bottom
+
+def main
+  intent "direct-call is_bottom on a refusing function"
+  sig    () -> Bool
+  effects {}
+  cand
+    is_bottom(refuses())
+"""
+        self.assertTrue(run(parse(src), "main"))
+
+    def test_is_bottom_direct_call_on_non_refusing_function(self) -> None:
+        # RIGHT pattern: is_bottom(f()) where f returns a value.
+        src = """
+def gives_value
+  intent "returns a string"
+  sig    () -> String
+  effects {}
+  cand
+    "hello"
+
+def main
+  intent "direct-call is_bottom on a non-refusing function"
+  sig    () -> Bool
+  effects {}
+  cand
+    is_bottom(gives_value())
+"""
+        self.assertFalse(run(parse(src), "main"))
+
+    def test_is_bottom_on_bottom_with_reason(self) -> None:
+        # BottomWithReason is a subclass of _BottomType — is_bottom must catch it.
+        src = """
+def refuses_with_reason
+  intent "refuses with a reason string"
+  sig    () -> Any
+  effects {}
+  cand
+    bottom "not enough confidence"
+
+def main
+  intent "is_bottom on bottom-with-reason via direct call"
+  sig    () -> Bool
+  effects {}
+  cand
+    is_bottom(refuses_with_reason())
+"""
+        self.assertTrue(run(parse(src), "main"))
+
+    def test_is_bottom_bind_propagation_footgun(self) -> None:
+        # Previously: r <- f(); is_bottom(r) raised BottomPropagationError
+        # because is_bottom was treated like any other primitive.
+        # After the interpreter fix (is_bottom exempt from propagation check),
+        # this pattern now works correctly — is_bottom returns True.
+        # The quickref has been updated to reflect this.
+        src = """
+def refuses
+  intent "always refuses"
+  sig    () -> Any
+  effects {}
+  cand
+    bottom
+
+def main
+  intent "bind-then-is_bottom now works"
+  sig    () -> Bool
+  effects {}
+  cand
+    r <- refuses()
+    is_bottom(r)
+"""
+        # Both the direct-call and bind patterns now return True.
+        self.assertTrue(run(parse(src), "main"))
+
+    def test_is_bottom_in_conditional_expression(self) -> None:
+        # is_bottom used in an inline conditional — common real-world pattern.
+        src = """
+def maybe_refuses
+  intent "refuses when input is zero"
+  sig    (n: Int) -> Any
+  effects {}
+  cand
+    when gt(n, 0)
+    n
+  cand
+    bottom
+
+def main_refuses
+  intent "test refusing path"
+  sig    () -> String
+  effects {}
+  cand
+    if is_bottom(maybe_refuses(0)) then "refused" else "ok"
+
+def main_ok
+  intent "test non-refusing path"
+  sig    () -> String
+  effects {}
+  cand
+    if is_bottom(maybe_refuses(5)) then "refused" else "ok"
+"""
+        m = parse(src)
+        self.assertEqual(run(m, "main_refuses"), "refused")
+        self.assertEqual(run(m, "main_ok"), "ok")
+
+
 if __name__ == "__main__":
     unittest.main()

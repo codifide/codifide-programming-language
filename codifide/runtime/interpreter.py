@@ -588,9 +588,12 @@ class Interpreter:
         # an argument. A program that wants to compute over a possibly-refused
         # value must handle it explicitly in a `believe` arm. Without this
         # check, arithmetic on ⊥ surfaces as a host TypeError.
-        for a in args:
-            if isinstance(a, _BottomType):
-                raise BottomPropagationError(fn=name)
+        # Exception: is_bottom is the one primitive whose purpose is to
+        # inspect a bottom value — it must not propagate.
+        if name != "is_bottom":
+            for a in args:
+                if isinstance(a, _BottomType):
+                    raise BottomPropagationError(fn=name)
         try:
             result = spec.fn(*args)
         except CodifideError:
