@@ -4,22 +4,38 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codifide"
-version = "2.0.0"
-description = "A programming language for agentic AI"
+version = "4.0.0"
+description = "A programming language for agentic AI — intent, effects, contracts, confidence, and refusal as first-class enforced properties"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
   { name = "Codifide contributors" },
 ]
-keywords = ["programming-language", "agentic-ai", "canonical-form"]
+keywords = ["programming-language", "agentic-ai", "canonical-form", "content-addressing", "ai-agents"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Topic :: Software Development :: Compilers",
+  "Topic :: Software Development :: Interpreters",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
+
+[project.urls]
+Homepage = "https://codifide.com"
+Repository = "https://github.com/codifide/codifide-programming-language"
+Documentation = "https://codifide.com/docs/FOR_AGENTS.md"
+Registry = "https://codifide.com/registry"
+Changelog = "https://github.com/codifide/codifide-programming-language/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+blob = ["vercel_blob>=0.3.0"]
 
 [project.scripts]
 codifide = "codifide.__main__:main"

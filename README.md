@@ -67,10 +67,10 @@ agents naming the same hash see the same bytes, the same contracts, and the
 same intent. Intent is part of a definition's canonical form; you cannot
 rename or re-intend a symbol without minting a new identity.
 
-The language is small. v1.0 shipped on 2026-05-11. The
+The language is small. v4.0 shipped on 2026-05-14. The
 properties it pins down are the ones that matter before scale, not after.
 
-## What's in v1.0
+## What's in v4.0
 
 - Canonical JSON and CBOR forms for the hypergraph, with a deterministic canonical byte
   form and SHA-256 content hash. CBOR is the primary hash format.
@@ -83,19 +83,26 @@ properties it pins down are the ones that matter before scale, not after.
   - Cost-based candidate selection — `min(cost, declaration_index)` among satisfied candidates.
   - Belief dispatch on runtime confidence.
   - Inline conditional expression (`if ... then ... else`) with short-circuit evaluation.
-  - First-class refusal (`bottom` / `⊥`) with explicit propagation.
-  - Eight typed error kinds; host exceptions do not leak.
+  - First-class refusal (`bottom` / `⊥`) with optional reason string and explicit propagation.
+  - Runtime type enforcement — `sig` declarations checked at every call boundary.
+  - Ten typed error kinds; host exceptions do not leak.
   - Configurable call-depth bound with a typed `RecursionLimitError`.
+- Standard library: file I/O (`io.read`, `io.write`, `io.exists`), HTTP client
+  (`http.get`, `http.post`), JSON (`json.parse`, `json.encode`), date arithmetic
+  (`clock.today`, `clock.parse`, `clock.add_days`, `clock.format`).
 - Indexed primitives: `slice`, `at`, `char_at`, `indexof`.
 - Content-addressed symbol store with Git-style sharded loose objects, atomic
   writes, hash-verified reads, idempotent writes, and garbage collection via declared roots.
 - Content-addressed imports (`import foo = sha256:...`) and index modules with
   `from <identity> import name1, name2` resolved at parse time.
-- Rust canonical crate (`crates/codifide-canonical/`) with byte-level conformance
-  to the Python reference on every example program, including CBOR-input subcommands.
+- **Public registry** at `https://codifide.com/symbols/<hash>` — publish symbols,
+  resolve them from any machine. Browse at `https://codifide.com/registry`.
+- Rust interpreter and Rust parser with byte-level conformance to the Python reference.
+- Parallel evaluator with full import support.
+- Remote symbol resolution (`--registry` flag, `store push` command).
 - Three-persona system: Quill (human readouts), Glyph (agent dispatches),
   Sable (adversarial audits).
-- 216 Python tests passing, 28 Rust canonical tests passing, 0 skipped.
+- 450 Python tests passing, 28 Rust canonical tests passing, 0 skipped.
 
 ## What working Codifide code looks like
 
@@ -148,14 +155,44 @@ def main
 ## Quickstart
 
 ```bash
+pip install codifide
 python3 -m codifide run examples/greet.cod
 python3 -m codifide run examples/sort.cod
 python3 -m codifide run examples/classify.cod
 python3 -m codifide test
 ```
 
+Or clone and run from source:
+
+```bash
+git clone https://github.com/codifide/codifide-programming-language
+cd codifide-programming-language
+pip install -e .
+python3 -m codifide agent-quickstart
+```
+
 See `GETTING_STARTED.md` for a walk-through that stores a symbol, mints an
 index, and consumes it from a second module.
+
+## Public registry
+
+The canonical pipeline symbols are published at `https://codifide.com/registry`.
+Any agent can resolve them by hash:
+
+```bash
+# Import from the public registry in your .cod file
+import classify_content = sha256:377099c5bddb8cebe9e8bc6b8499bb00ea99083798d1b064799ac82c55636fae
+
+# Run with registry resolution
+python3 -m codifide run my_program.cod --registry https://codifide.com
+```
+
+Publish your own symbols:
+
+```bash
+python3 -m codifide store put my_module.cod
+python3 -m codifide store push sha256:<hash> --registry https://codifide.com
+```
 
 ## Layout
 
