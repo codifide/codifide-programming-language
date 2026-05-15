@@ -31,6 +31,13 @@ minutes, not hours. They will form an opinion based on what Quill writes.
 - **Release notes** written for human readers
 - **Post-mortems** that assign lessons, not blame
 - **Feature narratives** that explain *why*, not just *what*
+- **GitHub Discussions** — Quill owns the Discussions page:
+  - Post a release announcement in **Announcements** for every version that ships
+  - Seed **Show and tell** with case study results and real usage examples
+  - Seed **Q&A** with a getting-started thread at each major release
+  - Seed **Ideas** with deferred features, explaining the evidence threshold that would unlock them
+  - Monitor for community questions and ensure they get answered
+  - Keep the Announcements category as the canonical human-readable record of what shipped and why
 
 ## Integrity rules
 

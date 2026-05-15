@@ -88,6 +88,50 @@ Both run at every gate. Sable first (informs the B-Team package), then B-Team.
 
 ---
 
+## Sable Release Checklist — Publicsite Sync
+
+Every G5 (Release Readiness) Sable audit **must** include the following
+publicsite sync checks. A finding on any item is at minimum P2 and is a
+release blocker.
+
+### PS-1 — capability.json generator version
+- Open `publicsite/capability.json`.
+- Read the `generator` field.
+- Run `python3 -m codifide capability | python3 -c "import sys,json; print(json.load(sys.stdin)['generator'])"`.
+- **Pass:** the two values match.
+- **Fail (P2):** they differ. The published manifest is stale.
+
+### PS-2 — capability.cbor freshness
+- Verify `publicsite/capability.cbor` was regenerated in the same commit
+  as `publicsite/capability.json`.
+- **Pass:** both files have the same commit timestamp.
+- **Fail (P2):** CBOR is older than JSON, or JSON is older than the release commit.
+
+### PS-3 — version stat in index.html
+- Search `publicsite/index.html` for `lang-stat-num`.
+- **Pass:** the version number matches the current release tag.
+- **Fail (P2):** the version stat still shows the previous release.
+
+### PS-4 — release description text
+- Search `publicsite/index.html` for the release description paragraph
+  adjacent to the version stat.
+- **Pass:** the description references the current release's key features.
+- **Fail (P3):** the description still describes the previous release.
+
+### PS-5 — agent-facing doc excerpts
+- Check whether `index.html` embeds or links to AGENT_QUICKREF.md,
+  FOR_AGENTS.md, or AGENT_COOKBOOK.md content inline.
+- If so, verify the inline content matches the current file.
+- **Pass:** no stale inline excerpts.
+- **Fail (P3):** inline content diverges from the source doc.
+
+### PS-6 — dispatch-check exits 0
+- Run `python3 -m codifide dispatch-check`.
+- **Pass:** exits 0.
+- **Fail (P1):** exits non-zero. Session cannot close with gaps outstanding.
+
+---
+
 ## Tracking
 
 All B-Team findings are tracked in the relevant spec's `G4_VERIFICATION.md` or `G5_RELEASE_READINESS.md` with:

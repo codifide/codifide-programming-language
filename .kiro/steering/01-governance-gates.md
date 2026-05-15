@@ -97,10 +97,20 @@ Every initiative passes through seven gates. No gate passes on confidence — on
 - Release notes (Quill readout)
 - Rollback plan (what breaks if we revert, how to revert)
 - Capability manifest updated if the public surface changed
-- publicsite updated if agent-facing docs changed
-- Sable post-audit completed
+- **Publicsite sync (mandatory on every release):**
+  - `publicsite/capability.json` regenerated — `generator` field matches current version
+  - `publicsite/capability.cbor` regenerated
+  - Version stat in `index.html` updated to the new release number
+  - Release description text in `index.html` updated
+  - Any agent-facing doc changes (QUICKREF, FOR_AGENTS, COOKBOOK) reflected on site
+- **GitHub (mandatory on every release):**
+  - Git tag created and pushed (`git tag -a vX.Y.Z -m "..."`)
+  - GitHub Release created via `gh release create` with full release notes (Paige)
+  - GitHub Discussions Announcements post by Quill (human-facing narrative)
+  - GitHub Discussions Announcements structured companion by Glyph (agent-readable dispatch summary)
+- Sable post-audit completed (includes publicsite sync verification — see `04-adversarial-review.md`)
 - Glyph dispatch filed
-- `dispatch-check` exits 0
+- `dispatch-check` exits 0 (enforces publicsite sync automatically)
 
 **Passes when:** The change is safe to put in front of agents and users.
 

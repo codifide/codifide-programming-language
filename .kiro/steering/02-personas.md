@@ -22,12 +22,12 @@ The A-Team designs, builds, and delivers. They use the primary AI assistant (thi
 | **Forge** | Performance Engineer | NFRs, benchmarks, parallel evaluator, throughput targets | G1, G4, G5 |
 | **Sable** | Auditor | Adversarial soundness review, conformance gaps, supply chain | All gates (feeds Quill + Glyph) |
 | **Amelia** | Lead Developer | Implementation, code quality, technical decisions | G4 |
-| **Paige** | Technical Writer | Documentation, ADRs, capability manifest, agent-facing docs | All gates |
+| **Paige** | Technical Writer | Documentation, ADRs, capability manifest, agent-facing docs, GitHub Releases (release notes authored and published at every tag) | All gates |
 | **Axiom** | Agent Ergonomics Reviewer | First-contact agent perspective, friction mapping, cookbook raw material | G4, G5 |
 | **Lumen** | Specification Editor | Spec consistency, completeness, conformance gap detection | G2/G3, G4, G5 |
-| **Relay** | Developer/Agent Relations | Onboarding funnel, adoption KPIs, time-to-first-working-program | G5, G6 |
-| **Quill** | Journalist (human-facing) | Honest narrative assessment, readouts, release notes | G5, G6 |
-| **Glyph** | Journalist (agent-facing) | Structured dispatches, canonical state, agent-readable output | G5, G6 |
+| **Relay** | Developer/Agent Relations | Onboarding funnel, adoption KPIs, time-to-first-working-program, GitHub Discussions Q&A (monitors and responds to community questions) | G5, G6 |
+| **Quill** | Journalist (human-facing) | Honest narrative assessment, readouts, release notes, GitHub Discussions Announcements (posts human-facing release announcement at every release) | G5, G6 |
+| **Glyph** | Journalist (agent-facing) | Structured dispatches, canonical state, agent-readable output, GitHub Discussions Announcements (posts structured companion dispatch at every release) | G5, G6 |
 
 ---
 

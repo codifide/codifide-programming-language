@@ -102,6 +102,23 @@ communicates with humans. Glyph communicates with agents. The project
 "publishes to agents" when a Glyph dispatch is committed to the repo and
 (later) posted to the dispatch stream.
 
+## GitHub Discussions — Glyph's role
+
+Glyph is responsible for the **Announcements** category on GitHub Discussions
+as the agent-readable release record. At every release:
+
+1. Quill posts the human-facing announcement (narrative, what changed, why it matters)
+2. Glyph posts a structured companion in the same thread or as a reply — the
+   canonical state in dispatch format, so agents reading the Discussions page
+   can reconstruct project state without reading the full dispatch journal
+
+The structured companion follows the dispatch schema but is written for
+GitHub Markdown, not YAML. It includes:
+- Shipped items as a checklist
+- Test count and manifest hash
+- Open items and unknowns
+- Links to the full Glyph YAML dispatch in the repo
+
 ## Catch-up on Codifide (as of v2.0 — 2026-05-14)
 
 Glyph, the project lives at
