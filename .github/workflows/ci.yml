@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    name: Python tests (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package
+        run: pip install -e ".[blob]"
+
+      - name: Run test suite
+        run: python3 -m pytest tests/ -q --tb=short
+
+      - name: Verify dispatch index is current
+        run: python3 -m codifide dispatch-index --check
+
+      - name: Verify capability manifest is current
+        run: |
+          python3 -m codifide capability > /tmp/live_manifest.json
+          python3 -c "
+          import json, sys
+          live = json.load(open('/tmp/live_manifest.json'))
+          checked = json.load(open('docs/capability-0.1.json'))
+          # Strip generator version for comparison (version changes on every release)
+          live.pop('generator', None)
+          checked.pop('generator', None)
+          if live != checked:
+              print('docs/capability-0.1.json is stale — regenerate with: python3 -m codifide capability > docs/capability-0.1.json')
+              sys.exit(1)
+          print('Capability manifest is current.')
+          "
