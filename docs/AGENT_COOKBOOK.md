@@ -495,6 +495,184 @@ def main
 
 ---
 
+## 13. Standard library — file I/O, HTTP, JSON, and dates (v4.0)
+
+**v4.0 added four new primitive groups.** Here are the patterns agents reach
+for most.
+
+### File I/O
+
+```codifide
+def read_config
+  intent "read a JSON config file"
+  sig    (path: String) -> Any
+  effects {io.read}
+  cand
+    json.parse(io.read(path))
+
+def write_result
+  intent "write a result to disk"
+  sig    (path: String, data: Any) -> Unit
+  effects {io.write}
+  cand
+    io.write(path, json.encode(data))
+
+def safe_read
+  intent "read a file if it exists, return empty string otherwise"
+  sig    (path: String) -> String
+  effects {io.read}
+  cand
+    if io.exists(path) then io.read(path) else ""
+```
+
+**Rules:**
+- `io.read` and `io.write` require `effects {io.read}` / `effects {io.write}`
+- Paths containing `..` are rejected — no path traversal
+- Files larger than 16 MiB raise `PrimitiveError`
+- `io.write` also has a 16 MiB limit on content
+
+### HTTP client
+
+```codifide
+def fetch_manifest
+  intent "fetch the live capability manifest"
+  sig    () -> Any
+  effects {http.fetch}
+  cand
+    json.parse(http.get("https://codifide.com/capability.json"))
+
+def post_data
+  intent "post JSON data to an API"
+  sig    (url: String, payload: Any) -> Any
+  effects {http.fetch}
+  cand
+    json.parse(http.post(url, json.encode(payload)))
+```
+
+**Rules:**
+- HTTPS only — `http://` URLs raise `PrimitiveError`
+- Redirects to non-HTTPS URLs are also rejected
+- 30-second timeout, 16 MiB response limit
+- Requires `effects {http.fetch}`
+
+### JSON
+
+```codifide
+def extract_field
+  intent "parse a JSON response and extract a field"
+  sig    (body: String, field: String) -> Any
+  effects {}
+  cand
+    obj <- json.parse(body)
+    at(obj, field)
+
+def round_trip
+  intent "encode and re-parse a value"
+  sig    (v: Any) -> Any
+  effects {}
+  cand
+    json.parse(json.encode(v))
+```
+
+**Rules:**
+- Both `json.parse` and `json.encode` are **pure** — no effect declaration needed
+- JSON objects become dicts accessible via `at(obj, "key")`
+- JSON arrays become lists
+
+### Date arithmetic
+
+```codifide
+def days_until
+  intent "days from today until a target date"
+  sig    (target: String) -> Int
+  effects {clock.read}
+  cand
+    today_ts  <- clock.parse(clock.today())
+    target_ts <- clock.parse(target)
+    div(sub(target_ts, today_ts), 86400)
+
+def format_today
+  intent "today's date in a human-readable format"
+  sig    () -> String
+  effects {clock.read}
+  cand
+    clock.format(clock.parse(clock.today()), "%B %d, %Y")
+```
+
+**Rules:**
+- `clock.today()` requires `effects {clock.read}` — it reads the system clock
+- `clock.parse`, `clock.add_days`, `clock.format` are **pure**
+- `clock.parse` expects `"YYYY-MM-DD"` format
+- `clock.format` uses Python's `strftime` format strings
+
+---
+
+## 14. Publishing and resolving symbols from the public registry (v4.0)
+
+**The public registry at `https://codifide.com/registry`** lets any agent
+publish a symbol and resolve it from any machine — no out-of-band coordination,
+no version numbers, just a SHA-256 hash.
+
+### Publish a symbol
+
+```bash
+# 1. Store locally
+python3 -m codifide store put my_module.cod
+# Output: sha256:<hash>   my_function
+
+# 2. Push to the public registry
+python3 -m codifide store push sha256:<hash> \
+  --registry https://codifide.com
+# Requires REGISTRY_WRITE_TOKEN in your environment
+```
+
+### Import from the registry
+
+```codifide
+module my_program
+
+import my_function = sha256:<hash>
+
+def main
+  intent "use a function from the public registry"
+  sig    () -> String
+  effects {}
+  cand
+    my_function("hello")
+```
+
+```bash
+python3 -m codifide run my_program.cod \
+  --registry https://codifide.com
+```
+
+### The canonical pipeline symbols
+
+The three pipeline symbols from the agent case studies are published at:
+
+```codifide
+import classify_content = sha256:377099c5bddb8cebe9e8bc6b8499bb00ea99083798d1b064799ac82c55636fae
+import moderate         = sha256:1bbe69ba7dae84a1fc1a5b335ac2fd9f4be3e4462857db3cc0d38c4af5be4a2a
+import route_message    = sha256:68c15e1108ac195e211634d2755f58353422db61b077690ec59686ad87d2d964
+```
+
+All three must be imported — individual imports do not carry transitive
+dependencies (see entry #8).
+
+### Verify a symbol exists
+
+```bash
+curl https://codifide.com/symbols/sha256:<hash> \
+  -H "Accept: application/json" | python3 -m json.tool | head -5
+```
+
+### Browse the registry
+
+Visit `https://codifide.com/registry` to see all published symbols with
+their intent strings, type signatures, and usage examples.
+
+---
+
 ## Quick diagnostics
 
 | Error | Likely cause | See entry |
@@ -510,9 +688,14 @@ def main
 | `ParseError: expected 'intent'` | Missing `intent` on `def` | #9 |
 | `EffectViolation: performed effect ... not in declared set` | Missing effect declaration | #9 |
 | Output printed twice | `io.say` + CLI both print return value | #12 |
+| `PrimitiveError: io.read: path traversal rejected` | Path contains `..` | #13 |
+| `PrimitiveError: http.get: only HTTPS URLs are allowed` | Non-HTTPS URL | #13 |
+| `PrimitiveError: http.get: redirect to non-HTTPS URL rejected` | Server redirected to HTTP | #13 |
+| `PrimitiveError: json.parse: invalid JSON` | Malformed JSON string | #13 |
+| `TypeViolation: parameter '<name>' expects <Type> but got <actual>` | Wrong type passed to function | AGENT_QUICKREF |
 
 ---
 
-*Cookbook version 1.1 — May 2026*  
-*Derived from: 2026-05-11 four-model review, 2026-05-13 Track 1 case studies, 2026-05-14 GPT-5.4 B-Team review*  
+*Cookbook version 1.2 — May 2026*  
+*Derived from: 2026-05-11 four-model review, 2026-05-13 Track 1 case studies, 2026-05-14 GPT-5.4 B-Team review, 2026-05-15 v4.0 stdlib and registry*  
 *Maintained by: Douglas Jones + Claude*

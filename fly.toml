@@ -1,0 +1,42 @@
+# Fly.io deployment configuration for the Codifide public registry.
+# https://fly.io/docs/reference/configuration/
+#
+# Deploy with:
+#   flyctl launch --no-deploy   (first time — creates the app)
+#   flyctl volumes create codifide_store --size 1 --region iad
+#   flyctl deploy
+#
+# The app serves the Codifide RPC API in read-only mode at:
+#   https://registry.codifide.com/symbols/<hash>
+#   https://registry.codifide.com/health
+
+app = "codifide-registry"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  CODIFIDE_STORE = "/data/store"
+
+[http_service]
+  internal_port = 7777
+  force_https = true
+  auto_stop_machines = false   # registry must always be reachable
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 100
+    soft_limit = 80
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[[mounts]]
+  source = "codifide_store"
+  destination = "/data/store"
+  initial_size = "1gb"

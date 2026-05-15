@@ -3,7 +3,80 @@
 All notable changes to Codifide are recorded here. Releases follow semver once we
 reach v1.0; until then, the canonical form may change between minor versions.
 
-## [3.0.0] — 2026-05-14
+## [4.0.0] — 2026-05-14
+
+Three of four v4.0 requirements shipped (V4-1, V4-2, V4-3 operational).
+V4-4 (network-safe server) deferred — V4-3 (public registry) must be
+operated before exposing the server to the network is worth the security
+investment. 450 tests passing, 0 skipped.
+
+### Added — V4-1: Runtime type enforcement
+
+`sig` declarations are now enforced at every user-function call boundary.
+`TypeViolation` is raised when a value does not match the declared type.
+
+- **`TypeViolation`** — new typed error in `codifide/runtime/errors.py`.
+  Fields: `fn`, `param`, `expected`, `actual`, `value_repr`.
+- **`_check_type`** — type checking helper in `interpreter.py`. Checks
+  argument types and return types at every call boundary.
+- **Type hierarchy:** `Number` accepts `Int` and `Float`. `String` accepts
+  `Label`. `Any` accepts everything. Untagged (`Any`) actual values pass
+  all checks — type enforcement is best-effort, not a full static type system.
+- **Capability manifest** — `TypeViolation` added to the errors list.
+- **`docs/AGENT_QUICKREF.md`** — surface rules section updated.
+- 20 new tests in `tests/test_type_enforcement.py`.
+
+### Added — V4-2: Standard library
+
+Four new primitive groups covering the most common real-world agent needs.
+
+#### V4-2a: File I/O (`{io.read}`, `{io.write}`)
+- `io.read(path)` — read a file, return string. Path traversal defense. 16 MiB limit.
+- `io.write(path, content)` — write a string to a file.
+- `io.exists(path)` — check whether a path exists.
+
+#### V4-2b: HTTP client (`{http.fetch}`)
+- `http.get(url)` — HTTPS GET, return response body as string.
+- `http.post(url, body)` — HTTPS POST, return response body.
+- HTTPS-only enforcement. 30-second timeout. 16 MiB response limit.
+
+#### V4-2c: JSON (pure)
+- `json.parse(s)` — parse JSON string to Codifide value.
+- `json.encode(v)` — encode Codifide value to JSON string.
+- Both pure — no effect declaration needed.
+
+#### V4-2d: Date arithmetic
+- `clock.today()` — today as `"YYYY-MM-DD"`. Effect: `{clock.read}`.
+- `clock.parse(s)` — parse `"YYYY-MM-DD"` to Unix timestamp. Pure.
+- `clock.add_days(ts, n)` — add days to a timestamp. Pure.
+- `clock.format(ts, fmt)` — strftime formatting. Pure.
+
+**Shared:**
+- Capability manifest updated with all new primitives and effects.
+- `docs/AGENT_QUICKREF.md` updated with new primitive groups and examples.
+- 44 new tests in `tests/test_stdlib.py`.
+
+### Added — V4-3: Public registry (operational)
+
+The public registry infrastructure (V3-2) is now seeded and documented.
+`docs/REGISTRY.md` documents the publish-and-resolve workflow.
+
+### Deferred — V4-4: Network-safe server
+
+Deferred until V4-3 (public registry) demonstrates multi-machine use
+cases that justify the security investment. The server remains
+`127.0.0.1`-only with the existing "not safe for network exposure" warning.
+
+### Test count at v4.0.0
+
+- Python: **450 passing, 0 skipped** (was 386 at v3.0.0).
+- Rust canonical: **28 passing** (unchanged).
+
+### Capability manifest hash at v4.0.0
+
+Run `python3 -m codifide capability --hash` for the current hash.
+
+
 
 Three requirements shipped (V3-1, V3-2, V3-3). V3-4 (time-indexed types) deferred
 — no adoption evidence emerged from V3-1 through V3-3. 383 tests passing, 0 skipped.

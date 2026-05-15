@@ -1,0 +1,254 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - text: 🚀 The Codifide Programming Language is now open source —
+    - link "view on GitHub" [ref=e3] [cursor=pointer]:
+      - /url: https://github.com/codifide/codifide-programming-language
+    - text: ·
+    - link "read the launch article" [ref=e4] [cursor=pointer]:
+      - /url: /launch
+  - banner [ref=e5]:
+    - navigation [ref=e6]:
+      - link "Codifide home" [ref=e7] [cursor=pointer]:
+        - /url: "#"
+        - img "Codifide" [ref=e8]
+      - list [ref=e9]:
+        - listitem [ref=e10]:
+          - link "Projects" [ref=e11] [cursor=pointer]:
+            - /url: "#projects"
+        - listitem [ref=e12]:
+          - link "AI Governance" [ref=e13] [cursor=pointer]:
+            - /url: "#governance"
+        - listitem [ref=e14]:
+          - link "About" [ref=e15] [cursor=pointer]:
+            - /url: "#about"
+        - listitem [ref=e16]:
+          - link "Contact" [ref=e17] [cursor=pointer]:
+            - /url: "#contact"
+  - main [ref=e18]:
+    - region "Confidence in code. Governance in practice." [ref=e19]:
+      - generic [ref=e21]:
+        - paragraph [ref=e22]: Building for the agent era
+        - heading "Confidence in code. Governance in practice." [level=1] [ref=e23]:
+          - text: Confidence in code.
+          - text: Governance in practice.
+        - paragraph [ref=e24]: Codifide designs programming languages, platforms, and governance frameworks for a world where AI agents write, read, and reason about code alongside humans.
+        - generic [ref=e25]:
+          - link "Explore the work" [ref=e26] [cursor=pointer]:
+            - /url: "#projects"
+          - link "AI Governance thinking →" [ref=e27] [cursor=pointer]:
+            - /url: "#governance"
+    - region "Active Projects" [ref=e34]:
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - heading "Active Projects" [level=2] [ref=e37]
+          - paragraph [ref=e38]: Four active projects at the intersection of AI, software, and real-world impact.
+        - generic [ref=e39]:
+          - article "The Codifide Programming Language" [ref=e40]:
+            - generic [ref=e41]:
+              - img "Codifide Programming Language" [ref=e43]
+              - generic [ref=e44]: Open Source · v1.0
+            - heading "The Codifide Programming Language" [level=3] [ref=e45]
+            - paragraph [ref=e46]: A programming language that codifies what software usually leaves implicit — for a world where agents write the code.
+            - paragraph [ref=e47]:
+              - text: "Every mainstream language — from Fortran to Rust — was built around human cognitive constraints. Agents don't share those constraints. Codifide codifies what software usually leaves implicit: intent, effects, contracts, confidence, and refusal — and preserves those properties with byte-level fidelity across every agent that reads, writes, or composes the code."
+              - strong [ref=e48]: The name is the thesis.
+            - generic [ref=e49]:
+              - generic [ref=e50]:
+                - generic [ref=e51]: Intent
+                - paragraph [ref=e52]: Every function carries why it exists as structure — not a comment the compiler discards. A symbol's intent is part of its content-addressed identity.
+              - generic [ref=e53]:
+                - generic [ref=e54]: Effects
+                - paragraph [ref=e55]: Declared in the type and enforced transitively across the call graph. A pure function cannot call an impure one and launder the effect.
+              - generic [ref=e56]:
+                - generic [ref=e57]: Contracts
+                - paragraph [ref=e58]: Pre- and postconditions the runtime evaluates — not docstrings. Contracts run with an empty effect budget. They describe state; they do not modify it.
+              - generic [ref=e59]:
+                - generic [ref=e60]: Confidence
+                - paragraph [ref=e61]:
+                  - code [ref=e62]: believe label ge(conf(label), 0.85)
+                  - text: — probability as a first-class dispatch mechanism. Every value can carry a confidence score.
+              - generic [ref=e63]:
+                - generic [ref=e64]: Refusal
+                - paragraph [ref=e65]:
+                  - code [ref=e66]: bottom
+                  - text: is a value, not an exception. A function that does not know enough to answer says so. The runtime respects that.
+              - generic [ref=e67]:
+                - generic [ref=e68]: Fidelity
+                - paragraph [ref=e69]: Two agents naming the same content hash see the same bytes, the same contracts, the same intent. No drift. No version gaps. No trust gaps.
+            - generic "Code example" [ref=e70]:
+              - code [ref=e72]: "def classify intent \"label an image, refuse rather than guess\" sig (img: Image) -> Label effects {model.vision} cand label <- vision.classify(img) believe label ge(conf(label), 0.85) => label ge(conf(label), 0.60) => escalate(img, label) else => bottom"
+            - generic [ref=e73]:
+              - generic [ref=e74]:
+                - generic [ref=e75]: "289"
+                - generic [ref=e76]: tests passing
+              - generic [ref=e77]:
+                - generic [ref=e78]: "2"
+                - generic [ref=e79]: implementations
+              - generic [ref=e80]:
+                - generic [ref=e81]: v1.0
+                - generic [ref=e82]: released May 2026
+              - generic [ref=e83]:
+                - generic [ref=e84]: MIT
+                - generic [ref=e85]: open source
+            - generic [ref=e86]:
+              - link "View on GitHub →" [ref=e87] [cursor=pointer]:
+                - /url: https://github.com/codifide/codifide-programming-language
+              - link "Get started" [ref=e88] [cursor=pointer]:
+                - /url: https://github.com/codifide/codifide-programming-language/blob/main/GETTING_STARTED.md
+          - article "Agentic Stage-Gate Governance" [ref=e89]:
+            - generic [ref=e90]: AI Governance · Open Source
+            - heading "Agentic Stage-Gate Governance" [level=3] [ref=e91]
+            - paragraph [ref=e92]: A governance framework for software built by AI agents.
+            - paragraph [ref=e93]: When your developer is an AI agent, who watches the gates? This open-source template adapts Robert Cooper's Stage-Gate® framework for a world where AI builds code faster than humans can review it. Copy the steering files into any project — governance, adversarial review, and quality gates activate automatically in Kiro.
+            - list "Key features" [ref=e94]:
+              - listitem [ref=e95]: 7-gate process (G0–G6) from problem validation to post-launch learning
+              - listitem [ref=e96]: "Three-model review: A-Team builder, B-Team critic, Zero-Context auditor"
+              - listitem [ref=e97]: 100% test coverage as a gate requirement, not a goal
+              - listitem [ref=e98]: Security and accessibility at every gate, not as a phase
+              - listitem [ref=e99]: AI builds. Humans decide. Evidence proves.
+            - generic "Core principle" [ref=e100]: "\"Evidence, not confidence. 'We think it's fine' is not a gate pass.\""
+            - link "View on GitHub →" [ref=e101] [cursor=pointer]:
+              - /url: https://github.com/codifide/agentic-stage-gate-governance
+          - article "Codifide Health" [ref=e102]:
+            - generic [ref=e103]: Healthcare · AI · HIPAA
+            - heading "Codifide Health" [level=3] [ref=e104]
+            - paragraph [ref=e105]: AI-powered healthcare intelligence, built for compliance from the ground up.
+            - paragraph [ref=e106]: A Tuva-aligned analytics platform designed to support 10M+ patients at scale, with AI clinical decision support, federated machine learning, and multi-region deployment. Built for HIPAA/SOC2 compliance from the ground up — not bolted on.
+            - list "Key features" [ref=e107]:
+              - listitem [ref=e108]: FHIR-native EHR integration with SMART on FHIR OAuth (Epic, Cerner, athenahealth, eClinicalWorks)
+              - listitem [ref=e109]: Fail-closed organization enforcement — no implicit tenant fallbacks
+              - listitem [ref=e110]: GPT-4 powered clinical assistant with audit trails
+              - listitem [ref=e111]: MIPS/HEDIS quality measures with real-time updates
+              - listitem [ref=e112]: Zero-trust security with ABAC policies, HIPAA/SOC2 ready
+            - generic "Technology stack" [ref=e113]:
+              - generic [ref=e114]: FHIR
+              - generic [ref=e115]: Kafka
+              - generic [ref=e116]: ClickHouse
+              - generic [ref=e117]: Keycloak
+              - generic [ref=e118]: Federated ML
+            - paragraph [ref=e119]:
+              - text: Private project — interested in contributing?
+              - link "Get in touch." [ref=e120] [cursor=pointer]:
+                - /url: "#contact"
+          - article "Decode The Sign" [ref=e121]:
+            - generic [ref=e122]: iOS · Consumer · AI
+            - heading "Decode The Sign" [level=3] [ref=e123]
+            - paragraph [ref=e124]: Confusing parking signs, decoded instantly on your iPhone.
+            - paragraph [ref=e125]: A native iOS app that turns the chaos of urban parking signs into a fast, plain-English answer. Point your camera, get a clear ruling. Built with a time-aware rule engine, semantic OCR, and conservative low-confidence gating — it never guesses. A companion web app serves Android and desktop users.
+            - list "Key features" [ref=e126]:
+              - listitem [ref=e127]: Native iOS app with Expo shell — camera capture, heading-aware nearby ranking
+              - listitem [ref=e128]: Time-aware parking rule engine with multi-sign merging
+              - listitem [ref=e129]: Semantic OCR-to-rule candidate scoring
+              - listitem [ref=e130]: Multi-city data sync — Chicago, NYC, San Francisco, Raleigh
+              - listitem [ref=e131]: Street cleaning schedules and EV charging station data
+              - listitem [ref=e132]: Conservative low-confidence gating — never guesses
+            - generic "Technology stack" [ref=e133]:
+              - generic [ref=e134]: Expo / iOS
+              - generic [ref=e135]: Next.js
+              - generic [ref=e136]: Supabase
+              - generic [ref=e137]: OpenAI OCR
+              - generic [ref=e138]: Vercel
+            - link "Visit decodethesign.com →" [ref=e139] [cursor=pointer]:
+              - /url: https://decodethesign.com
+            - paragraph [ref=e140]:
+              - text: Private project — interested in contributing?
+              - link "Get in touch." [ref=e141] [cursor=pointer]:
+                - /url: "#contact"
+    - region "AI Governance Thinking" [ref=e142]:
+      - generic [ref=e144]:
+        - generic [ref=e145]:
+          - generic [ref=e146]:
+            - heading "AI Governance Thinking" [level=2] [ref=e147]
+            - paragraph [ref=e148]:
+              - text: Agentic AI removes the speed constraint on building. It does not remove the constraint on safety. The question isn't
+              - emphasis [ref=e149]: "\"can AI build it?\""
+              - text: — it's
+              - emphasis [ref=e150]: "\"should this ship?\""
+          - generic [ref=e151]:
+            - generic [ref=e152]:
+              - img [ref=e154]
+              - generic [ref=e156]:
+                - heading "Speed without governance is faster failure" [level=3] [ref=e157]
+                - paragraph [ref=e158]: AI can produce 50 files in an hour. The bottleneck is no longer building — it's deciding what to ship. Governance frameworks must evolve to match the pace of agentic development, not lag behind it.
+            - generic [ref=e159]:
+              - img [ref=e161]
+              - generic [ref=e163]:
+                - heading "Evidence, not confidence" [level=3] [ref=e164]
+                - paragraph [ref=e165]: "\"We think it's fine\" is not a gate pass. Every gate requires artifacts — test coverage reports, security sign-offs, accessibility audits, integration tests against real backends. Not demos. Not decks."
+            - generic [ref=e166]:
+              - img [ref=e168]
+              - generic [ref=e170]:
+                - heading "The builder cannot review their own work" [level=3] [ref=e171]
+                - paragraph [ref=e172]: "Teams immersed in development share the same blind spots. A separate adversarial reviewer — different model, different prompt, hostile persona — attacks every gate. A Zero-Context reviewer reads the work as a regulator would: knowing nothing, asking everything."
+            - generic [ref=e173]:
+              - img [ref=e175]
+              - generic [ref=e177]:
+                - heading "AI builds. Humans decide." [level=3] [ref=e178]
+                - paragraph [ref=e179]: The gate decision — go, kill, hold — is never delegated to the machine. AI provides evidence. Humans decide what ships. That boundary is not a limitation of AI; it's the architecture of accountability.
+            - generic [ref=e180]:
+              - img [ref=e182]
+              - generic [ref=e186]:
+                - heading "Intent must survive compilation" [level=3] [ref=e187]
+                - paragraph [ref=e188]: When an agent transforms code, the original intent should be preserved — not discarded. Systems that lose intent create accountability gaps that compound at scale. The language is the governance.
+          - generic [ref=e189]:
+            - link "Read the whitepaper →" [ref=e190] [cursor=pointer]:
+              - /url: https://github.com/codifide/agentic-stage-gate-governance
+            - link "Follow on LinkedIn" [ref=e191] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/douglas-jones-b89777275/
+        - generic [ref=e193]:
+          - blockquote [ref=e194]:
+            - paragraph [ref=e195]: "\"The danger isn't that AI builds bad software. It's that AI builds software so fast that governance can't keep up.\""
+          - blockquote [ref=e196]:
+            - paragraph [ref=e197]: "\"Kill early, kill cheap. A failed gate at G1 costs hours. A failed gate at G5 costs months.\""
+          - blockquote [ref=e198]:
+            - paragraph [ref=e199]: "\"Agent-authored code does not have the same failure modes as human-authored code. Our governance frameworks haven't caught up.\""
+    - region "About Codifide" [ref=e200]:
+      - generic [ref=e202]:
+        - generic [ref=e203]:
+          - heading "About Codifide" [level=2] [ref=e204]
+          - paragraph [ref=e205]:
+            - text: "Codifide Inc. is a software company and research practice building tools for the agent era. The name means the same thing for both the company and the language it stewards:"
+            - strong [ref=e206]: confidence in code
+            - text: .
+          - paragraph [ref=e207]: "The work spans language design, healthcare intelligence, consumer AI, and governance frameworks — connected by a single thesis: the properties that matter most in AI-assisted software are the ones that need to be enforced by the system, not trusted to the agent."
+          - paragraph [ref=e208]: Founded and led by Douglas Jones, a software practitioner and thought leader on AI governance, based in the United States.
+          - paragraph [ref=e209]:
+            - img [ref=e210]
+            - text: Veteran-owned small business
+        - generic [ref=e212]:
+          - heading "Connect" [level=3] [ref=e213]
+          - list [ref=e214]:
+            - listitem [ref=e215]:
+              - link "LinkedIn — AI Governance & Thought Leadership" [ref=e216] [cursor=pointer]:
+                - /url: https://www.linkedin.com/in/douglas-jones-b89777275/
+                - img [ref=e217]
+                - text: LinkedIn — AI Governance & Thought Leadership
+            - listitem [ref=e221]:
+              - link "GitHub — Open Source Projects" [ref=e222] [cursor=pointer]:
+                - /url: https://github.com/codifide
+                - img [ref=e223]
+                - text: GitHub — Open Source Projects
+            - listitem [ref=e225]:
+              - link "DecodeTheSign — Live App" [ref=e226] [cursor=pointer]:
+                - /url: https://decodethesign.com
+                - img [ref=e227]
+                - text: DecodeTheSign — Live App
+    - region "Get in touch" [ref=e230]:
+      - generic [ref=e232]:
+        - heading "Get in touch" [level=2] [ref=e233]
+        - paragraph [ref=e234]: Interested in the work, a collaboration, or a conversation about AI governance?
+        - link "Send a message" [ref=e235] [cursor=pointer]:
+          - /url: https://forms.gle/CRfBxK21yu4WZeth9
+  - contentinfo [ref=e236]:
+    - generic [ref=e237]:
+      - img "Codifide" [ref=e239]
+      - paragraph [ref=e240]: © Codifide Inc. 2026 · All rights reserved · Veteran-owned small business
+      - navigation "Footer navigation" [ref=e241]:
+        - link "Projects" [ref=e242] [cursor=pointer]:
+          - /url: "#projects"
+        - link "AI Governance" [ref=e243] [cursor=pointer]:
+          - /url: "#governance"
+        - link "About" [ref=e244] [cursor=pointer]:
+          - /url: "#about"
+        - link "Contact" [ref=e245] [cursor=pointer]:
+          - /url: "#contact"

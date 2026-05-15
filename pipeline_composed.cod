@@ -1,0 +1,19 @@
+module pipeline_composed
+
+import classify_content = sha256:377099c5bddb8cebe9e8bc6b8499bb00ea99083798d1b064799ac82c55636fae
+import moderate         = sha256:1bbe69ba7dae84a1fc1a5b335ac2fd9f4be3e4462857db3cc0d38c4af5be4a2a
+import route_message    = sha256:68c15e1108ac195e211634d2755f58353422db61b077690ec59686ad87d2d964
+
+def composed_pipeline
+  intent "run the full moderation pipeline using content-addressed symbols"
+  sig    (message: String) -> String
+  effects {}
+  cand
+    route_message(message)
+
+def main
+  intent "entry point — test the composed pipeline"
+  sig    () -> String
+  effects {}
+  cand
+    composed_pipeline("this message contains violence")

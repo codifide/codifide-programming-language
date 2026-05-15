@@ -1,0 +1,45 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: Registry browser — codifide.com/registry live
+  at: "2026-05-14T00:00:00Z"
+  author: Glyph
+  intent: >
+    Record the launch of the public registry browser page.
+    Full symbol browser with live status, copy buttons, usage panels,
+    API reference, and publish guide. Matches existing design system.
+
+  state:
+    shipped:
+      - "registry.html — full symbol browser page"
+      - "registry.css — page-specific styles"
+      - "registry.js — live status, copy buttons, expand/collapse"
+      - "vercel.json — /registry route"
+      - "index.html — Registry nav link, footer link, v4.0 announcement link"
+      - "Page live at https://www.codifide.com/registry"
+    in_flight:
+      - "Symbol seeding — pipeline symbols not yet in blob store"
+    blocked: []
+    refused: []
+
+  evidence:
+    - claim: "Registry page live at /registry"
+      kind: run
+      source: "curl https://www.codifide.com/registry"
+      result: "<title>Codifide Registry — Public Symbol Store</title>"
+      confidence: 1.0
+
+  unknowns:
+    - question: "Do the 'View canonical JSON' links work once symbols are seeded?"
+      why_unknown: "Symbols not yet in blob store — seeding requires REGISTRY_WRITE_TOKEN"
+      how_to_resolve: "Run the three store push commands after confirming the blob store write API works"
+
+  next:
+    - action: "Seed registry with pipeline symbols"
+      depends_on: ["Vercel Blob write API working"]
+      effect: "{ops.seed}"
+
+  links:
+    canonical: "dispatches/2026-05-14-registry-browser.yaml"
+    human_readout: "dispatches/2026-05-14-registry-browser.readout.md"
+    live_url: "https://www.codifide.com/registry"

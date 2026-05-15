@@ -1,0 +1,24 @@
+id: 2026-05-14-vercel-registry-session-close
+date: 2026-05-14
+persona: Glyph
+kind: session-close
+title: "Session Close — Vercel Registry"
+status: closed
+tests: 450
+skipped: 0
+dispatch_check: exits 0
+items_this_session:
+  - G0 problem statement (Vercel Blob architecture)
+  - BlobStore backend (codifide/store/blob_store.py)
+  - Vercel serverless functions (api/health.py, api/symbols/index.py, api/symbols/[identity].py)
+  - vercel.json routing updates
+  - publicsite/requirements.txt
+  - docs/DEPLOY_VERCEL.md
+  - Sable audit (4 findings applied)
+  - docs/REGISTRY.md updated
+open_items:
+  - Create Vercel Blob store (user action)
+  - Set REGISTRY_WRITE_TOKEN (user action)
+  - Push publicsite repo (user action)
+  - Seed registry with pipeline symbols (after deploy)
+  - Publish codifide to PyPI (removes git+https:// dependency)

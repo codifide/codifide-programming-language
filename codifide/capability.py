@@ -316,6 +316,11 @@ def _errors() -> List[Dict[str, Any]]:
             "when":  "⊥ reached a primitive that cannot consume it.",
             "fatal": True,
         },
+        {
+            "name":  "TypeViolation",
+            "when":  "A value does not match the declared type in a sig parameter or return.",
+            "fatal": True,
+        },
     ]
 
 

@@ -89,6 +89,77 @@ a string. If `main` returns that string, the CLI also prints the return value.
 Programs that call `io.say` in `main` will print twice — once from `io.say`
 and once from the CLI. This is expected behavior.
 
+### File I/O (`{io.read}`, `{io.write}`) — v4.0
+
+`io.read(path)` — read a file by path, return its contents as a string.
+`io.write(path, content)` — write a string to a file.
+`io.exists(path)` — check whether a path exists, returns `Bool`.
+
+Path traversal defense: paths containing `..` are rejected with `PrimitiveError`.
+Size bound: `io.read` rejects files larger than 16 MiB.
+
+```codifide
+def read_config
+  intent "read a config file"
+  sig    (path: String) -> String
+  effects {io.read}
+  cand
+    io.read(path)
+```
+
+### HTTP client (`{http.fetch}`) — v4.0
+
+`http.get(url)` — HTTP GET, returns response body as string.
+`http.post(url, body)` — HTTP POST with string body, returns response body.
+
+**HTTPS only.** `http://` URLs raise `PrimitiveError`. Timeout: 30 seconds.
+Response size bound: 16 MiB. Non-2xx responses raise `PrimitiveError`.
+
+```codifide
+def fetch_capability
+  intent "fetch the live capability manifest"
+  sig    () -> String
+  effects {http.fetch}
+  cand
+    http.get("https://codifide.com/capability.json")
+```
+
+### JSON (pure) — v4.0
+
+`json.parse(s)` — parse a JSON string, return a Codifide value.
+`json.encode(v)` — encode a Codifide value as a JSON string.
+
+Both are pure — no effect declaration needed. JSON objects become dicts
+accessible via `at(obj, "key")`. JSON arrays become lists.
+
+```codifide
+def parse_response
+  intent "extract a field from a JSON response"
+  sig    (body: String) -> Any
+  effects {}
+  cand
+    obj <- json.parse(body)
+    at(obj, "status")
+```
+
+### Date arithmetic (pure, except `clock.today`) — v4.0
+
+`clock.today()` — today's date as `"YYYY-MM-DD"`. Effect: `{clock.read}`.
+`clock.parse(s)` — parse `"YYYY-MM-DD"` to Unix timestamp (Int). Pure.
+`clock.add_days(ts, n)` — add `n` days to a Unix timestamp. Pure.
+`clock.format(ts, fmt)` — format a Unix timestamp with strftime format. Pure.
+
+```codifide
+def days_until
+  intent "days from today until a target date"
+  sig    (target: String) -> Int
+  effects {clock.read}
+  cand
+    today_ts <- clock.parse(clock.today())
+    target_ts <- clock.parse(target)
+    div(sub(target_ts, today_ts), 86400)
+```
+
 ### Clock (`{clock.read}`)
 `clock.now` — returns a record with `hm` (string `"HH:MM"`) and
 `unix` (float seconds since epoch).
@@ -253,41 +324,33 @@ cand
 Both patterns are valid. `cand` + `when` is preferred for three or more
 branches; `if/then/else` is preferred for binary choices inside a body.
 
-**`is_bottom` — value inspector, not propagation catcher.**
+**`is_bottom` — value inspector.**
 
-`is_bottom(x)` returns `true` when `x` is a literal `bottom` value.
-It **cannot** catch a `bottom` that propagated through a bind:
+`is_bottom(x)` returns `true` when `x` is a `bottom` value (including `bottom "reason"`).
+Both the direct-call and bind patterns work:
 
 ```codifide
-# WRONG — bottom propagates through the bind before is_bottom sees it
+# Direct-call — is_bottom sees the value before any bind
+cand
+  if is_bottom(function_that_refuses()) then "refused" else "ok"
+
+# Bind pattern — also works; is_bottom receives the bottom value
 cand
   r <- function_that_refuses()
-  if is_bottom(r) then "caught" else r   # raises BottomPropagationError
+  if is_bottom(r) then "refused" else r
+```
 
-# RIGHT — use a believe arm to handle propagated bottom
+For conditional routing on a possibly-refused value, `believe` is usually
+cleaner and more idiomatic:
+
+```codifide
+# Idiomatic — believe handles refusal explicitly
 cand
   r <- function_that_refuses()
   believe r
     ge(conf(r), 0.70) => r
-    else              => bottom          # or handle the refusal here
+    else              => bottom
 ```
-
-`is_bottom` is useful when `bottom` is passed as an explicit argument
-or stored in a data structure, not when it arrives via function return.
-
-**Direct-call `is_bottom` works.** If you need to check whether a function
-refuses *before* binding its result, call `is_bottom` directly on the call
-expression — no bind needed:
-
-```codifide
-# Works — is_bottom sees the value before any bind propagates it
-cand
-  if is_bottom(moderate(message)) then "refused" else moderate(message)
-```
-
-This short-circuits: if `moderate` refuses, the `else` branch never runs.
-Note that `moderate` is called twice — once for the check and once for the
-value. For expensive functions, prefer the `believe` pattern instead.
 
 ## Content-addressed imports
 
@@ -384,6 +447,12 @@ support `from`-import as of v2.0.
 - **Multi-line expressions are fine.** Call arguments, bind
   right-hand sides, and contract expressions may span multiple
   physical lines as long as brackets are balanced at the end.
+- **`sig` type declarations are enforced at runtime (v4.0).** Passing
+  a `String` where `Int` is declared raises `TypeViolation`. `Any`
+  accepts all values. `Number` accepts both `Int` and `Float`.
+  `String` accepts `Label` (Label is a subtype of String). If the
+  actual value is untagged (`Any`), the check passes — type enforcement
+  is best-effort, not a full static type system.
 
 ## When the parser or runtime rejects you
 

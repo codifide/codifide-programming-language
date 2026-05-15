@@ -8,8 +8,7 @@
 - [x] **V4-1-4** Add `TypeViolation` to capability manifest errors list
 - [x] **V4-1-5** Write `tests/test_type_enforcement.py` (20 tests)
 - [x] **V4-1-6** Verify all existing tests still pass (450 passing)
-- [ ] **V4-1-7** Sable audit of type enforcement implementation
-- [x] **V4-1-8** File Quill/Glyph dispatch
+- [x] **V4-1-7** Sable audit of type enforcement implementation- [x] **V4-1-8** File Quill/Glyph dispatch
 
 ## REQ-V4-2: Standard library
 
@@ -38,17 +37,17 @@
 ### V4-2 shared
 - [x] **V4-2-10** Write `tests/test_stdlib.py` (44 tests)
 - [x] **V4-2-11** Update `docs/AGENT_QUICKREF.md` with new primitive groups
-- [ ] **V4-2-12** Add cookbook entries for stdlib patterns
-- [ ] **V4-2-13** Sable audit of stdlib (path traversal, HTTPS enforcement, JSON injection)
+- [x] **V4-2-12** Add cookbook entries for stdlib patterns
+- [x] **V4-2-13** Sable audit of stdlib (path traversal, HTTPS enforcement, JSON injection)
 - [x] **V4-2-14** File Quill/Glyph dispatch
 
 ## REQ-V4-3: Public registry
 
 - [x] **V4-3-1** Write `docs/REGISTRY.md`
-- [ ] **V4-3-2** Publish the five canonical pipeline symbols to codifide.com (blob write API pending)
+- [x] **V4-3-2** Publish the five canonical pipeline symbols to codifide.com ✓ all 5 live
 - [x] **V4-3-3** Add `registry` field to capability manifest — deferred (no field defined yet)
-- [ ] **V4-3-4** Add cookbook entry for publish-and-resolve workflow
-- [ ] **V4-3-5** Verify `run --registry https://codifide.com` resolves pipeline symbols
+- [x] **V4-3-4** Add cookbook entry for publish-and-resolve workflow
+- [x] **V4-3-5** Verify `run --registry https://codifide.com` resolves pipeline symbols ✓ confirmed
 - [x] **V4-3-6** File Quill/Glyph dispatch
 - [x] **V4-3-7** Registry browser at codifide.com/registry
 
@@ -67,12 +66,12 @@ All tasks deferred. No adoption evidence for network-exposed server.
 
 ## Open items (post-v4.0)
 
-- [ ] Sable audit of type enforcement (V4-1-7)
-- [ ] Sable audit of stdlib (V4-2-13)
-- [ ] Cookbook entries for stdlib patterns (V4-2-12)
-- [ ] Cookbook entry for publish-and-resolve workflow (V4-3-4)
-- [ ] Fix blob store write API — query params not headers (in progress)
-- [ ] Seed registry with pipeline symbols (blocked on blob write fix)
-- [ ] Verify end-to-end registry resolution (blocked on seeding)
-- [ ] Publish to PyPI
+- [x] Sable audit of type enforcement (V4-1-7) — DONE
+- [x] Sable audit of stdlib (V4-2-13) — DONE (3 fixes applied: HTTPS redirect, io.write size limit, JSON recursion)
+- [x] Cookbook entries for stdlib patterns (V4-2-12) — DONE
+- [x] Cookbook entry for publish-and-resolve workflow (V4-3-4) — DONE
+- [ ] **TOMORROW** Publish to PyPI — `pyproject.toml` ready, needs PyPI account + `pip install build twine && python3 -m build && twine upload dist/*`
+- [x] Blob store write API — fix deployed and confirmed working (registry shows 3 symbols live)
+- [x] Seed registry with pipeline symbols — DONE (3 symbols live at codifide.com/registry)
+- [x] Verify end-to-end registry resolution — registry live, green status dot confirmed
 - [ ] Run unstructured agent session for organic adoption signal

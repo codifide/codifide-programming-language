@@ -421,6 +421,208 @@ def build_default_registry(trace: EffectTrace) -> PrimitiveRegistry:
         returns="Image",
     )
 
+    # -- Standard library: File I/O (V4-2a) ----------------------------------
+    import os as _os
+
+    def _io_read(path: Any) -> str:
+        p = str(_unwrap(path))
+        # Path traversal defense: reject any path containing '..'
+        if ".." in p.split(_os.sep) or ".." in p.split("/"):
+            raise ValueError(
+                f"io.read: path traversal rejected — '..' not allowed in path: {p!r}"
+            )
+        _MAX_READ = 16 * 1024 * 1024  # 16 MiB
+        try:
+            size = _os.path.getsize(p)
+        except OSError as exc:
+            raise OSError(f"io.read: cannot stat {p!r}: {exc}") from exc
+        if size > _MAX_READ:
+            raise ValueError(
+                f"io.read: file {p!r} is {size} bytes, exceeds 16 MiB limit"
+            )
+        try:
+            with open(p, "r", encoding="utf-8") as fh:
+                return fh.read(_MAX_READ + 1)
+        except OSError as exc:
+            raise OSError(f"io.read: cannot read {p!r}: {exc}") from exc
+
+    def _io_write(path: Any, content: Any) -> None:
+        p = str(_unwrap(path))
+        if ".." in p.split(_os.sep) or ".." in p.split("/"):
+            raise ValueError(
+                f"io.write: path traversal rejected — '..' not allowed in path: {p!r}"
+            )
+        c = str(_unwrap(content))
+        # AUD-STD-05: size limit consistent with io.read (16 MiB).
+        _MAX_WRITE = 16 * 1024 * 1024
+        if len(c.encode("utf-8")) > _MAX_WRITE:
+            raise ValueError(
+                f"io.write: content exceeds 16 MiB limit"
+            )
+        try:
+            with open(p, "w", encoding="utf-8") as fh:
+                fh.write(c)
+        except OSError as exc:
+            raise OSError(f"io.write: cannot write {p!r}: {exc}") from exc
+
+    def _io_exists(path: Any) -> bool:
+        p = str(_unwrap(path))
+        if ".." in p.split(_os.sep) or ".." in p.split("/"):
+            raise ValueError(
+                f"io.exists: path traversal rejected — '..' not allowed in path: {p!r}"
+            )
+        return _os.path.exists(p)
+
+    reg.register("io.read",   _io_read,   effect="io.read",  returns="String")
+    reg.register("io.write",  _io_write,  effect="io.write", returns="Unit")
+    reg.register("io.exists", _io_exists, effect="io.read",  returns="Bool")
+
+    # -- Standard library: HTTP client (V4-2b) --------------------------------
+    def _https_only_opener():
+        """Build a urllib opener that rejects HTTP redirects (AUD-STD-02).
+
+        urllib follows redirects by default. A server at https://example.com
+        could redirect to http://evil.com, bypassing the HTTPS-only check.
+        This opener intercepts redirects and raises if the destination is
+        not HTTPS.
+        """
+        import urllib.request as _req
+
+        class _HTTPSOnlyRedirectHandler(_req.HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, headers, newurl):
+                if not newurl.startswith("https://"):
+                    raise ValueError(
+                        f"http: redirect to non-HTTPS URL rejected: {newurl!r}. "
+                        f"Only HTTPS redirects are allowed."
+                    )
+                return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+        return _req.build_opener(_HTTPSOnlyRedirectHandler())
+
+    def _http_get(url: Any) -> str:
+        import urllib.error as _err
+        u = str(_unwrap(url))
+        if not u.startswith("https://"):
+            raise ValueError(
+                f"http.get: only HTTPS URLs are allowed, got: {u!r}. "
+                f"Use 'https://' instead of 'http://'."
+            )
+        _MAX_RESP = 16 * 1024 * 1024
+        opener = _https_only_opener()
+        try:
+            with opener.open(u, timeout=30) as resp:
+                data = resp.read(_MAX_RESP + 1)
+                if len(data) > _MAX_RESP:
+                    raise ValueError(
+                        f"http.get: response from {u!r} exceeds 16 MiB limit"
+                    )
+                return data.decode("utf-8", errors="replace")
+        except _err.HTTPError as exc:
+            raise ValueError(
+                f"http.get: HTTP {exc.code} from {u!r}: {exc.reason}"
+            ) from exc
+        except _err.URLError as exc:
+            raise ValueError(
+                f"http.get: cannot reach {u!r}: {exc.reason}"
+            ) from exc
+
+    def _http_post(url: Any, body: Any) -> str:
+        import urllib.request as _req
+        import urllib.error as _err
+        u = str(_unwrap(url))
+        b = str(_unwrap(body)).encode("utf-8")
+        if not u.startswith("https://"):
+            raise ValueError(
+                f"http.post: only HTTPS URLs are allowed, got: {u!r}. "
+                f"Use 'https://' instead of 'http://'."
+            )
+        _MAX_RESP = 16 * 1024 * 1024
+        opener = _https_only_opener()
+        try:
+            request = _req.Request(
+                u, data=b, method="POST",
+                headers={"Content-Type": "text/plain; charset=utf-8"},
+            )
+            with opener.open(request, timeout=30) as resp:
+                data = resp.read(_MAX_RESP + 1)
+                if len(data) > _MAX_RESP:
+                    raise ValueError(
+                        f"http.post: response from {u!r} exceeds 16 MiB limit"
+                    )
+                return data.decode("utf-8", errors="replace")
+        except _err.HTTPError as exc:
+            raise ValueError(
+                f"http.post: HTTP {exc.code} from {u!r}: {exc.reason}"
+            ) from exc
+        except _err.URLError as exc:
+            raise ValueError(
+                f"http.post: cannot reach {u!r}: {exc.reason}"
+            ) from exc
+
+    reg.register("http.get",  _http_get,  effect="http.fetch", returns="String")
+    reg.register("http.post", _http_post, effect="http.fetch", returns="String")
+
+    # -- Standard library: JSON (V4-2c) ---------------------------------------
+    def _json_parse(s: Any) -> Any:
+        import json as _json
+        text = str(_unwrap(s))
+        try:
+            return _json.loads(text)
+        except _json.JSONDecodeError as exc:
+            raise ValueError(f"json.parse: invalid JSON: {exc}") from exc
+        except RecursionError as exc:
+            # AUD-STD-03: deeply nested JSON can cause RecursionError in
+            # Python's JSON parser. Catch and surface as a typed PrimitiveError.
+            raise ValueError(
+                f"json.parse: JSON structure is too deeply nested"
+            ) from exc
+
+    def _json_encode(v: Any) -> str:
+        import json as _json
+        val = _unwrap(v)
+        # Reject values that cannot be represented in JSON.
+        if isinstance(val, _BottomType):
+            raise ValueError("json.encode: cannot encode ⊥ (refusal) as JSON")
+        try:
+            return _json.dumps(val, ensure_ascii=False)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"json.encode: cannot encode value: {exc}") from exc
+
+    reg.register("json.parse",  _json_parse,  effect=None, returns="Any")
+    reg.register("json.encode", _json_encode, effect=None, returns="String")
+
+    # -- Standard library: Date arithmetic (V4-2d) ----------------------------
+    def _clock_today() -> str:
+        import datetime as _dt
+        ts = time.time()
+        trace.clock_reads.append(ts)
+        return _dt.date.today().isoformat()
+
+    def _clock_parse(s: Any) -> int:
+        import datetime as _dt
+        text = str(_unwrap(s))
+        try:
+            d = _dt.date.fromisoformat(text)
+            return int(_dt.datetime(d.year, d.month, d.day).timestamp())
+        except ValueError as exc:
+            raise ValueError(
+                f"clock.parse: expected YYYY-MM-DD, got {text!r}: {exc}"
+            ) from exc
+
+    def _clock_add_days(ts: Any, n: Any) -> int:
+        return int(_num(ts)) + int(_num(n)) * 86400
+
+    def _clock_format(ts: Any, fmt: Any) -> str:
+        import datetime as _dt
+        t = int(_num(ts))
+        f = str(_unwrap(fmt))
+        return _dt.datetime.fromtimestamp(t).strftime(f)
+
+    reg.register("clock.today",    _clock_today,    effect="clock.read", returns="String")
+    reg.register("clock.parse",    _clock_parse,    effect=None,         returns="Int")
+    reg.register("clock.add_days", _clock_add_days, effect=None,         returns="Int")
+    reg.register("clock.format",   _clock_format,   effect=None,         returns="String")
+
     return reg
 
 
