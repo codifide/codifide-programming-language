@@ -14,6 +14,8 @@ Filename convention:
 | slug | subject | readout | yaml | audit |
 |---|---|---|---|---|
 | `session-close` |  | [md](./2026-05-15-session-close.readout.md) | [yaml](./2026-05-15-session-close.yaml) |  |
+| `v4-1-type-enforcement-sable` |  |  |  | [md](./2026-05-15-v4-1-type-enforcement-sable-audit.md) |
+| `v4-2-stdlib-sable` |  |  |  | [md](./2026-05-15-v4-2-stdlib-sable-audit.md) |
 | `v4-retrospective` | v4.0 retrospective — state of Codifide, team review | [md](./2026-05-15-v4-retrospective.readout.md) | [yaml](./2026-05-15-v4-retrospective.yaml) |  |
 
 ## 2026-05-14

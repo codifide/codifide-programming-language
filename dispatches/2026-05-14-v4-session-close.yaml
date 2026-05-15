@@ -1,0 +1,31 @@
+id: 2026-05-14-v4-session-close
+date: 2026-05-14
+persona: Glyph
+kind: session-close
+title: "Session Close — v4.0"
+status: closed
+tests: 450
+skipped: 0
+dispatch_check: exits 0
+v4_status:
+  V4-1: shipped
+  V4-2: shipped
+  V4-3: shipped (docs/REGISTRY.md)
+  V4-4: deferred (no adoption evidence)
+items_this_session:
+  - V4-1 runtime type enforcement (TypeViolation, 20 tests)
+  - V4-2 standard library (file I/O, HTTP, JSON, dates, 44 tests)
+  - V4-3 public registry documentation
+  - G0 + G1 specs for v4.0
+  - publicsite-rules.md version sync rules
+  - governance gates G5 publicsite checklist tightened
+  - Sable publicsite sync checklist (PS-1 through PS-6)
+  - dispatch-check publicsite sync checks (PS-1, PS-3)
+  - publicsite updated to v4.0
+  - CHANGELOG.md v4.0.0 entry
+  - ROADMAP.md v4.0 closed
+  - version bumped to 4.0.0
+open_items:
+  - V4-4 network-safe server (deferred)
+  - Gather adoption evidence for V4-1 type enforcement
+  - Operate public registry (seed with pipeline symbols)
