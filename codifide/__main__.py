@@ -786,9 +786,12 @@ def _check_publicsite_sync(repo_root: "Path", gaps: list) -> None:
             "file not found in publicsite directory"
         )
 
-    # PS-3 — version stat in index.html
-    index_html = publicsite / "index.html"
-    if index_html.exists():
+    # PS-3 — version stat in language.html (or index.html fallback)
+    # The version stat moved to the dedicated language page in the site
+    # restructure (May 2026). Check language.html first, fall back to index.html.
+    lang_html = publicsite / "language.html"
+    check_html = lang_html if lang_html.exists() else (publicsite / "index.html")
+    if check_html.exists():
         try:
             from .capability import generate_capability
             live_generator = generate_capability().get("generator", "")
@@ -798,7 +801,7 @@ def _check_publicsite_sync(repo_root: "Path", gaps: list) -> None:
             m = _re.search(r"codifide-python-(\d+)\.(\d+)", live_generator)
             if m:
                 expected_stat = f"v{m.group(1)}.{m.group(2)}"
-                html = index_html.read_text(encoding="utf-8")
+                html = check_html.read_text(encoding="utf-8")
                 # Match the lang-stat-num span that is immediately followed
                 # by a lang-stat-label containing "released" — that's the
                 # version stat, not the test count or implementation count.
@@ -811,13 +814,13 @@ def _check_publicsite_sync(repo_root: "Path", gaps: list) -> None:
                     actual_stat = stat_m.group(1).strip()
                     if actual_stat != expected_stat:
                         gaps.append(
-                            f"  STALE   publicsite/index.html: "
+                            f"  STALE   publicsite/{check_html.name}: "
                             f"version stat shows '{actual_stat}' but current release is '{expected_stat}'. "
-                            f"Update the lang-stat-num span paired with 'released May 20XX' in index.html."
+                            f"Update the lang-stat-num span paired with 'released May 20XX'."
                         )
                 else:
                     gaps.append(
-                        "  MISSING publicsite/index.html: "
+                        f"  MISSING publicsite/{check_html.name}: "
                         "could not find version stat span (lang-stat-num paired with 'released') "
                         "to verify version"
                     )

@@ -1,0 +1,26 @@
+id: 2026-05-17-session-close
+date: 2026-05-17
+persona: Glyph
+kind: session-close
+title: "Session Close — May 17 2026"
+status: closed
+tests: 461
+skipped: 0
+dispatch_check: exits 0
+items_this_session:
+  - Dedicated /language page for CPL (full content moved from homepage)
+  - Homepage restructure — Governance featured first, CPL as standard card
+  - Nav cleanup — 6 items + Contact, no wrapping
+  - Orphaned stats strip removed from homepage
+  - Codifide Health wordmark SVG created
+  - Health logo added to Health project card
+  - CPL README updated with contract-and-dispatch positioning
+  - dispatch-check PS-3 updated to check language.html
+  - vercel.json /language rewrite added
+  - 4 production deploys (iterative fixes)
+  - Self-hosting analysis (conclusion: not viable by design, not a failure)
+open_items:
+  - Launch banner copy may need revision (says v4.0 but governance is now featured)
+  - PyPI publish still pending
+  - Blob store write API verification still pending
+  - Governance project logo (matching wordmark style) not yet created

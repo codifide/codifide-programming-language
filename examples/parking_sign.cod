@@ -1,0 +1,162 @@
+module parking_sign_classifier
+
+# Parking Sign Confidence Classifier
+#
+# Inspired by DecodeTheSign — interprets parking sign text and returns
+# a verdict (YES/NO/SOON) with confidence gating. Refuses rather than
+# guesses when OCR confidence is too low.
+#
+# Demonstrates:
+#   - Belief dispatch for confidence-gated OCR results
+#   - Multi-candidate dispatch with cost for sign type classification
+#   - Contracts (pre/post) for input validation
+#   - First-class refusal (bottom) when confidence is insufficient
+#   - String primitives for text parsing
+#   - The parallel evaluator opportunity: each sign analysis is independent
+
+# --- OCR Confidence Gate ---
+
+def gate_ocr
+  intent "accept OCR text only if confidence is high enough to act on"
+  sig    (text: String, confidence: Number) -> String
+  effects {}
+  pre    ge(confidence, 0.0)
+  pre    le(confidence, 1.0)
+  cand
+    result <- belief(text, confidence)
+    believe result
+      ge(conf(result), 0.85) => text
+      ge(conf(result), 0.70) => "LOW_CONFIDENCE"
+      else                   => bottom "OCR confidence too low to interpret safely"
+
+# --- Sign Type Classification ---
+
+def classify_sign_type
+  intent "determine what kind of parking sign this is"
+  sig    (text: String) -> String
+  effects {}
+  pre    ne(text, "")
+
+  cand
+    intent "street cleaning sign — specific keyword takes priority"
+    cost   1
+    when   contains(upper(text), "CLEANING")
+    "STREET_CLEANING"
+
+  cand
+    intent "no parking sign — explicit prohibition"
+    cost   2
+    when   or(contains(upper(text), "NO PARKING"), contains(upper(text), "NO STOPPING"))
+    "NO_PARKING"
+
+  cand
+    intent "permit-only sign — specific access restriction"
+    cost   3
+    when   or(contains(upper(text), "PERMIT"), contains(upper(text), "RESIDENT"))
+    "PERMIT_ONLY"
+
+  cand
+    intent "metered parking sign"
+    cost   4
+    when   or(contains(upper(text), "METER"), contains(upper(text), "HR"))
+    "METERED"
+
+  cand
+    intent "time-restricted sign — broad pattern, lower priority"
+    cost   10
+    when   or(contains(text, "AM"), contains(text, "PM"))
+    "TIME_RESTRICTED"
+
+  cand
+    intent "unrecognized sign type — fallback"
+    cost   100
+    "UNKNOWN"
+
+# --- Verdict Logic ---
+
+def verdict_for_no_parking
+  intent "no parking signs always mean NO"
+  sig    (text: String) -> String
+  effects {}
+  cand
+    "NO"
+
+def verdict_for_time_restricted
+  intent "time-restricted signs need time evaluation — simplified to text check"
+  sig    (text: String) -> String
+  effects {}
+  cand
+    if contains(upper(text), "EXCEPT") then "CONDITIONAL" else "NO"
+
+def verdict_for_permit
+  intent "permit signs mean NO unless you have a permit"
+  sig    (text: String) -> String
+  effects {}
+  cand
+    "NO"
+
+def verdict_for_metered
+  intent "metered signs mean YES if you pay"
+  sig    (text: String) -> String
+  effects {}
+  cand
+    "YES"
+
+def verdict_for_cleaning
+  intent "street cleaning signs are time-dependent"
+  sig    (text: String) -> String
+  effects {}
+  cand
+    "CONDITIONAL"
+
+def verdict_for_unknown
+  intent "refuse to give a verdict for unrecognized signs"
+  sig    (text: String) -> String
+  effects {}
+  cand
+    bottom "Cannot determine parking rules from unrecognized sign type"
+
+# --- Main Dispatch ---
+
+def interpret_sign
+  intent "given sign text and OCR confidence, return a verdict or refuse"
+  sig    (text: String, confidence: Number) -> String
+  effects {}
+  pre    ne(text, "")
+
+  cand
+    intent "high confidence path — classify and interpret"
+    cost   1
+    when   ne(gate_ocr(text, confidence), "LOW_CONFIDENCE")
+    gated <- gate_ocr(text, confidence)
+    sign_type <- classify_sign_type(gated)
+    if eq(sign_type, "NO_PARKING") then verdict_for_no_parking(gated)
+    else if eq(sign_type, "TIME_RESTRICTED") then verdict_for_time_restricted(gated)
+    else if eq(sign_type, "PERMIT_ONLY") then verdict_for_permit(gated)
+    else if eq(sign_type, "METERED") then verdict_for_metered(gated)
+    else if eq(sign_type, "STREET_CLEANING") then verdict_for_cleaning(gated)
+    else verdict_for_unknown(gated)
+
+  cand
+    intent "low confidence path — refuse rather than guess"
+    cost   10
+    when   eq(gate_ocr(text, confidence), "LOW_CONFIDENCE")
+    bottom "Confidence too low for safe interpretation"
+
+# --- Entry Point ---
+
+def main
+  intent "classify several parking signs with varying confidence levels"
+  sig    () -> List
+  effects {}
+  cand
+    list(
+      interpret_sign("NO PARKING ANY TIME", 0.95),
+      interpret_sign("2 HR PARKING 8AM-6PM EXCEPT SUNDAY", 0.88),
+      interpret_sign("PERMIT PARKING ONLY ZONE 4", 0.92),
+      interpret_sign("NO STOPPING 7AM-9AM MON-FRI", 0.91),
+      interpret_sign("STREET CLEANING TUESDAY 8AM-10AM", 0.87),
+      classify_sign_type("FREE PARKING ALL DAY"),
+      is_bottom(gate_ocr("blurry text", 0.45)),
+      is_bottom(interpret_sign("maybe no parking?", 0.72))
+    )

@@ -15,6 +15,12 @@ leaves implicit — intent, effects, contracts, confidence, refusal — and
 preserves those codifications with **fidelity** across every agent that reads,
 writes, or composes the code. The name is the thesis.
 
+Codifide is a **contract-and-dispatch language**, not a systems language or a
+general-purpose computation language. It optimizes for declaring intent and
+contracts, dispatching among candidates, enforcing effects, and
+content-addressing compositions — the properties that matter for
+agent-to-agent trust.
+
 ## Thesis
 
 Every mainstream programming language — from Fortran to Rust — was designed
