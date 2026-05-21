@@ -1,0 +1,93 @@
+glyph: quill
+kind: readout
+date: "2026-05-21"
+title: "Scan Performance, Error Hardening & Gate Infrastructure"
+scope:
+  - decodethesign-web
+  - decodethesign-ios
+  - agentic-stage-gate-governance
+tags:
+  - bug-fix
+  - performance
+  - error-handling
+  - nfr
+  - admin-dashboard
+  - testflight-prep
+summary: >
+  Field test exposed three production bugs: iOS confidence gate failing on every scan,
+  rule engine returning wrong verdicts for permit-exception signs, and isComplexSign
+  over-detection routing all multi-panel signs to 10s Gemini path. All three fixed and
+  deployed. 29 silent catch blocks eliminated across 17 files — every catch now logs
+  or rethrows. NFR/KPI gate infrastructure built: 30 NFRs documented, two admin
+  dashboards deployed (/admin/nfr-dashboard, /admin/adoption), governance project
+  updated with NFR template and error handling standard.
+artifacts:
+  - path: decodethesign/app/api/consumer/live/[liveId]/capture/route.ts
+    action: modified
+    notes: "Decouple selected_match from canSelectTopCandidate; fix isComplexSign; log silent catches"
+  - path: decodethesign/ios-native/DecodeTheSignPackage/Sources/DecodeTheSignFeature/Services/ScanResultParser.swift
+    action: modified
+    notes: "inline_evaluation present implies dbScore=1.0"
+  - path: decodethesign/lib/rule-engine.ts
+    action: modified
+    notes: "Remove isPermitOnly — no_parking with permit_types is still red"
+  - path: decodethesign/lib/consumer-capture-recent-match.ts
+    action: modified
+    notes: "Log fast-match query failures instead of swallowing"
+  - path: decodethesign/lib/consumer-crowdsource-intake.ts
+    action: modified
+    notes: "Log sharp and fingerprint failures"
+  - path: decodethesign/lib/sign-registry.ts
+    action: modified
+    notes: "Log DB query failures on critical path"
+  - path: decodethesign/lib/rate-limit.ts
+    action: modified
+    notes: "Log KV unavailability"
+  - path: decodethesign/lib/ocr/arrow-detect.ts
+    action: modified
+    notes: "Log Gemini JSON parse failures with raw preview"
+  - path: decodethesign/lib/ocr/extract.ts
+    action: modified
+    notes: "Log tiebreaker failures; SILENT-CATCH-APPROVED for tryParseJson"
+  - path: decodethesign/lib/ocr/prior-sign-hashes.ts
+    action: modified
+    notes: "Log Supabase query failure"
+  - path: decodethesign/lib/ocr/reconsensus.ts
+    action: modified
+    notes: "Log hash computation failure"
+  - path: decodethesign/lib/edge-config.ts
+    action: modified
+    notes: "Log Edge Config unavailability at debug level"
+  - path: decodethesign/app/admin/nfr-dashboard/page.tsx
+    action: created
+    notes: "Live NFR & KPI gate dashboard"
+  - path: decodethesign/app/admin/adoption/page.tsx
+    action: created
+    notes: "DAU/WAU/MAU, retention, engagement, geo spread"
+  - path: decodethesign/docs/NFRS.md
+    action: expanded
+    notes: "30 NFRs, automated gate assertions table"
+  - path: decodethesign/.kiro/steering/03-coding-standards.md
+    action: modified
+    notes: "Error handling rule: no silent catches"
+  - path: agentic-stage-gate-governance/templates/NFR-TEMPLATE.md
+    action: created
+    notes: "Generic reusable NFR template"
+  - path: agentic-stage-gate-governance/steering/03-coding-standards.md
+    action: modified
+    notes: "Error handling rule added"
+  - path: agentic-stage-gate-governance/steering/05-nfr-kpi-mandate.md
+    action: expanded
+    notes: "Field-tested guidance on latency tiers, parity tests, graceful degradation"
+bugs_fixed:
+  - id: scan-confidence-gate
+    severity: critical
+    description: "inline_evaluation present caused dbScore=0.0, composite 0.45 < 0.80 gate"
+  - id: rule-engine-permit-types
+    severity: critical
+    description: "no_parking with permit_types returned green instead of red — 40 tests broken"
+  - id: isComplexSign-over-detection
+    severity: high
+    description: "All multi-panel signs routed to 10s Gemini path instead of 1s client OCR"
+silent_catches_fixed: 29
+tests_passing: 1007

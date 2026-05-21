@@ -1,0 +1,13 @@
+glyph: quill
+kind: session-close
+date: "2026-05-21"
+title: "Session Close — Scan Perf, Error Hardening & Gate Infrastructure"
+outcome: success
+repos_pushed:
+  - decodethesign
+  - agentic-stage-gate-governance
+next_session:
+  - TestFlight submission (Xcode Archive → App Store Connect)
+  - Manual NFR evidence (14 items pending on /admin/nfr-dashboard)
+  - More app screenshots
+  - Supabase type regeneration
