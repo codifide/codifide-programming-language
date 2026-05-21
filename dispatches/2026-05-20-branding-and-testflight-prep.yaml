@@ -1,0 +1,50 @@
+glyph: quill
+kind: readout
+date: "2026-05-20"
+title: "Branding Unification & TestFlight Prep"
+scope:
+  - publicsite
+  - decodethesign-web
+  - decodethesign-ios
+tags:
+  - branding
+  - deployment
+  - testflight-prep
+  - content-accuracy
+summary: >
+  Unified "decode the sign" branding (lowercase, monospace, "parking, interpreted")
+  across codifide.com, decodethesign.com, and the iOS native app. Removed unimplemented
+  feature claims. Fixed production errors (CSP, CORS, missing SVG). Parallel Xcode session
+  hardened iOS for TestFlight: App Shortcuts in correct target, deferred permissions,
+  updated nav branding. Both websites deployed to Vercel. iOS submission planned for tomorrow.
+artifacts:
+  - path: publicsite/index.html
+    action: modified
+  - path: publicsite/glossary.html
+    action: modified
+  - path: publicsite/stats.js
+    action: modified
+  - path: publicsite/vercel.json
+    action: modified
+  - path: publicsite/api/pypi_stats.py
+    action: created
+  - path: decodethesign/app/page.tsx
+    action: rewritten
+  - path: decodethesign/app/layout.tsx
+    action: modified
+  - path: decodethesign/app/coverage/page.tsx
+    action: rewritten
+  - path: decodethesign/components/site-wordmark.tsx
+    action: modified
+  - path: decodethesign/tailwind.config.ts
+    action: modified
+  - path: decodethesign/public/decodethesign-wordmark.svg
+    action: committed
+  - path: decodethesign/public/favicon.ico
+    action: regenerated
+  - path: ios-native/DecodeTheSign/DecodeTheSignApp.swift
+    action: modified
+  - path: ios-native/DecodeTheSignPackage/Sources/DecodeTheSignFeature/Theme/Strings.swift
+    action: modified
+  - path: ios-native/DecodeTheSignPackage/Sources/DecodeTheSignFeature/ContentView.swift
+    action: modified
