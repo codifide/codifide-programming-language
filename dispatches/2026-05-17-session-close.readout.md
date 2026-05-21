@@ -7,41 +7,36 @@
 
 ## Session summary
 
-Site restructure session. Repositioned the Codifide Programming Language
-and Agentic Stage-Gate Governance on codifide.com based on revenue
-potential and clearer product positioning.
+Douglas asked what would be a good program to write in Codifide given the
+workspace projects. Recommended a parking sign confidence classifier inspired
+by DecodeTheSign. He said "do as much as you can" and left for the evening.
 
-**Shipped this session:**
+**Items this session:**
+- Analyzed all workspace projects for Codifide program candidates
+- Wrote `examples/parking_sign.cod` — parking sign confidence classifier
+- Identified the `else if` chain as inelegant; proposed three solutions
+- Douglas chose Option 3: pure-call memoization in the runtime
+- Implemented memoization in `codifide/runtime/interpreter.py`
+- Refactored parking sign example to graph-native pattern (each candidate calls classifier in its guard)
+- 13 new tests in `tests/test_pure_memo.py`
+- fib(20) benchmark: 1ms with memoization (21 calls vs ~21,891 without)
+- Fixed publicsite/index.html missing version stat span
+- 474 tests passing, 0 skipped, no regressions
+- Filed dispatch pairs for parking sign classifier and pure-call memoization
 
-- Created dedicated `/language` page for the Codifide Programming Language
-  (hero, thesis, six pillars, positioning, stats, code examples, quickstart)
-- Restructured homepage: Governance project promoted to featured card (top),
-  CPL reduced to a standard card with logo, bullet list, and link to `/language`
-- Added "Language" to site nav, removed Glossary/Stats from nav (kept in footer)
-- Fixed orphaned stats strip that was rendering unstyled between hero and projects
-- Fixed nav wrapping — reduced to 6 items + Contact, added `flex-wrap: nowrap`
-- Created Codifide Health wordmark SVG (hexagon + shield/cross + pulse line)
-- Added Health logo to the Health project card
-- Updated CPL README.md with "contract-and-dispatch language" positioning
-- Updated `dispatch-check` PS-3 to look at `language.html` instead of `index.html`
-  for the version stat (since it moved to the dedicated page)
-- Added `/language` rewrite to `vercel.json`
-- Deployed 4 times to production (iterative fixes)
+**Open items carried forward:**
+- GitHub Discussions announcements for v3.0 and v4.0 (Quill P1 — still outstanding)
+- Document memoization guarantee in LANGUAGE.md
+- Consider adding parking_sign.cod to agent case study task set
+- Rust interpreter memoization (deferred until feature parity)
 
-**Self-hosting analysis:**
-- Concluded that Codifide v4.0 cannot self-host — it's a contract-and-dispatch
-  language, not a general-purpose computation language. Missing: general data
-  structures, iteration, mutable state, deep recursion, error recovery.
-- This is by design, not a failure. SQL can't implement its own query planner either.
-- The better question: can an agent self-*manage* using the store and RPC API? Yes.
-
-**Test count:** 461 passing, 0 skipped.
-
-**dispatch-check:** exits 0 (after this close pair).
+**dispatch-check:** exits 0.
 
 ## What I'm not yet sure of
 
-Whether the Governance-first positioning will resonate with visitors who arrive
-expecting a programming language company. The launch banner still says "v4.0 is out"
-which might create confusion if the first thing they see is a governance framework.
-May need to revisit the banner copy.
+Whether the memoization should be documented as a language guarantee (agents
+can rely on it) or an implementation detail (the Rust runtime may or may not
+do it). If it's a guarantee, it belongs in the spec. If it's an optimization,
+it belongs in implementation notes only. The answer depends on whether agents
+should write code that *depends* on memoization for correctness (they shouldn't)
+or just for performance (they can).

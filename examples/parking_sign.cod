@@ -125,23 +125,52 @@ def interpret_sign
   pre    ne(text, "")
 
   cand
-    intent "high confidence path — classify and interpret"
-    cost   1
-    when   ne(gate_ocr(text, confidence), "LOW_CONFIDENCE")
-    gated <- gate_ocr(text, confidence)
-    sign_type <- classify_sign_type(gated)
-    if eq(sign_type, "NO_PARKING") then verdict_for_no_parking(gated)
-    else if eq(sign_type, "TIME_RESTRICTED") then verdict_for_time_restricted(gated)
-    else if eq(sign_type, "PERMIT_ONLY") then verdict_for_permit(gated)
-    else if eq(sign_type, "METERED") then verdict_for_metered(gated)
-    else if eq(sign_type, "STREET_CLEANING") then verdict_for_cleaning(gated)
-    else verdict_for_unknown(gated)
-
-  cand
     intent "low confidence path — refuse rather than guess"
-    cost   10
+    cost   1
     when   eq(gate_ocr(text, confidence), "LOW_CONFIDENCE")
     bottom "Confidence too low for safe interpretation"
+
+  cand
+    intent "no parking — clear prohibition"
+    cost   10
+    when   ne(gate_ocr(text, confidence), "LOW_CONFIDENCE")
+    when   eq(classify_sign_type(gate_ocr(text, confidence)), "NO_PARKING")
+    verdict_for_no_parking(gate_ocr(text, confidence))
+
+  cand
+    intent "time restricted — needs time evaluation"
+    cost   11
+    when   ne(gate_ocr(text, confidence), "LOW_CONFIDENCE")
+    when   eq(classify_sign_type(gate_ocr(text, confidence)), "TIME_RESTRICTED")
+    verdict_for_time_restricted(gate_ocr(text, confidence))
+
+  cand
+    intent "permit only — need permit"
+    cost   12
+    when   ne(gate_ocr(text, confidence), "LOW_CONFIDENCE")
+    when   eq(classify_sign_type(gate_ocr(text, confidence)), "PERMIT_ONLY")
+    verdict_for_permit(gate_ocr(text, confidence))
+
+  cand
+    intent "metered — you can park if you pay"
+    cost   13
+    when   ne(gate_ocr(text, confidence), "LOW_CONFIDENCE")
+    when   eq(classify_sign_type(gate_ocr(text, confidence)), "METERED")
+    verdict_for_metered(gate_ocr(text, confidence))
+
+  cand
+    intent "street cleaning — time dependent"
+    cost   14
+    when   ne(gate_ocr(text, confidence), "LOW_CONFIDENCE")
+    when   eq(classify_sign_type(gate_ocr(text, confidence)), "STREET_CLEANING")
+    verdict_for_cleaning(gate_ocr(text, confidence))
+
+  cand
+    intent "unknown sign — refuse to interpret"
+    cost   100
+    when   ne(gate_ocr(text, confidence), "LOW_CONFIDENCE")
+    when   eq(classify_sign_type(gate_ocr(text, confidence)), "UNKNOWN")
+    verdict_for_unknown(gate_ocr(text, confidence))
 
 # --- Entry Point ---
 

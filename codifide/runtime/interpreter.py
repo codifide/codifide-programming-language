@@ -331,6 +331,14 @@ class Interpreter:
         # messages can walk the intent graph — "the function exists
         # because: ..." at every level. Roadmap v0.1 item.
         self._intent_chain: List[tuple[str, str]] = []
+        # Pure-call memoization cache. Keyed by (function_name, normalized_args).
+        # Scoped to a single top-level invoke() call — cleared at the start of
+        # each invocation. Only pure functions (effects == frozenset()) are
+        # cached. Since pure functions cannot perform side effects, calling
+        # them with the same arguments must produce the same result within
+        # a single evaluation. This makes the "six candidates each calling
+        # classify_sign_type in their guard" pattern free.
+        self._memo: Dict[tuple, Any] = {}
 
     # -- Invocation ------------------------------------------------------
 
@@ -338,6 +346,10 @@ class Interpreter:
         defn = self.module.lookup(name)
         if defn is None:
             raise CodifideError(f"no such definition: {name!r}")
+        # Clear the memoization cache at the start of each top-level
+        # invocation. The cache is valid only within a single evaluation
+        # because effectful state (clock, I/O) may change between calls.
+        self._memo.clear()
         self._push_depth()
         self._intent_chain.append((defn.name, defn.intent))
         try:
@@ -630,6 +642,18 @@ class Interpreter:
         # Transitive effect subset is checked statically at module-load time
         # in ``_check_transitive_effects``; call-site runtime checks are
         # unnecessary here.
+
+        # Pure-call memoization: if the function declares no effects, its
+        # result is determined entirely by its arguments. Cache the result
+        # so repeated calls with the same args (e.g. in multiple candidate
+        # guards) are free.
+        is_pure = defn.signature.effects == frozenset()
+        memo_key: Optional[tuple] = None
+        if is_pure:
+            memo_key = _memo_key(defn.name, args)
+            if memo_key is not None and memo_key in self._memo:
+                return self._memo[memo_key]
+
         self._push_depth()
         self._intent_chain.append((defn.name, defn.intent))
         try:
@@ -668,6 +692,11 @@ class Interpreter:
                 ret_type = defn.signature.returns
                 if ret_type and ret_type != "Any":
                     _check_type(defn.name, "<return>", ret_type, result)
+
+            # Cache the result for pure functions.
+            if is_pure and memo_key is not None:
+                self._memo[memo_key] = result
+
             return result
         finally:
             self._intent_chain.pop()
@@ -705,6 +734,47 @@ def _with_pure_budget(frame: _Frame) -> _Frame:
         prims=frame.prims,
         effect_budget=frozenset(),
     )
+
+
+# ---------------------------------------------------------------------------
+# Pure-call memoization
+# ---------------------------------------------------------------------------
+
+
+def _memo_key(fn_name: str, args: List[Any]) -> Optional[tuple]:
+    """Build a hashable cache key from a function name and its arguments.
+
+    Returns None if any argument cannot be safely normalized to a hashable
+    form (e.g. contains unhashable nested structures). In that case the
+    caller skips memoization — correctness is preserved, only the
+    optimization is lost.
+
+    The key normalizes Codifide Values and Beliefs to their unwrapped
+    payloads. Two calls with the same unwrapped argument values are
+    semantically identical for a pure function.
+    """
+    try:
+        normalized = tuple(_normalize_for_key(a) for a in args)
+        return (fn_name, normalized)
+    except TypeError:
+        # Unhashable argument — skip memoization for this call.
+        return None
+
+
+def _normalize_for_key(v: Any) -> Any:
+    """Recursively normalize a Codifide value into a hashable form."""
+    if isinstance(v, Value):
+        return _normalize_for_key(v.payload)
+    if isinstance(v, Belief):
+        return ("__belief__", _normalize_for_key(v.about), v.conf)
+    if isinstance(v, _BottomType):
+        return ("__bottom__",)
+    if isinstance(v, list):
+        return tuple(_normalize_for_key(item) for item in v)
+    if isinstance(v, dict):
+        return tuple(sorted((k, _normalize_for_key(val)) for k, val in v.items()))
+    # Scalars (int, float, str, bool, None) are already hashable.
+    return v
 
 
 # ---------------------------------------------------------------------------

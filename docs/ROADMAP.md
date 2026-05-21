@@ -228,3 +228,29 @@ the security investment. No adoption evidence for network-exposed server yet.
 *Updated by: Douglas Jones + Claude*  
 *Evidence base: "is this usable in the wild?" gap analysis, V4 spec*  
 *Governed by: GOVERNANCE.md*
+
+---
+
+## Open RFCs (no scheduled work)
+
+The following RFCs are filed for review but not scheduled. They will
+remain open until CPL adoption evidence emerges that justifies the work.
+
+- `rfcs/0001-formal-semantics-gaps.md` — six areas where CPL's semantics
+  are not yet formalized (belief semantics, confidence algebra, refusal
+  propagation, ambiguity, provenance, distributed evaluation)
+- `rfcs/0002-semantic-invariants.md` — seven proposed invariants
+  evaluated against CPL's actual surface
+- `rfcs/0003-epistemic-state-model.md` — proposed five-state epistemic
+  model (Certain, Ambiguous, Refused, Contradictory, Unknown)
+
+These RFCs are not v5.0 work. They are proposals awaiting evidence.
+
+---
+
+## v5.0 — Not yet planned
+
+A v5.0 milestone will be defined when adoption evidence accumulates
+for one or more of the open RFCs above, or for an entirely different
+direction the project decides to pursue. CPL's roadmap is
+evidence-driven; without evidence, v5.0 is intentionally open.

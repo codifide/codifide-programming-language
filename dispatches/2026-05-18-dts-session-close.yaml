@@ -1,0 +1,18 @@
+id: 2026-05-18-dts-session-close
+date: 2026-05-18
+persona: Glyph
+kind: session-close
+title: "Session Close — May 18 2026 (DecodeTheSign)"
+status: closed
+project: DecodeTheSign
+dispatch_check: exits 0
+items_this_session:
+  - "Sign-data override logic: verified signs override ArcGIS segment colors within 40m"
+  - "New migration: find_signs_nearby returns verification_state"
+  - "Certificate pinning fix: added Let's Encrypt R12 intermediate SPKI hash"
+  - "Map data freshness banner: dismissible per-session disclaimer on home map"
+  - "iOS app deployed to physical device (3 build iterations)"
+open_items:
+  - "Deploy Next.js backend to Vercel (segments route override logic)"
+  - "Monitor 40m override radius for false positives in dense areas"
+  - "Consider persisting banner dismissal after N sessions (user fatigue)"

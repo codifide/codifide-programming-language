@@ -1,0 +1,36 @@
+dispatch: 2026-05-19-epistemic-correction
+date: 2026-05-19
+persona: Claude
+gate: G0
+title: "Correction — recategorize epistemic model docs as RFC drafts"
+status: complete
+supersedes:
+  - 2026-05-19-epistemic-model-docs
+artifacts_removed:
+  - docs/SEMANTIC_INVARIANTS.md
+  - docs/EPISTEMIC_MODEL.md
+  - docs/IMPLEMENTATION_DRIFT.md
+  - "v5.0 section in docs/ROADMAP.md"
+artifacts_added:
+  - rfcs/README.md
+  - rfcs/0002-semantic-invariants.md
+  - rfcs/0003-epistemic-state-model.md
+  - docs/case_studies/decodethesign-implementation-drift.md
+artifacts_kept:
+  - rfcs/0001-formal-semantics-gaps.md
+correction_reason: |
+  Yesterday's session shipped four documents into docs/ as if they
+  described CPL behavior. Three of them did not — they described
+  aspirational properties or proposed type systems that CPL does
+  not implement. Filing them in docs/ misrepresents what CPL is to
+  future readers. The correction moves the proposals to rfcs/ where
+  they can be evaluated honestly, and moves the case study material
+  to docs/case_studies/ where it is descriptive rather than
+  constitutional. The v5.0 roadmap section is removed because it
+  had no CPL adoption evidence.
+governance_note: |
+  The correction is itself a G0 because it is documentation reorganization
+  with no surface change. The original ship was a G0 fast-track that
+  should have been G1 with B-Team review. This correction restores
+  the project to the state it should have been in if the governance
+  process had been followed.

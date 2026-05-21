@@ -563,7 +563,7 @@ def _parse_candidate(lines: List[_Line], i: int) -> Tuple[Candidate, int]:
     i += 1
 
     cand_intent = "default"
-    guard: Optional[Expr] = None
+    guards: List[Expr] = []
     cost: Optional[int] = None
     steps: List[Expr] = []
     # Track bind names seen before any `when` guard so we can raise a
@@ -626,7 +626,7 @@ def _parse_candidate(lines: List[_Line], i: int) -> Tuple[Candidate, int]:
                     line=line.lineno,
                 )
             text, i = _gather_expr(lines, i, rest)
-            guard = _safe_parse_expr(text, line.lineno)
+            guards.append(_safe_parse_expr(text, line.lineno))
             continue
         if head == "believe":
             block, i = _parse_believe(lines, i)
@@ -651,6 +651,15 @@ def _parse_candidate(lines: List[_Line], i: int) -> Tuple[Candidate, int]:
             "candidate has no body. Add at least one expression line.",
             line=header.lineno,
         )
+
+    # Combine multiple `when` clauses into a single guard via `and()`.
+    # A single `when` is used directly. Zero `when` clauses means no guard.
+    # This matches the behavior of `pre` and `post` (all enforced, implicitly ANDed).
+    guard: Optional[Expr] = None
+    if len(guards) == 1:
+        guard = guards[0]
+    elif len(guards) > 1:
+        guard = Call(fn="and", args=tuple(guards))
 
     body = _compose_steps(steps)
     return Candidate(body=body, intent=cand_intent, guard=guard, cost=cost), i

@@ -26,3 +26,4 @@ build/
 # Future Rust runtime
 target/
 Cargo.lock
+.playwright-mcp/

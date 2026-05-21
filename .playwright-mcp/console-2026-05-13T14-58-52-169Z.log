@@ -1,1 +1,0 @@
-[     170ms] [ERROR] Applying inline style violates the following Content Security Policy directive 'style-src 'self' https://fonts.googleapis.com'. Either the 'unsafe-inline' keyword, a hash ('sha256-WzjfMLvDBLIZVlbHcK8Z+0Wk6pO1n23AXlp4eNpJ4KQ='), or a nonce ('nonce-...') is required to enable inline execution. The action has been blocked. @ https://www.codifide.com/launch:11

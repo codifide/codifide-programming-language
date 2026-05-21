@@ -4,23 +4,19 @@ persona: Glyph
 kind: session-close
 title: "Session Close — May 17 2026"
 status: closed
-tests: 461
+tests: 474
 skipped: 0
 dispatch_check: exits 0
 items_this_session:
-  - Dedicated /language page for CPL (full content moved from homepage)
-  - Homepage restructure — Governance featured first, CPL as standard card
-  - Nav cleanup — 6 items + Contact, no wrapping
-  - Orphaned stats strip removed from homepage
-  - Codifide Health wordmark SVG created
-  - Health logo added to Health project card
-  - CPL README updated with contract-and-dispatch positioning
-  - dispatch-check PS-3 updated to check language.html
-  - vercel.json /language rewrite added
-  - 4 production deploys (iterative fixes)
-  - Self-hosting analysis (conclusion: not viable by design, not a failure)
+  - "Wrote examples/parking_sign.cod (belief dispatch, cost-based classification, refusal)"
+  - "Implemented pure-call memoization in codifide/runtime/interpreter.py"
+  - "Refactored parking sign to graph-native pattern (guards call classifier directly)"
+  - "13 new tests in tests/test_pure_memo.py"
+  - "fib(20) benchmark: 1ms (21 calls vs ~21,891 without memoization)"
+  - "Fixed publicsite/index.html version stat span"
+  - "474 tests passing, 0 skipped, no regressions"
 open_items:
-  - Launch banner copy may need revision (says v4.0 but governance is now featured)
-  - PyPI publish still pending
-  - Blob store write API verification still pending
-  - Governance project logo (matching wordmark style) not yet created
+  - "GitHub Discussions announcements for v3.0 and v4.0 (Quill P1)"
+  - "Document memoization guarantee in LANGUAGE.md"
+  - "Consider adding parking_sign.cod to agent case study task set"
+  - "Rust interpreter memoization (deferred until feature parity)"

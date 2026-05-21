@@ -1,0 +1,21 @@
+id: 2026-05-18-session-close
+date: 2026-05-18
+persona: Glyph
+kind: session-close
+title: "Session Close — May 18 2026"
+status: closed
+tests: 483
+skipped: 0
+dispatch_check: exits 0
+items_this_session:
+  - "Multiple when clause support (implicit AND) in Python and Rust parsers"
+  - "9 new tests in tests/test_multi_when.py"
+  - "Parking sign example updated to multi-when syntax"
+  - "Rust conformance verified — identical canonical JSON"
+  - "483 Python tests passing, 24 Rust canonical tests passing"
+open_items:
+  - "GitHub Discussions announcements for v3.0 and v4.0 (Quill P1)"
+  - "Document memoization and multi-when in LANGUAGE.md"
+  - "Update AGENT_QUICKREF.md with multi-when syntax"
+  - "PyPI publish (v4.0.1 or v4.1.0)"
+  - "Pre-existing: Rust fuzz test stack overflow on deeply nested adversarial input"

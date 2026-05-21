@@ -1,0 +1,85 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: "Pure-call memoization — runtime optimization for graph-native dispatch"
+  at: "2026-05-17T00:00:00Z"
+  author: Glyph
+  intent: >
+    Record the implementation of pure-call memoization in the interpreter.
+    Pure functions (effects == {}) are now cached within a single evaluation.
+    This makes the graph-native pattern (multiple candidates calling the same
+    pure function in their guards) free. 474 tests passing.
+
+  state:
+    shipped:
+      - "_memo dict added to Interpreter class"
+      - "Cache cleared at start of each invoke() call"
+      - "Pure function results cached by (fn_name, normalized_args) key"
+      - "_memo_key() normalizes Values/Beliefs/Bottoms into hashable tuples"
+      - "Graceful degradation: unhashable args skip caching"
+      - "Only pure functions cached (effects == frozenset() gate)"
+      - "Bottom values cached correctly"
+      - "Parking sign example refactored to graph-native pattern"
+      - "13 new tests in tests/test_pure_memo.py"
+      - "fib(20) benchmark: 1ms with memoization (21 calls vs ~21,891 without)"
+      - "474 tests passing, 0 skipped, 0 regressions"
+    in_flight: []
+    blocked: []
+    refused:
+      - "Rust interpreter memoization: deferred until Rust interpreter is feature-complete"
+      - "match expression: deferred — no adoption evidence for new syntax yet"
+
+  evidence:
+    - claim: "474 tests passing after memoization changes"
+      kind: run
+      source: "python3 -m pytest tests/ -q --tb=short"
+      result: "474 passed in 31.56s"
+      confidence: 1.0
+    - claim: "13 new memoization tests all pass"
+      kind: run
+      source: "python3 -m pytest tests/test_pure_memo.py -v"
+      result: "13 passed in 0.10s"
+      confidence: 1.0
+    - claim: "All existing examples produce correct output"
+      kind: run
+      source: "for f in examples/*.cod; do python3 -m codifide run $f; done"
+      result: "All 9 runnable examples produce expected output"
+      confidence: 1.0
+    - claim: "fib(20) completes in 1ms with memoization"
+      kind: measure
+      source: "python3 -c 'import time; from codifide import parse, run; ...'"
+      result: "fib(20) = 6765 in 0.001s"
+      confidence: 1.0
+    - claim: "Parking sign example works with graph-native pattern"
+      kind: run
+      source: "python3 -m codifide run examples/parking_sign.cod"
+      result: "['NO', 'YES', 'NO', 'NO', 'CONDITIONAL', 'UNKNOWN', True, True]"
+      confidence: 1.0
+    - claim: "Effectful functions are never memoized"
+      kind: test
+      source: "tests/test_pure_memo.py::test_memoization_does_not_affect_effectful_functions"
+      result: "passed"
+      confidence: 1.0
+
+  unknowns:
+    - question: "Should the Rust interpreter implement the same memoization?"
+      why_unknown: "Memoization is semantically transparent — Rust could omit it without conformance issues. But performance-sensitive workloads would benefit."
+      how_to_resolve: "Decide when Rust interpreter reaches feature parity with Python reference"
+    - question: "Is there a pathological case where memoization causes excessive memory use?"
+      why_unknown: "The cache grows with unique (fn, args) pairs within one evaluation. A program with many unique calls to the same pure function would accumulate entries."
+      how_to_resolve: "Add a cache size bound (e.g. 10,000 entries) if profiling shows memory pressure in real workloads"
+
+  next:
+    - action: "Document memoization guarantee in LANGUAGE.md"
+      depends_on: []
+      effect: "{}"
+    - action: "Consider cache size bound if memory profiling warrants it"
+      depends_on: ["adoption evidence of large programs"]
+      effect: "{implementation}"
+    - action: "Rust interpreter memoization when Rust reaches feature parity"
+      depends_on: ["Rust interpreter feature-complete"]
+      effect: "{implementation}"
+
+  links:
+    canonical: "dispatches/2026-05-17-pure-call-memoization.yaml"
+    human_readout: "dispatches/2026-05-17-pure-call-memoization.readout.md"

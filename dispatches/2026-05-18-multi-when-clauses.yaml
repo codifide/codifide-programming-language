@@ -1,0 +1,71 @@
+dispatch:
+  id: sha256:pending
+  schema: codifide.dispatch/0.1
+  subject: "Multiple when clauses — parser fix for implicit AND"
+  at: "2026-05-18T00:00:00Z"
+  author: Glyph
+  intent: >
+    Record the fix for multiple when clauses in both Python and Rust parsers.
+    Previously, only the last when clause was kept (silent data loss). Now
+    multiple when clauses are implicitly ANDed, matching pre/post behavior.
+    Canonical form unchanged — emits and(g1, g2, ...) as the guard.
+
+  state:
+    shipped:
+      - "Python parser: guards accumulated as List[Expr], combined with and() at end"
+      - "Rust parser: guards accumulated as Vec<Expr>, combined with Expr::Call and() at end"
+      - "Single when clause: unchanged behavior (direct expression, no wrapping)"
+      - "Zero when clauses: unchanged behavior (no guard)"
+      - "Canonical form unchanged — no new AST node, no hash invalidation"
+      - "bind-before-when detection preserved for all when clauses"
+      - "Parking sign example updated to use multi-when syntax"
+      - "Rust conformance: Python and Rust produce identical canonical JSON"
+      - "9 new tests in tests/test_multi_when.py"
+      - "483 Python tests passing, 24 Rust canonical tests passing"
+    in_flight: []
+    blocked: []
+    refused: []
+
+  evidence:
+    - claim: "483 Python tests passing after multi-when changes"
+      kind: run
+      source: "python3 -m pytest tests/ -q --tb=short"
+      result: "483 passed in 31.39s"
+      confidence: 1.0
+    - claim: "9 new multi-when tests all pass"
+      kind: run
+      source: "python3 -m pytest tests/test_multi_when.py -v"
+      result: "9 passed in 0.10s"
+      confidence: 1.0
+    - claim: "Rust parser conformance passes (identical canonical JSON)"
+      kind: run
+      source: "python3 -m pytest tests/test_rust_parser.py -v"
+      result: "3 passed in 0.76s"
+      confidence: 1.0
+    - claim: "Rust crate builds successfully"
+      kind: run
+      source: "cargo build --release -p codifide-interpreter"
+      result: "Finished release profile, 1 warning (dead_code)"
+      confidence: 1.0
+    - claim: "Parking sign example works with multi-when syntax"
+      kind: run
+      source: "python3 -m codifide run examples/parking_sign.cod"
+      result: "['NO', 'YES', 'NO', 'NO', 'CONDITIONAL', 'UNKNOWN', True, True]"
+      confidence: 1.0
+
+  unknowns:
+    - question: "Should LANGUAGE.md document multi-when as a language feature?"
+      why_unknown: "It's a parser behavior, not a new AST node. The canonical form is unchanged. But agents need to know it works."
+      how_to_resolve: "Add a section to LANGUAGE.md documenting multi-when as syntactic sugar for and()"
+
+  next:
+    - action: "Document multi-when in LANGUAGE.md"
+      depends_on: []
+      effect: "{}"
+    - action: "Update AGENT_QUICKREF.md to mention multi-when syntax"
+      depends_on: []
+      effect: "{}"
+
+  links:
+    canonical: "dispatches/2026-05-18-multi-when-clauses.yaml"
+    human_readout: "dispatches/2026-05-18-multi-when-clauses.readout.md"

@@ -9,6 +9,30 @@ Filename convention:
 - `<date>-<slug>.md`         — standalone dispatch (rare)
 
 
+## 2026-05-19
+
+| slug | subject | readout | yaml | audit |
+|---|---|---|---|---|
+| `epistemic-correction` |  | [md](./2026-05-19-epistemic-correction.readout.md) | [yaml](./2026-05-19-epistemic-correction.yaml) |  |
+| `epistemic-model-docs` |  | [md](./2026-05-19-epistemic-model-docs.readout.md) | [yaml](./2026-05-19-epistemic-model-docs.yaml) |  |
+| `session-close` |  | [md](./2026-05-19-session-close.readout.md) | [yaml](./2026-05-19-session-close.yaml) |  |
+
+## 2026-05-18
+
+| slug | subject | readout | yaml | audit |
+|---|---|---|---|---|
+| `dts-session-close` |  | [md](./2026-05-18-dts-session-close.readout.md) | [yaml](./2026-05-18-dts-session-close.yaml) |  |
+| `multi-when-clauses` | Multiple when clauses — parser fix for implicit AND | [md](./2026-05-18-multi-when-clauses.readout.md) | [yaml](./2026-05-18-multi-when-clauses.yaml) |  |
+| `session-close` |  | [md](./2026-05-18-session-close.readout.md) | [yaml](./2026-05-18-session-close.yaml) |  |
+
+## 2026-05-17
+
+| slug | subject | readout | yaml | audit |
+|---|---|---|---|---|
+| `parking-sign-classifier` | Parking sign confidence classifier — example program | [md](./2026-05-17-parking-sign-classifier.readout.md) | [yaml](./2026-05-17-parking-sign-classifier.yaml) |  |
+| `pure-call-memoization` | Pure-call memoization — runtime optimization for graph-native dispatch | [md](./2026-05-17-pure-call-memoization.readout.md) | [yaml](./2026-05-17-pure-call-memoization.yaml) |  |
+| `session-close` |  | [md](./2026-05-17-session-close.readout.md) | [yaml](./2026-05-17-session-close.yaml) |  |
+
 ## 2026-05-15
 
 | slug | subject | readout | yaml | audit |

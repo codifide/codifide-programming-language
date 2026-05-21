@@ -1,0 +1,12 @@
+dispatch: 2026-05-19-epistemic-model-docs
+date: 2026-05-19
+persona: Kiro
+gate: G0
+title: "Epistemic Model Documentation — Semantic Invariants, RFC, Drift Warning"
+status: complete
+artifacts:
+  - docs/SEMANTIC_INVARIANTS.md
+  - docs/IMPLEMENTATION_DRIFT.md
+  - docs/EPISTEMIC_MODEL.md
+  - rfcs/0001-formal-semantics-gaps.md
+origin: "GPT-4o adversarial review session (DecodeTheSign directional redesign)"

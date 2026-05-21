@@ -392,7 +392,7 @@ fn parse_candidate(lines: &[Line], i: usize) -> Result<(Candidate, usize), Parse
     let mut i = i + 1;
 
     let mut cand_intent = "default".to_string();
-    let mut guard: Option<Expr> = None;
+    let mut guards: Vec<Expr> = Vec::new();
     let mut cost: Option<u64> = None;
     let mut steps: Vec<Expr> = Vec::new();
     // Track (name, lineno) of binds seen before any `when` guard.
@@ -454,7 +454,7 @@ fn parse_candidate(lines: &[Line], i: usize) -> Result<(Candidate, usize), Parse
                     ));
                 }
                 let (text, new_i) = gather_expr(lines, i, rest.trim())?;
-                guard = Some(safe_parse_expr(&text, line.lineno)?);
+                guards.push(safe_parse_expr(&text, line.lineno)?);
                 i = new_i;
             }
             "believe" => {
@@ -487,6 +487,18 @@ fn parse_candidate(lines: &[Line], i: usize) -> Result<(Candidate, usize), Parse
             Some(header.lineno),
         ));
     }
+
+    // Combine multiple `when` clauses into a single guard via `and()`.
+    // A single `when` is used directly. Zero `when` clauses means no guard.
+    // This matches the behavior of `pre` and `post` (all enforced, implicitly ANDed).
+    let guard = match guards.len() {
+        0 => None,
+        1 => Some(guards.into_iter().next().unwrap()),
+        _ => Some(Expr::Call {
+            fn_: "and".to_string(),
+            args: guards,
+        }),
+    };
 
     let body = compose_steps(steps);
     Ok((Candidate { intent: cand_intent, guard, body, cost }, i))

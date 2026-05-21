@@ -1,0 +1,16 @@
+dispatch: 2026-05-19-session-close
+date: 2026-05-19
+persona: Kiro
+gate: G0
+title: "Session close — Epistemic model documentation"
+status: complete
+session_dispatches:
+  - 2026-05-19-epistemic-model-docs
+  - 2026-05-19-epistemic-correction
+correction_filed: 2026-05-19-epistemic-correction
+artifacts:
+  - rfcs/README.md
+  - rfcs/0001-formal-semantics-gaps.md
+  - rfcs/0002-semantic-invariants.md
+  - rfcs/0003-epistemic-state-model.md
+  - docs/case_studies/decodethesign-implementation-drift.md
