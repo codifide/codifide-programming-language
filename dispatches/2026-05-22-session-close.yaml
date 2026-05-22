@@ -1,0 +1,39 @@
+date: "2026-05-22"
+type: session-close
+project: DecodeTheSign
+status: complete
+
+summary: >
+  Fixed 35 failing tests (missing mock exports + rule engine cache bleed),
+  ran clean build, deployed to Vercel production, pushed 2 commits to remote.
+
+commits:
+  - sha: 016c2dc7
+    repo: decodethesign
+    message: "fix: test suite — add missing ocr/extract mock exports, clear rule engine cache between tests"
+  - sha: 03a760fe
+    repo: decodethesign
+    message: "feat(ios): ContentView, HomeView, NearbySignsCache, OnDeviceInference, LocationService updates"
+
+fixes:
+  - file: tests/consumer-live-capture-route.test.ts
+    issue: "@/lib/ocr/extract mock missing extractSignCondition and isSignConditionEligibleToWin"
+    resolution: "added both to mock factory"
+  - file: tests/consumer-live-capture-errors.test.ts
+    issue: "same missing mock exports"
+    resolution: "added both to mock factory"
+  - file: tests/rule-engine.test.ts
+    issue: "ruleEvaluationCache not cleared between tests causing stale green results"
+    resolution: "import clearRuleEvaluationCache, call in beforeEach"
+
+test_result:
+  passed: 1007
+  skipped: 6
+  failed: 0
+
+deploy:
+  platform: vercel
+  url: https://decodethesign.com
+  status: success
+
+dispatch_check: complete
