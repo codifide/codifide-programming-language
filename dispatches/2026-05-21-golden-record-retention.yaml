@@ -1,0 +1,40 @@
+id: 2026-05-21-golden-record-retention
+date: 2026-05-21
+persona: Quill
+project: DecodeTheSign
+type: architectural-hardening
+gate: fast-track
+
+title: "DecodeTheSign — Golden Record Enforcement, Retention Policy, Crowdsource Rollup"
+
+summary: >
+  Enforced the MDM golden record model permanently via steering doc. Added
+  crowdsource_submission_count to consumer_contributors so awards system retains
+  lifetime totals after 7-day submission purge. Rewrote cleanup cron with full
+  retention policy (7d submissions, 30d audits/events/inactive-rules, 90d feedback).
+  Fixed replaceActiveRules to be unconditional on high-confidence re-import.
+  Fixed three pre-existing TypeScript errors (missing const declarations). tsc exits 0.
+
+files_changed:
+  - path: .kiro/steering/07-data-model-golden-record.md
+    changes: ["New permanent architectural rule document — table roles, retention windows, golden record invariant"]
+  - path: supabase/migrations/20260521000002_crowdsource_submission_count.sql
+    changes: ["Add crowdsource_submission_count column", "Backfill from existing submissions", "Create increment_contributor_submission_count RPC"]
+  - path: lib/consumer-crowdsource-intake.ts
+    changes: ["completeConsumerSignSubmission accepts contributorHash", "Background increment on completion", "replaceActiveRules unconditional on confidence >= 0.95"]
+  - path: app/api/consumer/live/[liveId]/capture/route.ts
+    changes: ["All four completeConsumerSignSubmission call sites pass contributorHash"]
+  - path: app/api/cron/cleanup/route.ts
+    changes: ["Full rewrite with 7 retention tasks covering all audit-log tables"]
+  - path: app/api/admin/upstream-reports/export/route.ts
+    changes: ["Fixed missing const reportIds = declaration (pre-existing error)"]
+  - path: app/api/admin/conflicts/[id]/resolve/route.ts
+    changes: ["Fixed missing const actionKey = declaration (pre-existing error)"]
+  - path: app/api/admin/upstream-reports/[id]/promote/route.ts
+    changes: ["Fixed missing const nextStatus = declaration (pre-existing error)"]
+
+build: "tsc --noEmit exits 0, zero errors"
+
+standard_set: >
+  Pre-existing TypeScript errors are not acceptable regardless of cause.
+  tsc must exit 0 before any session work is considered complete.

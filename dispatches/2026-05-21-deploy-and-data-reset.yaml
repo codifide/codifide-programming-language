@@ -1,0 +1,30 @@
+id: 2026-05-21-deploy-and-data-reset
+date: 2026-05-21
+persona: Quill
+project: DecodeTheSign
+type: release-prep
+gate: fast-track
+
+title: "DecodeTheSign — Git Commit, Data Reset, Vercel Deploy, iOS Device Deploy"
+
+summary: >
+  Committed all session work (1e512d3a), wiped all crowdsourced captures and
+  crowd-created signs from the database (clean slate for testing), deployed API
+  to decodethesign.com via Vercel, built and installed iOS app on device DJ1Z.
+
+git_commit: 1e512d3a
+vercel_url: https://decodethesign.com
+ios_device: 00008140-000235280143801C
+ios_bundle: com.codifide.decodethesign
+
+data_deleted:
+  consumer_feedback: 41
+  consumer_capture_audits: 176
+  consumer_sign_submissions: 176
+  ocr_extractions_crowd: 22
+  sign_images_crowd: 23
+  sign_rules_crowd: 23
+  sign_events_crowd: 266
+  sign_locations_crowd: 14
+  contributor_counters_reset: true
+  authoritative_signs_preserved: true

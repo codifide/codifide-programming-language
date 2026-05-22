@@ -1,0 +1,62 @@
+date: "2026-05-22"
+type: dispatch
+project: DecodeTheSign
+status: complete
+
+summary: >
+  Hardening pass: rule engine cache invalidation on all admin rule writes,
+  iOS NearbySignsCache compile-error fix + 10 unit tests, 3 dependency
+  vulnerabilities resolved (0 remaining).
+
+commit:
+  sha: 051c0c24
+  repo: decodethesign
+  message: "fix: rule engine cache invalidation on admin rule writes + iOS NearbySignsCache fixes"
+
+changes:
+  - area: web-api
+    file: lib/rule-engine.ts
+    description: "Add invalidateSignCache(signId) — prefix-evicts affected sign's cache entries"
+
+  - area: web-api
+    file: app/api/admin/signs/[signId]/rules/route.ts
+    description: "Call invalidateSignCache on POST (new rule)"
+
+  - area: web-api
+    file: app/api/admin/signs/[signId]/rules/[ruleId]/route.ts
+    description: "Call invalidateSignCache on PATCH and DELETE"
+
+  - area: web-api
+    file: app/api/admin/signs/[signId]/rules/apply-template/route.ts
+    description: "Call invalidateSignCache on POST"
+
+  - area: web-api
+    file: app/api/admin/ocr/review/assign-rules/route.ts
+    description: "Call invalidateSignCache on all 4 success paths; fix syntax error"
+
+  - area: web-api
+    file: tests/e2e/founder-journey.test.ts
+    description: "Add invalidateSignCache: vi.fn() to rule-engine mock"
+
+  - area: ios
+    file: ios-native/DecodeTheSignPackage/Sources/DecodeTheSignFeature/Services/NearbySignsCache.swift
+    description: "Fix invalidate() — remove invalid try?/await in non-async context; add _injectForTesting(); public init()"
+
+  - area: ios
+    file: ios-native/DecodeTheSignPackage/Tests/DecodeTheSignFeatureTests/NearbySignsCacheTests.swift
+    description: "10 new unit tests for NearbySignsCache (freshness, proximity, invalidate, idempotency)"
+
+  - area: deps
+    description: "Remove unused uuid dep (resolves CVE); npm audit fix resolves ws; 0 vulnerabilities"
+
+test_result:
+  passed: 1007
+  skipped: 6
+  failed: 0
+
+deploy:
+  platform: vercel
+  url: https://decodethesign.com
+  status: success
+
+dispatch_check: complete

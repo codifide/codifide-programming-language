@@ -1,0 +1,35 @@
+id: 2026-05-21-sign-condition-detection
+date: 2026-05-21
+persona: Quill
+project: DecodeTheSign
+type: feature
+gate: automated-safety-guard
+
+title: "DecodeTheSign — Sign Condition Detection"
+
+summary: >
+  Gemini now assesses the physical state of every sign and returns sign_condition
+  (clean/damaged/graffiti/obscured/faded). Damaged, graffiti, and obscured signs
+  cannot overwrite feed rules. iOS shows a warning banner. No human review queue
+  needed — handled automatically. tsc exits 0. iOS builds clean.
+
+files_changed:
+  - path: lib/ocr/extract.ts
+    changes: ["sign_condition in both OCR prompts", "extractSignCondition()", "isSignConditionEligibleToWin()"]
+  - path: app/api/consumer/live/[liveId]/capture/route.ts
+    changes: ["sign_condition and sign_condition_eligible in response JSON", "signConditionEligible passed to completeConsumerSignSubmission"]
+  - path: lib/consumer-crowdsource-intake.ts
+    changes: ["signConditionEligible param on completeConsumerSignSubmission", "signCondition on SubmissionOcrSnapshot", "replaceActiveRules gated on isSignConditionEligibleToWin", "extractSignCondition/isSignConditionEligibleToWin imported"]
+  - path: ios-native/DecodeTheSignPackage/Sources/DecodeTheSignFeature/Models/APIModels.swift
+    changes: ["sign_condition and sign_condition_eligible on CaptureResponse"]
+  - path: ios-native/DecodeTheSignPackage/Sources/DecodeTheSignFeature/Models/AppState.swift
+    changes: ["signCondition on ScanResult"]
+  - path: ios-native/DecodeTheSignPackage/Sources/DecodeTheSignFeature/Services/ScanResultParser.swift
+    changes: ["sign_condition threaded into ScanResult"]
+  - path: ios-native/DecodeTheSignPackage/Sources/DecodeTheSignFeature/Views/Scan/ResultView.swift
+    changes: ["warning banner for damaged/graffiti/obscured sign condition"]
+  - path: .kiro/steering/08-golden-record-authority.md
+    changes: ["Automated Sign Condition Detection section", "removed human review language"]
+
+git_commit: 6b35ed9c
+vercel_deploy: https://decodethesign.com

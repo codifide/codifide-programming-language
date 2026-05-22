@@ -9,6 +9,30 @@ Filename convention:
 - `<date>-<slug>.md`         — standalone dispatch (rare)
 
 
+## 2026-05-21
+
+| slug | subject | readout | yaml | audit |
+|---|---|---|---|---|
+| `deploy-and-data-reset` |  | [md](./2026-05-21-deploy-and-data-reset.readout.md) | [yaml](./2026-05-21-deploy-and-data-reset.yaml) |  |
+| `golden-record-authority-requirements` |  | [md](./2026-05-21-golden-record-authority-requirements.readout.md) | [yaml](./2026-05-21-golden-record-authority-requirements.yaml) |  |
+| `golden-record-retention` |  | [md](./2026-05-21-golden-record-retention.readout.md) | [yaml](./2026-05-21-golden-record-retention.yaml) |  |
+| `gps-warmup-and-location-pill` |  | [md](./2026-05-21-gps-warmup-and-location-pill.readout.md) | [yaml](./2026-05-21-gps-warmup-and-location-pill.yaml) |  |
+| `scan-perf-error-hardening` |  | [md](./2026-05-21-scan-perf-error-hardening.readout.md) | [yaml](./2026-05-21-scan-perf-error-hardening.yaml) |  |
+| `session-close` |  | [md](./2026-05-21-session-close.readout.md) | [yaml](./2026-05-21-session-close.yaml) |  |
+| `session-close-2` |  | [md](./2026-05-21-session-close-2.readout.md) | [yaml](./2026-05-21-session-close-2.yaml) |  |
+| `session-close-3` |  | [md](./2026-05-21-session-close-3.readout.md) | [yaml](./2026-05-21-session-close-3.yaml) |  |
+| `session-close-4` |  | [md](./2026-05-21-session-close-4.readout.md) | [yaml](./2026-05-21-session-close-4.yaml) |  |
+| `session-close-5` |  | [md](./2026-05-21-session-close-5.readout.md) | [yaml](./2026-05-21-session-close-5.yaml) |  |
+| `sign-condition-detection` |  | [md](./2026-05-21-sign-condition-detection.readout.md) | [yaml](./2026-05-21-sign-condition-detection.yaml) |  |
+| `vision-ocr-hardening` |  | [md](./2026-05-21-vision-ocr-hardening.readout.md) | [yaml](./2026-05-21-vision-ocr-hardening.yaml) |  |
+
+## 2026-05-20
+
+| slug | subject | readout | yaml | audit |
+|---|---|---|---|---|
+| `branding-and-testflight-prep` |  | [md](./2026-05-20-branding-and-testflight-prep.readout.md) | [yaml](./2026-05-20-branding-and-testflight-prep.yaml) |  |
+| `session-close` |  | [md](./2026-05-20-session-close.readout.md) | [yaml](./2026-05-20-session-close.yaml) |  |
+
 ## 2026-05-19
 
 | slug | subject | readout | yaml | audit |

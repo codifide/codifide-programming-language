@@ -22,6 +22,33 @@ No two reviews use the same AI model. B-Team and Zero-Context use different mode
 
 ---
 
+## Recommended Models by Role
+
+### A-Team (Builder)
+Frontier models with large context windows. Best for generation, refactoring, and multi-file reasoning.
+- Claude Sonnet 4.5 / Claude Opus 4
+- GPT-4o
+- Gemini 2.5 Pro
+
+### B-Team (Adversarial Code Reviewer)
+**Use reasoning/thinking models.** These grind through logic systematically rather than pattern-matching to the most plausible answer. They are less susceptible to the RLHF bias toward confirming that code looks reasonable. They find more bugs.
+- **Qwen3** (recommended — strong adversarial posture by default, extended thinking)
+- **o3** (OpenAI — deep reasoning, excellent at security and correctness)
+- **DeepSeek-R1** (strong reasoning, good for logic and edge-case analysis)
+- Claude with extended thinking enabled
+
+Do **not** use the same model family as the A-Team for B-Team review. If Claude built it, do not use Claude to review it.
+
+### Zero-Context Reviewer
+Any capable model that has **not** seen the project context. The goal is a naive read — fresh eyes catch undocumented assumptions.
+- Gemini 2.5 Flash (fast, low cost, good for doc/API surface review)
+- GPT-4o mini
+- Any model in a clean session with no system prompt or project files
+
+---
+
+---
+
 ## How to Run a B-Team Review
 
 ### Step 1: Prepare the Review Package
@@ -30,7 +57,7 @@ Concatenate the relevant artifacts into a single document. The B-Team must also 
 
 ### Step 2: Use the B-Team System Prompt
 
-The full B-Team system prompt is in `02-personas.md`. Copy it into a **different AI** (GPT-4o, Gemini, etc.).
+The full B-Team system prompt is in `02-personas.md`. Copy it into a **reasoning model** (Qwen3, o3, DeepSeek-R1 — see Recommended Models above). Do not use the same model family that built the code.
 
 ### Step 3: Submit the Spec/Code
 

@@ -1,0 +1,20 @@
+id: 2026-05-21-golden-record-authority-requirements
+date: 2026-05-21
+persona: Quill
+project: DecodeTheSign
+type: requirements
+gate: architectural-decision
+
+title: "DecodeTheSign — Golden Record Authority Requirements"
+
+summary: >
+  Formalized the golden record authority model: capture wins on rules at
+  confidence >= 0.95; feed wins on existence and location. Added vandalism/OCR
+  error guard (conflict queue when feed is recent). Sign replacement handled
+  via conflict queue with feed winning on age. Committed as steering/08.
+
+files_changed:
+  - path: .kiro/steering/08-golden-record-authority.md
+    changes: ["New permanent architectural requirement — authority by field type, conflict resolution, vandalism guard, sign replacement scenario"]
+
+git_commit: b37f9fe5

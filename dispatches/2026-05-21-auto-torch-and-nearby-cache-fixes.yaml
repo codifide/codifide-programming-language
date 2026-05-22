@@ -1,0 +1,28 @@
+id: 2026-05-21-auto-torch-and-nearby-cache-fixes
+date: 2026-05-21
+persona: Quill
+project: DecodeTheSign
+type: defect-fix
+gate: fast-track
+source: code-review-of-xcode-claude-session
+
+title: "DecodeTheSign — Auto-Torch Leak Fix + Nearby Cache Server Wiring"
+
+summary: >
+  Fixed two defects found in code review of Xcode Claude session 382c6cc1.
+  (1) Auto-torch not turned off after scan — tracked autoEnabledTorch flag,
+  added cleanup to all 7 exit paths. (2) client_nearby_spots sent by iOS but
+  server never parsed it — wired server-side, DB geospatial query now bypassed
+  when client spots present. tsc exits 0, iOS build clean, committed 99b7d37c.
+
+files_changed:
+  - path: ios-native/DecodeTheSignPackage/Sources/DecodeTheSignFeature/Views/Scan/ScanView.swift
+    changes: ["autoEnabledTorch flag, torch cleanup in all 7 exit paths"]
+  - path: app/api/consumer/live/[liveId]/capture/route.ts
+    changes: ["parse client_nearby_spots from form", "bypass getConsumerLiveNearbyData when client spots present (both call sites)"]
+
+git_commit: 99b7d37c
+
+process_note: >
+  Sub-agent output must be reviewed before sign-off. Reading changed files
+  is not optional.

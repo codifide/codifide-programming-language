@@ -1,0 +1,21 @@
+id: 2026-05-21-session-close-5
+date: 2026-05-21
+persona: Quill
+type: session-close
+session: 5
+
+title: "Session Close — May 21, 2026 (Session 5)"
+
+summary: >
+  Sign condition detection shipped. Gemini assesses physical sign state on every
+  scan. Damaged/graffiti/obscured signs cannot overwrite feed rules. iOS shows
+  warning banner. Steering doc updated. tsc exits 0. iOS builds clean. Deployed
+  to Vercel. No open items.
+
+dispatches_filed:
+  - 2026-05-21-sign-condition-detection
+
+deferred: []
+
+git_commit: 6b35ed9c
+vercel_deploy: https://decodethesign.com

@@ -1,0 +1,27 @@
+id: 2026-05-21-gps-warmup-and-location-pill
+date: 2026-05-21
+persona: Quill
+project: DecodeTheSign
+type: field-defect-response
+gate: fast-track
+
+title: "DecodeTheSign — GPS Warm-Up, Location Pill, Continuous Refinement"
+
+summary: >
+  Fixed stale GPS coordinates at capture time. Added warmUpGPS() with 2-second
+  budget, warmedLocation state, locationStatus enum, and location pill UI.
+  Continuous refinement via onChange upgrades warmedLocation whenever a better
+  fix arrives while the screen is open. Budget exhaustion shows "Location uncertain"
+  briefly then falls back to OCR-only — sign is still read, just not DB-matched.
+
+files_changed:
+  - path: ios-native/DecodeTheSignPackage/Sources/DecodeTheSignFeature/Views/Scan/ScanView.swift
+    changes:
+      - "warmedLocation: CLLocation? state property"
+      - "locationStatus enum (.verifying/.uncertain/.ready)"
+      - "warmUpGPS() — 2s budget, polls for fresh fix ≤15m accuracy"
+      - "Location pill UI — verifying/uncertain states, fades on ready"
+      - "Shutter snapshot prefers warmedLocation over currentLocation"
+      - "onChange continuous refinement — upgrades warmedLocation on better fix"
+
+build: clean

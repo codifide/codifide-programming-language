@@ -1,0 +1,39 @@
+id: 2026-05-21-session-close-2
+date: 2026-05-21
+persona: Quill
+type: session-close
+session: 2
+
+title: "Session Close — May 21, 2026 (Session 2)"
+
+summary: >
+  Analysis session. Forensic audit of duplicate sign_rules on raleigh-feed-87957
+  (13 active rules, should be 3). Root cause: deactivateActiveRulesForSign is
+  conditional on panel count increase, so same-panel-count re-imports accumulate
+  rules instead of replacing them. Golden record model is architecturally correct
+  but not enforced. Three fixes identified: unconditional deactivation, partial
+  unique index on sign_rules, cleanup migration. No code written this session.
+
+files_changed: []
+
+deferred:
+  - id: high-confidence-no-ocr-inline-eval
+    description: >
+      high_confidence_no_ocr path returns no inline_evaluation. evaluateRulesAtLocation
+      import is in place in capture/route.ts but call site not wired.
+    priority: critical
+  - id: sign-rules-deactivation-unconditional
+    description: >
+      replaceActiveRules should default true for any complete new extraction,
+      not only when panel count increased.
+    priority: major
+  - id: sign-rules-unique-index
+    description: >
+      Partial unique index on (sign_id, activity_type, arrow_direction,
+      time_start, time_end, days_of_week) WHERE is_active = true.
+    priority: major
+  - id: sign-rules-dedup-migration
+    description: >
+      Cleanup migration: keep most recent active rule per logical fingerprint
+      per sign, deactivate the rest.
+    priority: major

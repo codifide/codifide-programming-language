@@ -1,0 +1,49 @@
+id: 2026-05-21-vision-ocr-hardening
+date: 2026-05-21
+persona: Quill
+project: DecodeTheSign
+type: field-defect-response
+gate: fast-track
+
+title: "DecodeTheSign — Vision OCR Hardening & Scan Consistency Fixes"
+
+summary: >
+  Forensic audit of inconsistent scan results from field testing. Root causes:
+  Apple Vision language correction garbling "2HR" into "SHR"/"CHR"/"Z"; stale
+  GPS coordinates (14–18m error) blocking nearby sign match; multi-panel sign
+  bypassing Gemini due to a short-circuit in isComplexSign detection. Fixed all
+  three. Added isTextReliable gate so garbled Vision output falls through to
+  Gemini instead of poisoning the cheap parser.
+
+files_changed:
+  - path: ios-native/DecodeTheSignPackage/Sources/DecodeTheSignFeature/Services/VisionService.swift
+    changes:
+      - "usesLanguageCorrection = false (was true — direct cause of 2HR→SHR/CHR/Z)"
+      - "Added isTextReliable field to PreScreenResult"
+      - "Reliability gate: avg confidence, min confidence, garble patterns, digit-letter confusion"
+  - path: ios-native/DecodeTheSignPackage/Sources/DecodeTheSignFeature/Views/Scan/ScanView.swift
+    changes:
+      - "preExtractedText gated on isTextReliable — nil sent when Vision garbles text"
+      - "On-device inference gated on isTextReliable"
+      - "GPS accuracy gate: horizontalAccuracy > 20m treated as nil at shutter time"
+  - path: app/api/consumer/live/[liveId]/capture/route.ts
+    changes:
+      - "isComplexSign: removed length>80+timeRanges short-circuit that suppressed multi-panel detection"
+      - "Multi-panel indicators now always route to Gemini regardless of text length"
+      - "evaluateRulesAtLocation imported (groundwork for high_confidence_no_ocr fix)"
+
+build: clean
+test_suite: n/a (field defect response, no new unit tests)
+
+deferred:
+  - id: high-confidence-no-ocr-inline-eval
+    description: >
+      high_confidence_no_ocr path returns no inline_evaluation, causing
+      ScanResultParser to return .failure. Fix: call evaluateRulesAtLocation
+      for the matched sign and include result as inline_evaluation.
+    priority: critical
+  - id: raleigh-feed-87957-rule-dedup
+    description: >
+      Sign has 13 active rules (4 copies of each). Needs cleanup migration.
+      verification_state is stale.
+    priority: major

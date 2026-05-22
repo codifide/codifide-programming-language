@@ -1,0 +1,30 @@
+id: 2026-05-21-xcode-session-code-review
+date: 2026-05-21
+persona: Quill
+project: DecodeTheSign
+type: code-review
+gate: pre-testflight
+
+title: "DecodeTheSign — Xcode Claude Session Code Review"
+
+summary: >
+  Reviewed Xcode Claude session 382c6cc1 (last 4 hours). 6 edits across
+  CameraService, APIClient, ScanView. Auto-torch and nearby cache features added.
+  One defect: auto-torch not turned off after scan completes — battery drain and
+  confusing UX. Server-side wiring for client_nearby_spots not yet done.
+
+findings:
+  - id: auto-torch-not-cleared
+    severity: defect
+    file: Views/Scan/ScanView.swift
+    description: >
+      Torch auto-enabled in low light but never turned off after scan completes.
+      camera.reset() does not touch torch state. Stays on for all subsequent scans.
+    action: Fix before TestFlight — track autoEnabledTorch, turn off in all result paths.
+  - id: client-nearby-spots-server-not-wired
+    severity: note
+    file: app/api/consumer/live/[liveId]/capture/route.ts
+    description: >
+      iOS sends client_nearby_spots in multipart body but server does not read it.
+      Optimization not active. Harmless but incomplete.
+    action: Wire server-side to complete the feature.
