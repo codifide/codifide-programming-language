@@ -1,0 +1,39 @@
+date: "2026-05-22"
+type: session-close
+project: DecodeTheSign
+status: complete
+
+summary: >
+  Hardening pass: rule engine cache invalidation on all admin rule writes,
+  iOS NearbySignsCache compile-error fix + 10 unit tests, 0 npm vulnerabilities,
+  26 backlogged dispatch artifacts committed and pushed.
+
+gaps_closed:
+  - id: cache-invalidation
+    description: "invalidateSignCache(signId) wired into all 5 admin rule-writing endpoints"
+  - id: ios-nearby-cache-bug
+    description: "NearbySignsCache.invalidate() compile error fixed (invalid await in non-async)"
+  - id: ios-nearby-cache-tests
+    description: "10 unit tests added for NearbySignsCache"
+  - id: dependencies
+    description: "uuid removed, ws fixed via npm audit fix — 0 vulnerabilities"
+
+commits:
+  - sha: 051c0c24
+    repo: decodethesign
+    message: "fix: rule engine cache invalidation on admin rule writes + iOS NearbySignsCache fixes"
+  - sha: 36a034a
+    repo: codifide-programming-language
+    message: "dispatch: 2026-05-21 session dispatches + 2026-05-22 DTS hardening pass"
+
+test_result:
+  passed: 1007
+  skipped: 6
+  failed: 0
+
+deploy:
+  platform: vercel
+  url: https://decodethesign.com
+  status: success
+
+dispatch_check: complete
