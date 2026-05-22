@@ -1,0 +1,50 @@
+date: "2026-05-22"
+type: session-close
+project: multi
+status: complete
+
+summary: >
+  Three branches of work: (1) reasoning-model code review template added to
+  agentic-stage-gate-governance with forensic-investigator framing, (2) failed
+  attempt at fixing DecodeTheSign Xcode build hang — Xcode Claude solved it
+  with a forward-reference fix, (3) 3 iOS commits pushed.
+
+work_items:
+  - area: governance
+    artifacts:
+      - templates/CODE-REVIEW-PROMPT-QWEN.md
+      - steering/04-adversarial-review.md
+    commits:
+      - 632a472
+      - 04b6434
+    repo: agentic-stage-gate-governance
+
+  - area: ios-build
+    description: "Xcode build hang on 4-file Swift frontend batch"
+    my_attempts:
+      - speculative_fix: "ScanMilestoneView ternary refactor"
+        result: did not unblock
+      - speculative_fix: "FindMyCarView .radians extension removal"
+        result: did not unblock
+      - speculative_fix: "ScanView async let tuple destructure split"
+        result: did not unblock
+    actual_fix:
+      author: "Xcode Claude"
+      root_cause: "captureDate and deviceRegion referenced inside isHighConfidenceVerdict closure block before declaration — forward reference caused Swift type checker to loop"
+      commit: 6c67c0da
+    repo: decodethesign
+
+  - area: push
+    description: "3 unpushed iOS commits pushed to origin/main"
+    commits:
+      - 1f01d082
+      - 6e31c084
+      - 6c67c0da
+
+lessons:
+  - "Failure-loop rule applies to me — should have diagnosed after 2 failed fixes, not tried a 3rd"
+  - "git bisect is the right tool when 'it was working recently' — I ignored that signal"
+  - "Read function in declaration order before guessing at compiler pathologies"
+  - "IDE-integrated assistants beat terminal-based for slow-compile-language diagnostics"
+
+dispatch_check: complete
