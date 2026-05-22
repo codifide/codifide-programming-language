@@ -1,0 +1,29 @@
+date: "2026-05-22"
+type: session-close
+project: DecodeTheSign
+status: complete
+
+summary: >
+  Final close-out: session state written, PROJECT_STATUS updated to May 2026,
+  team briefing and next-session prompt prepared. All repos synced.
+
+commits:
+  - sha: dd44eac5
+    repo: decodethesign
+    message: "docs: session state 2026-05-22 + update PROJECT_STATUS to current"
+
+artifacts_created:
+  - docs/SESSION_STATE_2026_05_22.md
+  - docs/PROJECT_STATUS.md (updated)
+
+gate_status:
+  G0: PASS
+  G1: "6/7 — B-Team review pending"
+  G2_G3: "5/6 — B-Team review pending"
+  G4: "8/22 NFR items automated — field evidence pending"
+  G5: "3/12 — pre-launch"
+  G6: "0/7 — pre-launch"
+
+next_priority: "B-Team adversarial review (GPT-4o) — unblocks G1 + G2/G3"
+
+dispatch_check: complete
