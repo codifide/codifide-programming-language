@@ -6,6 +6,10 @@
 
 **Confidence in code, for agents.**
 
+> **📖 Documentation:** [Codifide Programming Language](https://www.codifide.com/language) — explore the language on codifide.com
+>
+> **🏛️ Governance:** Built with [Agentic Stage-Gate-Loop Governance](https://www.codifide.com/governance-whitepaper)
+
 > *Codifide* = **Codified** (every property is explicit structure, not convention) ×
 > **Fidelity** (those properties survive storage, composition, and
 > independent reimplementation).
