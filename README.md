@@ -241,3 +241,8 @@ faster than reading this README. The capability manifest at
 in one content-addressable document, and `docs/AGENT_QUICKREF.md`
 is a one-page cross-reference of primitives and common-guess
 pitfalls distilled from the manifest.
+
+
+---
+
+Codifide®, Confidence in Code®, and the Codifide logo mark are registered trademarks of Codifide Inc.
