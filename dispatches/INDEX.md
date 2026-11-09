@@ -9,10 +9,21 @@ Filename convention:
 - `<date>-<slug>.md`         — standalone dispatch (rare)
 
 
+## 2026-05-22
+
+| slug | subject | readout | yaml | audit |
+|---|---|---|---|---|
+| `dts-hardening` |  | [md](./2026-05-22-dts-hardening.readout.md) | [yaml](./2026-05-22-dts-hardening.yaml) |  |
+| `session-close` |  | [md](./2026-05-22-session-close.readout.md) | [yaml](./2026-05-22-session-close.yaml) |  |
+| `session-close-2` |  | [md](./2026-05-22-session-close-2.readout.md) | [yaml](./2026-05-22-session-close-2.yaml) |  |
+| `session-close-3` |  | [md](./2026-05-22-session-close-3.readout.md) | [yaml](./2026-05-22-session-close-3.yaml) |  |
+| `session-close-4` |  | [md](./2026-05-22-session-close-4.readout.md) | [yaml](./2026-05-22-session-close-4.yaml) |  |
+
 ## 2026-05-21
 
 | slug | subject | readout | yaml | audit |
 |---|---|---|---|---|
+| `auto-torch-and-nearby-cache-fixes` |  | [md](./2026-05-21-auto-torch-and-nearby-cache-fixes.readout.md) | [yaml](./2026-05-21-auto-torch-and-nearby-cache-fixes.yaml) |  |
 | `deploy-and-data-reset` |  | [md](./2026-05-21-deploy-and-data-reset.readout.md) | [yaml](./2026-05-21-deploy-and-data-reset.yaml) |  |
 | `golden-record-authority-requirements` |  | [md](./2026-05-21-golden-record-authority-requirements.readout.md) | [yaml](./2026-05-21-golden-record-authority-requirements.yaml) |  |
 | `golden-record-retention` |  | [md](./2026-05-21-golden-record-retention.readout.md) | [yaml](./2026-05-21-golden-record-retention.yaml) |  |
@@ -25,6 +36,7 @@ Filename convention:
 | `session-close-5` |  | [md](./2026-05-21-session-close-5.readout.md) | [yaml](./2026-05-21-session-close-5.yaml) |  |
 | `sign-condition-detection` |  | [md](./2026-05-21-sign-condition-detection.readout.md) | [yaml](./2026-05-21-sign-condition-detection.yaml) |  |
 | `vision-ocr-hardening` |  | [md](./2026-05-21-vision-ocr-hardening.readout.md) | [yaml](./2026-05-21-vision-ocr-hardening.yaml) |  |
+| `xcode-session-code-review` |  | [md](./2026-05-21-xcode-session-code-review.readout.md) | [yaml](./2026-05-21-xcode-session-code-review.yaml) |  |
 
 ## 2026-05-20
 
