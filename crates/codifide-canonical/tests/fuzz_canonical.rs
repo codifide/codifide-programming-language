@@ -20,7 +20,7 @@
 
 use codifide_canonical::{
     canonical_bytes, canonical_cbor, content_hash, content_hash_cbor,
-    from_canonical_json, to_canonical_json, Error,
+    from_canonical_json, to_canonical_json, Error, MAX_EXPR_DEPTH,
 };
 use serde_json::{json, Value};
 
@@ -393,6 +393,25 @@ fn randomly_generated_json_does_not_panic() {
             "panic on random input #{i}: {}",
             serde_json::to_string(&input).unwrap_or_else(|_| "<unserializable>".into())
         );
+    }
+}
+
+/// Regression: unbounded expression nesting used to overflow the stack
+/// (a process abort). Input at the limit must still parse and
+/// round-trip; input beyond it must yield a typed shape error. Runs at
+/// the default test-thread stack (no RUST_MIN_STACK).
+#[test]
+fn expression_nesting_is_bounded_with_typed_error() {
+    let at_limit = deeply_nested_call(MAX_EXPR_DEPTH);
+    let module = from_canonical_json(&at_limit).expect("nesting at the limit parses");
+    let json = to_canonical_json(&module);
+    canonical_bytes(&json).unwrap();
+    canonical_cbor(&json).unwrap();
+    for depth in [MAX_EXPR_DEPTH + 1] {
+        match from_canonical_json(&deeply_nested_call(depth)) {
+            Err(Error::Shape(msg)) => assert!(msg.contains("maximum depth"), "{msg}"),
+            other => panic!("depth {depth}: expected Shape error, got {other:?}"),
+        }
     }
 }
 

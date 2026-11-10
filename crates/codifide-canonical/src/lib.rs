@@ -22,7 +22,7 @@ pub use canonical::{canonical_bytes, content_hash};
 pub use cbor::{canonical_cbor, content_hash_cbor};
 pub use cbor_decoder::{decode_canonical_cbor, decode_canonical_cbor_with_limit};
 pub use error::Error;
-pub use json::{from_canonical_json, to_canonical_json};
+pub use json::{from_canonical_json, to_canonical_json, MAX_EXPR_DEPTH};
 
 /// Schema version implemented by this crate. Documents with any other
 /// version tag are rejected.
