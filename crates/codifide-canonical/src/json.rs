@@ -86,6 +86,14 @@ pub fn from_canonical_json(v: &JsonValue) -> Result<Module, Error> {
 // Definition
 // ---------------------------------------------------------------------------
 
+/// Maximum expression nesting accepted by `from_canonical_json`.
+///
+/// Parsing is recursive, so unbounded nesting would overflow the stack
+/// (an abort, not a catchable error). Deeper input is rejected with a
+/// typed `Error::Shape`. The Python reference enforces the same limit
+/// (`MAX_EXPR_DEPTH` in `codifide/projection/canonical.py`).
+pub const MAX_EXPR_DEPTH: usize = 64;
+
 fn def_to_json(d: &Definition) -> JsonValue {
     json!({
         "kind": "definition",
@@ -105,8 +113,8 @@ fn def_from_json(v: &JsonValue) -> Result<Definition, Error> {
         .ok_or_else(|| shape("definition.intent missing or not a string"))?
         .to_string();
     let signature = sig_from_json(obj.get("signature").unwrap_or(&JsonValue::Null))?;
-    let pre = array_of_exprs(obj.get("pre"))?;
-    let post = array_of_exprs(obj.get("post"))?;
+    let pre = array_of_exprs(0, obj.get("pre"))?;
+    let post = array_of_exprs(0, obj.get("post"))?;
     let candidates_json = obj
         .get("candidates")
         .and_then(|v| v.as_array())
@@ -321,6 +329,16 @@ fn expr_to_json(e: &Expr) -> JsonValue {
 }
 
 fn expr_from_json(v: &JsonValue) -> Result<Expr, Error> {
+    expr_from_json_at(0, v)
+}
+
+fn expr_from_json_at(depth: usize, v: &JsonValue) -> Result<Expr, Error> {
+    if depth > MAX_EXPR_DEPTH {
+        return Err(shape(format!(
+            "expression nesting exceeds maximum depth of {MAX_EXPR_DEPTH}"
+        )));
+    }
+    let d = depth + 1;
     let obj = v.as_object().ok_or_else(|| shape("expression must be object"))?;
     let kind = obj
         .get("kind")
@@ -357,7 +375,7 @@ fn expr_from_json(v: &JsonValue) -> Result<Expr, Error> {
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| shape("call.fn missing"))?
                 .to_string(),
-            args: array_of_exprs(obj.get("args"))?,
+            args: array_of_exprs(d, obj.get("args"))?,
         }),
         "bind" => Ok(Expr::Bind {
             name: obj
@@ -365,18 +383,18 @@ fn expr_from_json(v: &JsonValue) -> Result<Expr, Error> {
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| shape("bind.name missing"))?
                 .to_string(),
-            expr: Box::new(expr_from_json(
+            expr: Box::new(expr_from_json_at(d, 
                 obj.get("expr").ok_or_else(|| shape("bind.expr missing"))?,
             )?),
-            body: Box::new(expr_from_json(
+            body: Box::new(expr_from_json_at(d, 
                 obj.get("in").ok_or_else(|| shape("bind.in missing"))?,
             )?),
         }),
         "seq" => Ok(Expr::Seq {
-            steps: array_of_exprs(obj.get("steps"))?,
+            steps: array_of_exprs(d, obj.get("steps"))?,
         }),
         "believe" => {
-            let subject = Box::new(expr_from_json(
+            let subject = Box::new(expr_from_json_at(d, 
                 obj.get("subject")
                     .ok_or_else(|| shape("believe.subject missing"))?,
             )?);
@@ -392,9 +410,9 @@ fn expr_from_json(v: &JsonValue) -> Result<Expr, Error> {
                 if pair.len() != 2 {
                     return Err(shape("believe arm must have exactly two elements"));
                 }
-                arms.push((expr_from_json(&pair[0])?, expr_from_json(&pair[1])?));
+                arms.push((expr_from_json_at(d, &pair[0])?, expr_from_json_at(d, &pair[1])?));
             }
-            let otherwise = Box::new(expr_from_json(
+            let otherwise = Box::new(expr_from_json_at(d, 
                 obj.get("else")
                     .ok_or_else(|| shape("believe.else missing (required)"))?,
             )?);
@@ -408,10 +426,10 @@ fn expr_from_json(v: &JsonValue) -> Result<Expr, Error> {
             reason: obj.get("reason").and_then(|v| v.as_str()).map(|s| s.to_string()),
         }),
         "concat" => Ok(Expr::Concat {
-            parts: array_of_exprs(obj.get("parts"))?,
+            parts: array_of_exprs(d, obj.get("parts"))?,
         }),
         "attr" => Ok(Expr::Attr {
-            target: Box::new(expr_from_json(
+            target: Box::new(expr_from_json_at(d, 
                 obj.get("target").ok_or_else(|| shape("attr.target missing"))?,
             )?),
             name: obj
@@ -421,13 +439,13 @@ fn expr_from_json(v: &JsonValue) -> Result<Expr, Error> {
                 .to_string(),
         }),
         "if" => Ok(Expr::If {
-            cond: Box::new(expr_from_json(
+            cond: Box::new(expr_from_json_at(d, 
                 obj.get("cond").ok_or_else(|| shape("if.cond missing"))?,
             )?),
-            then_: Box::new(expr_from_json(
+            then_: Box::new(expr_from_json_at(d, 
                 obj.get("then").ok_or_else(|| shape("if.then missing"))?,
             )?),
-            else_: Box::new(expr_from_json(
+            else_: Box::new(expr_from_json_at(d, 
                 obj.get("else").ok_or_else(|| shape("if.else missing"))?,
             )?),
         }),
@@ -435,14 +453,14 @@ fn expr_from_json(v: &JsonValue) -> Result<Expr, Error> {
     }
 }
 
-fn array_of_exprs(opt: Option<&JsonValue>) -> Result<Vec<Expr>, Error> {
+fn array_of_exprs(depth: usize, opt: Option<&JsonValue>) -> Result<Vec<Expr>, Error> {
     match opt {
         None | Some(JsonValue::Null) => Ok(vec![]),
         Some(v) => {
             let arr = v
                 .as_array()
                 .ok_or_else(|| shape("expected array of expressions"))?;
-            arr.iter().map(expr_from_json).collect()
+            arr.iter().map(|e| expr_from_json_at(depth, e)).collect()
         }
     }
 }

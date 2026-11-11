@@ -120,3 +120,35 @@ def judge
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExpressionDepthLimitTests(unittest.TestCase):
+    """Mirror of the Rust ``expression_nesting_is_bounded_with_typed_error`` test."""
+
+    @staticmethod
+    def _nested(depth: int) -> dict:
+        body = {"kind": "lit", "value": 0, "type": "Int", "conf": 1.0, "provenance": "literal"}
+        for _ in range(depth):
+            body = {"kind": "call", "fn": "id", "args": [body]}
+        return {
+            "codifide": "0.1",
+            "module": "x",
+            "symbols": {"n": {
+                "kind": "definition",
+                "intent": "t",
+                "signature": {"params": [], "returns": "Any", "effects": []},
+                "pre": [], "post": [],
+                "candidates": [{"kind": "candidate", "intent": "d", "guard": None, "body": body}],
+            }},
+        }
+
+    def test_nesting_at_limit_round_trips(self) -> None:
+        from codifide.projection.canonical import MAX_EXPR_DEPTH
+        doc = self._nested(MAX_EXPR_DEPTH)
+        self.assertEqual(to_canonical(from_canonical(doc))["module"], "x")
+
+    def test_nesting_beyond_limit_is_a_defined_error(self) -> None:
+        from codifide.projection.canonical import MAX_EXPR_DEPTH
+        for depth in (MAX_EXPR_DEPTH + 1, 5000):
+            with self.assertRaisesRegex(ValueError, "maximum depth"):
+                from_canonical(self._nested(depth))

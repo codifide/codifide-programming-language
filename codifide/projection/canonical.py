@@ -37,6 +37,12 @@ from ..core.types import (
 
 CODIFIDE_SCHEMA_VERSION = "0.1"
 
+# Maximum expression nesting accepted by ``from_canonical``. Mirrors
+# ``MAX_EXPR_DEPTH`` in ``crates/codifide-canonical/src/json.rs``: parsing is
+# recursive, so deeper input is rejected with a defined error instead of
+# overflowing the stack (Rust) or raising RecursionError (Python).
+MAX_EXPR_DEPTH = 64
+
 
 def to_canonical(module: Module) -> Dict[str, Any]:
     obj: Dict[str, Any] = {
@@ -299,7 +305,12 @@ def _expr_to_json(e: Expr) -> Dict[str, Any]:
     raise TypeError(f"cannot serialize expression: {type(e).__name__}")
 
 
-def _expr_from_json(obj: Dict[str, Any]) -> Expr:
+def _expr_from_json(obj: Dict[str, Any], _depth: int = 0) -> Expr:
+    if _depth > MAX_EXPR_DEPTH:
+        raise ValueError(
+            f"expression nesting exceeds maximum depth of {MAX_EXPR_DEPTH}"
+        )
+    d = _depth + 1
     k = obj.get("kind")
     if k == "lit":
         return Lit(
@@ -311,34 +322,34 @@ def _expr_from_json(obj: Dict[str, Any]) -> Expr:
     if k == "ref":
         return Ref(obj["name"])
     if k == "call":
-        return Call(obj["fn"], tuple(_expr_from_json(a) for a in obj.get("args", [])))
+        return Call(obj["fn"], tuple(_expr_from_json(a, d) for a in obj.get("args", [])))
     if k == "bind":
         return Bind(
             name=obj["name"],
-            expr=_expr_from_json(obj["expr"]),
-            body=_expr_from_json(obj["in"]),
+            expr=_expr_from_json(obj["expr"], d),
+            body=_expr_from_json(obj["in"], d),
         )
     if k == "seq":
-        return Seq(steps=tuple(_expr_from_json(s) for s in obj["steps"]))
+        return Seq(steps=tuple(_expr_from_json(s, d) for s in obj["steps"]))
     if k == "believe":
         return Believe(
-            subject=_expr_from_json(obj["subject"]),
+            subject=_expr_from_json(obj["subject"], d),
             arms=tuple(
-                (_expr_from_json(c), _expr_from_json(v))
+                (_expr_from_json(c, d), _expr_from_json(v, d))
                 for c, v in obj.get("arms", [])
             ),
-            otherwise=_expr_from_json(obj["else"]),
+            otherwise=_expr_from_json(obj["else"], d),
         )
     if k == "bottom":
         return BottomExpr(reason=obj.get("reason"))
     if k == "concat":
-        return Concat(parts=tuple(_expr_from_json(p) for p in obj.get("parts", [])))
+        return Concat(parts=tuple(_expr_from_json(p, d) for p in obj.get("parts", [])))
     if k == "attr":
-        return Attr(target=_expr_from_json(obj["target"]), name=obj["name"])
+        return Attr(target=_expr_from_json(obj["target"], d), name=obj["name"])
     if k == "if":
         return If(
-            cond=_expr_from_json(obj["cond"]),
-            then_=_expr_from_json(obj["then"]),
-            else_=_expr_from_json(obj["else"]),
+            cond=_expr_from_json(obj["cond"], d),
+            then_=_expr_from_json(obj["then"], d),
+            else_=_expr_from_json(obj["else"], d),
         )
     raise ValueError(f"unknown expression kind: {k!r}")
